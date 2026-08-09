@@ -1,4 +1,4 @@
 PUPIL_REF,FIRST_NAME,LAST_NAME,DATE_OF_BIRTH,UPN,FSM_STATUS
 string,string,string,date,string,code
-CONTACT_REF,PUPIL_REF,CONTACT_NAME,REL_CODE,EMAIL
-string,string,string,lookup,string
+Impulse pupil reference,Pupil given name,Pupil family name,Date of birth,Unique Pupil Number,Free school meals status
+Vendor-assigned pupil key,Free text,Free text,YYYY-MM-DD,13-character UPN or blank,"Y = eligible, N = not eligible"

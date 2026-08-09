@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MapBridge — Collaborative migration mapping for education systems</title>
-  <meta name="description" content="Secure, project-based source-to-target mapping for education MIS migrations. Connect schemas, drag to map columns, export and delete.">
+  <title>MapBridge — Migration mapping with test & live traceability</title>
+  <meta name="description" content="Secure, project-based source-to-target mapping for education MIS migrations. Connect schemas, map columns, record test and live traceability per column, export and delete.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -233,7 +233,7 @@
     .demo-body {
       display: grid;
       grid-template-columns: 1fr 1.2fr 1fr;
-      min-height: 380px;
+      min-height: 460px;
       position: relative;
     }
 
@@ -286,13 +286,10 @@
     }
 
     .col-row {
-      padding: 0.35rem 0.55rem;
+      padding: 0.45rem 0.55rem;
       font-family: "JetBrains Mono", monospace;
       font-size: 0.68rem;
       border-bottom: 1px solid #f1f5f9;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       cursor: grab;
       transition: background 0.12s;
     }
@@ -301,10 +298,44 @@
     .col-row:hover { background: rgba(0,0,0,0.03); }
     .col-row.mapped { background: rgba(37, 99, 235, 0.08); }
     .col-row.unmapped { color: var(--warn); }
+    .col-row.value-mismatch { background: #fffbeb; border-left: 2px solid var(--warn); }
+
+    .col-row-name { font-weight: 600; }
+    .col-row-desc {
+      font-family: "DM Sans", system-ui, sans-serif;
+      font-size: 0.58rem;
+      color: var(--ink);
+      line-height: 1.35;
+      margin-top: 0.15rem;
+    }
+    .col-row-values {
+      font-family: "DM Sans", system-ui, sans-serif;
+      font-size: 0.55rem;
+      margin-top: 0.15rem;
+    }
+    .demo-value-chip {
+      display: inline-block;
+      padding: 0.06rem 0.3rem;
+      border-radius: 4px;
+      background: #f1f5f9;
+      border: 1px solid var(--line);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.52rem;
+      color: var(--ink);
+    }
+    .col-row-warn {
+      font-family: "DM Sans", system-ui, sans-serif;
+      font-size: 0.52rem;
+      color: #92400e;
+      font-weight: 600;
+      margin-top: 0.12rem;
+    }
 
     .col-type {
       font-size: 0.6rem;
       color: var(--muted);
+      font-weight: 400;
+      margin-left: 0.3rem;
     }
 
     .mapping-svg {
@@ -387,9 +418,64 @@
 
     .section-head p { color: var(--muted); }
 
+    .trace-preview {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+    }
+
+    .trace-preview-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.45rem;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .trace-preview-step.done {
+      background: var(--target-bg);
+      border-color: rgba(5, 150, 105, 0.25);
+      color: #047857;
+    }
+
+    .trace-preview-step.next {
+      background: var(--brand-light);
+      border-color: rgba(13, 92, 99, 0.25);
+      color: var(--brand);
+    }
+
+    .trace-preview-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      display: grid;
+      place-items: center;
+      font-size: 0.55rem;
+      line-height: 1;
+    }
+
+    .trace-preview-step.done .trace-preview-dot {
+      background: #059669;
+      border-color: #059669;
+      color: white;
+    }
+
+    .trace-preview-step.next .trace-preview-dot {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
     .steps {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 1rem;
     }
 
@@ -691,18 +777,22 @@
       <div>
         <div class="eyebrow">
           <span class="eyebrow-dot"></span>
-          Education MIS migration mapping
+          Migration mapping · test & live traceability
         </div>
-        <h1>Map source to target.<br>Together. Then delete.</h1>
+        <h1>Map source to target.<br>Track test & live. Then delete.</h1>
         <p class="hero-lead">
           A secure collaboration workspace for Local Authorities, system suppliers, and delivery partners.
-          Connect schemas, drag columns to map, export your mapping artefact, and wipe the project when you're done.
+          Connect schemas, map columns visually, then record who sent SQL, who checked test, and who signed off live — per column, with a full audit trail.
         </p>
         <div class="hero-actions">
           <a href="/app.html" class="btn btn-primary">Start a project</a>
           <a href="#how" class="btn btn-secondary">See how it works</a>
         </div>
         <div class="trust-row">
+          <span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Test & live traceability
+          </span>
           <span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Metadata-only by default
@@ -721,22 +811,47 @@
       <div class="demo-card" aria-label="Interactive mapping preview">
         <div class="demo-topbar">
           <span class="demo-project">Synergy → Impulse · Birmingham LA</span>
-          <span class="demo-status">● Mapping in progress</span>
+          <span class="demo-status" style="background:#ecfdf5;color:#047857">● 18/42 signed off in live</span>
         </div>
         <div class="demo-body" id="mapping-demo">
           <div class="panel panel-source">
             <div class="panel-title">Source <span class="badge">Synergy</span></div>
             <div class="table-block">
               <div class="table-name">mig_pupil</div>
-              <div class="col-row mapped" data-source="pupil_id">pupil_id <span class="col-type">int</span></div>
-              <div class="col-row mapped" data-source="forename">forename <span class="col-type">varchar</span></div>
-              <div class="col-row mapped" data-source="surname">surname <span class="col-type">varchar</span></div>
-              <div class="col-row unmapped" data-source="fsm_flag">fsm_flag <span class="col-type">char</span></div>
+              <div class="col-row mapped" data-source="pupil_id">
+                <div class="col-row-name">pupil_id<span class="col-type">int</span></div>
+                <div class="col-row-desc">Internal Synergy pupil identifier</div>
+                <div class="col-row-values"><span class="demo-value-chip">Numeric ID</span></div>
+              </div>
+              <div class="col-row mapped" data-source="forename">
+                <div class="col-row-name">forename<span class="col-type">varchar</span></div>
+                <div class="col-row-desc">Pupil given name</div>
+                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              </div>
+              <div class="col-row mapped" data-source="surname">
+                <div class="col-row-name">surname<span class="col-type">varchar</span></div>
+                <div class="col-row-desc">Pupil family name</div>
+                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              </div>
+              <div class="col-row mapped value-mismatch" data-source="fsm_flag">
+                <div class="col-row-name">fsm_flag<span class="col-type">char(1)</span></div>
+                <div class="col-row-desc">Free school meals eligibility at extract date</div>
+                <div class="col-row-values"><span class="demo-value-chip">1 = eligible, 0 = not eligible</span></div>
+                <div class="col-row-warn">Target expects Y/N — transform required</div>
+              </div>
             </div>
             <div class="table-block">
               <div class="table-name">mig_guardian</div>
-              <div class="col-row mapped" data-source="guardian_name">guardian_name <span class="col-type">varchar</span></div>
-              <div class="col-row" data-source="relationship">relationship <span class="col-type">lookup</span></div>
+              <div class="col-row mapped" data-source="guardian_name">
+                <div class="col-row-name">guardian_name<span class="col-type">varchar</span></div>
+                <div class="col-row-desc">Contact full name</div>
+                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              </div>
+              <div class="col-row" data-source="relationship">
+                <div class="col-row-name">relationship<span class="col-type">lookup</span></div>
+                <div class="col-row-desc">Relationship to pupil</div>
+                <div class="col-row-values"><span class="demo-value-chip">Synergy lookup code</span></div>
+              </div>
             </div>
           </div>
 
@@ -756,21 +871,45 @@
             <div class="panel-title">Target <span class="badge">Impulse</span></div>
             <div class="table-block">
               <div class="table-name">Pupil_Template</div>
-              <div class="col-row mapped" data-target="PUPIL_REF">PUPIL_REF <span class="col-type">string</span></div>
-              <div class="col-row mapped" data-target="FIRST_NAME">FIRST_NAME <span class="col-type">string</span></div>
-              <div class="col-row mapped" data-target="LAST_NAME">LAST_NAME <span class="col-type">string</span></div>
-              <div class="col-row" data-target="FSM_STATUS">FSM_STATUS <span class="col-type">code</span></div>
+              <div class="col-row mapped" data-target="PUPIL_REF">
+                <div class="col-row-name">PUPIL_REF<span class="col-type">string</span></div>
+                <div class="col-row-desc">Impulse pupil reference</div>
+                <div class="col-row-values"><span class="demo-value-chip">Vendor-assigned pupil key</span></div>
+              </div>
+              <div class="col-row mapped" data-target="FIRST_NAME">
+                <div class="col-row-name">FIRST_NAME<span class="col-type">string</span></div>
+                <div class="col-row-desc">Pupil given name</div>
+                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              </div>
+              <div class="col-row mapped" data-target="LAST_NAME">
+                <div class="col-row-name">LAST_NAME<span class="col-type">string</span></div>
+                <div class="col-row-desc">Pupil family name</div>
+                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              </div>
+              <div class="col-row mapped value-mismatch" data-target="FSM_STATUS">
+                <div class="col-row-name">FSM_STATUS<span class="col-type">code</span></div>
+                <div class="col-row-desc">Free school meals status</div>
+                <div class="col-row-values"><span class="demo-value-chip">Y = eligible, N = not eligible</span></div>
+              </div>
             </div>
             <div class="table-block">
               <div class="table-name">Guardian_Template</div>
-              <div class="col-row mapped" data-target="CONTACT_NAME">CONTACT_NAME <span class="col-type">string</span></div>
-              <div class="col-row" data-target="REL_CODE">REL_CODE <span class="col-type">lookup</span></div>
+              <div class="col-row mapped" data-target="CONTACT_NAME">
+                <div class="col-row-name">CONTACT_NAME<span class="col-type">string</span></div>
+                <div class="col-row-desc">Contact full name</div>
+                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              </div>
+              <div class="col-row" data-target="REL_CODE">
+                <div class="col-row-name">REL_CODE<span class="col-type">lookup</span></div>
+                <div class="col-row-desc">Relationship to pupil</div>
+                <div class="col-row-values"><span class="demo-value-chip">Impulse code list required</span></div>
+              </div>
             </div>
           </div>
         </div>
         <div class="demo-footer">
-          <span>12 tables · 68% mapped · 4 open issues</span>
-          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <span>42 columns · 68% mapped · 18 signed off · 2 blocked in test</span>
+          <div class="progress-bar"><div class="progress-fill" style="width:43%"></div></div>
         </div>
       </div>
     </div>
@@ -796,12 +935,23 @@
         <div class="step">
           <div class="step-num">3</div>
           <h3>Map visually</h3>
-          <p>Drag arrows between columns. Add transforms, lookup rules, notes, and approvals.</p>
+          <p>Drag arrows between columns. Add transforms, lookup rules, and service area groupings.</p>
         </div>
         <div class="step">
           <div class="step-num">4</div>
+          <h3>Test & live checks</h3>
+          <p>Record SQL sent, test upload, checks, live push, and sign-off — per column, with names and timestamps.</p>
+          <div class="trace-preview" aria-hidden="true">
+            <span class="trace-preview-step done"><span class="trace-preview-dot">✓</span>SQL sent</span>
+            <span class="trace-preview-step done"><span class="trace-preview-dot">✓</span>Test</span>
+            <span class="trace-preview-step next"><span class="trace-preview-dot">+</span>Live</span>
+            <span class="trace-preview-step">Done</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
           <h3>Export & close</h3>
-          <p>Download the full mapping package. Close the project — all data permanently deleted.</p>
+          <p>Download mappings plus full traceability log. Close the project — all data permanently deleted.</p>
         </div>
       </div>
     </div>
@@ -811,18 +961,18 @@
     <div class="wrap">
       <div class="section-head">
         <h2>Built for migration pain, not generic ETL</h2>
-        <p>The spreadsheet master document problem — unmapped fields, lookup conversions, "not convinced this was sent" — is what this replaces.</p>
+        <p>The spreadsheet master document problem — unmapped fields, lookup conversions, and "not convinced this was sent to test" — is what this replaces.</p>
       </div>
       <div class="features">
         <div class="feature">
-          <div class="feature-icon" style="background: var(--source-bg);">↔</div>
-          <h3>Visual column mapping</h3>
-          <p>Side-by-side schemas with drag-and-drop lines. Unmapped and type-mismatch columns flagged instantly.</p>
+          <div class="feature-icon" style="background: var(--target-bg);">✓</div>
+          <h3>Test & live traceability</h3>
+          <p>Per-column pipeline from SQL sent through test checks, live push, and sign-off. Click to record, revert with history kept.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: var(--brand-light);">👥</div>
-          <h3>Multi-party collaboration</h3>
-          <p>LA, vendor, and consultant in one workspace. Comments, @mentions, activity log, and sign-off workflows.</p>
+          <div class="feature-icon" style="background: var(--brand-light);">👤</div>
+          <h3>Who did what</h3>
+          <p>Migration team roster. Every step records who checked — including resends, failures, and reverts — with timestamps.</p>
         </div>
         <div class="feature">
           <div class="feature-icon" style="background: var(--accent-soft);">⚡</div>
@@ -830,19 +980,19 @@
           <p>Capture Synergy → Impulse code conversions, defaults, and join conditions on each mapping line.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: var(--target-bg);">📤</div>
+          <div class="feature-icon" style="background: #fef3c7;">📊</div>
+          <h3>Live dashboard</h3>
+          <p>Pipeline completion, status mix, service area progress, and audit activity — updated as your team records steps.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon" style="background: var(--source-bg);">↔</div>
+          <h3>Visual column mapping</h3>
+          <p>Side-by-side schemas with drag-and-drop lines. Unmapped and type-mismatch columns flagged instantly.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon" style="background: #f3e8ff;">📤</div>
           <h3>Exportable artefacts</h3>
-          <p>Excel, JSON, or SQL stubs generated from the visual map. Living documentation the client keeps.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon" style="background: #fef3c7;">📋</div>
-          <h3>Version history</h3>
-          <p>See what changed between mapping runs. Compare versions side-by-side before sign-off.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon" style="background: #f3e8ff;">🤖</div>
-          <h3>Smart suggestions (later)</h3>
-          <p>Propose likely column matches from names, types, and sample metadata. Human review always required.</p>
+          <p>Excel or JSON with mappings, verification status, traceability columns, and full audit history.</p>
         </div>
       </div>
     </div>
@@ -894,7 +1044,7 @@
         </div>
         <div class="security-card">
           <h3>Audit trail & DPA-ready</h3>
-          <p>Full activity log while the project is active. Deletion confirmation provided on close. UK/EU data residency.</p>
+          <p>Append-only history per column while the project is active — every check, resend, and revert logged with who and when. Deletion confirmation on close.</p>
         </div>
       </div>
     </div>
@@ -931,6 +1081,11 @@
             <td class="check">✓ Core design</td>
           </tr>
           <tr>
+            <td>Per-column test & live traceability</td>
+            <td class="partial">Status fields only</td>
+            <td class="check">✓ Full pipeline + audit log</td>
+          </tr>
+          <tr>
             <td>Mapping export as deliverable</td>
             <td class="check">✓</td>
             <td class="check">✓ Explicit requirement</td>
@@ -949,7 +1104,7 @@
     <div class="wrap">
       <div class="cta">
         <h2>Try the working demo</h2>
-        <p>Interactive mapping canvas, auth & invites, schema upload, and export/delete — all running locally in your browser.</p>
+        <p>Interactive mapping canvas, test & live verification, team traceability, schema upload, and export/delete — all running locally in your browser.</p>
         <a href="/app.html" class="btn btn-primary">Open MapBridge app</a>
       </div>
     </div>

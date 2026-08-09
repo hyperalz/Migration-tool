@@ -1,8 +1,10 @@
 import {
   TRACE_STEPS, traceStepSummary, columnTraceability, ensureMappingFields, nextTraceStepKey,
+  statusMeta,
 } from './verification.js';
 
 const STEP_COLORS = ['#64748b', '#2563eb', '#d97706', '#059669', '#7c3aed', '#10b981', '#0d5c63'];
+const RECENT_ACTIVITY_LIMIT = 12;
 
 let charts = {};
 
@@ -54,7 +56,9 @@ export function buildTraceDashboardData(mappings) {
     }
   }
 
-  const activity = buildActivitySeries(mappings, 14);
+  const backlogList = TRACE_STEPS
+    .map(s => ({ label: s.action, count: backlog[s.action] || 0 }))
+    .filter(x => x.count > 0);
 
   return {
     total,
@@ -63,38 +67,91 @@ export function buildTraceDashboardData(mappings) {
     inProgress,
     steps,
     areas,
-    backlog,
-    activity,
+    backlogList,
+    recentActivity: buildRecentActivity(mappings, RECENT_ACTIVITY_LIMIT),
     donePct: total ? Math.round((signedOff / total) * 100) : 0,
   };
 }
 
-function buildActivitySeries(mappings, days) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const labels = [];
-  const counts = [];
-  const keys = [];
-
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    keys.push(key);
-    labels.push(d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }));
-  }
-
-  const buckets = new Map(keys.map(k => [k, 0]));
+function buildRecentActivity(mappings, limit) {
+  const events = [];
   for (const m of mappings) {
+    ensureMappingFields(m);
     for (const h of m.verification?.history || []) {
-      if (h.revertTo) continue;
-      const key = h.at?.slice(0, 10);
-      if (buckets.has(key)) buckets.set(key, buckets.get(key) + 1);
+      if (!h.at) continue;
+      events.push({
+        at: h.at,
+        mappingId: m.id,
+        columnRef: `${m.sourceTable}.${m.sourceColumn}`,
+        status: h.status,
+        by: h.participants?.length ? h.participants.join(', ') : (h.by || 'unknown'),
+        note: h.note || '',
+        revertTo: h.revertTo || null,
+      });
     }
   }
-  for (const key of keys) counts.push(buckets.get(key));
+  events.sort((a, b) => new Date(b.at) - new Date(a.at));
+  return events.slice(0, limit);
+}
 
-  return { labels, counts };
+function formatRelativeTime(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderActionPanel(data) {
+  const backlogHtml = data.backlogList.length
+    ? `<ul class="dash-backlog-list">${data.backlogList.map(item => `
+        <li class="dash-backlog-item">
+          <span class="dash-backlog-label">${esc(item.label)}</span>
+          <span class="dash-backlog-count">${item.count}</span>
+        </li>`).join('')}</ul>`
+    : `<p class="dash-action-empty">All columns signed off — nothing waiting.</p>`;
+
+  const activityHtml = data.recentActivity.length
+    ? `<ul class="dash-activity-list">${data.recentActivity.map(ev => {
+      const meta = ev.revertTo
+        ? { label: 'Reverted', color: '#d97706' }
+        : statusMeta(ev.status);
+      return `<li class="dash-activity-item" data-mapping-id="${esc(ev.mappingId)}" tabindex="0" role="button">
+        <div class="dash-activity-row">
+          <span class="dash-activity-status" style="color:${meta.color}">${esc(meta.label)}</span>
+          <span class="dash-activity-time">${formatRelativeTime(ev.at)}</span>
+        </div>
+        <div class="dash-activity-col">${esc(ev.columnRef)}</div>
+        <div class="dash-activity-meta">${esc(ev.by)}${ev.note ? ` · ${esc(ev.note)}` : ''}</div>
+      </li>`;
+    }).join('')}</ul>`
+    : `<p class="dash-action-empty">No steps recorded yet — click + on a row to start.</p>`;
+
+  return `
+    <div class="dash-action-grid">
+      <div class="dash-action-block">
+        <h3>Waiting on next step</h3>
+        <p class="dash-chart-hint">Columns ready for the next action</p>
+        ${backlogHtml}
+      </div>
+      <div class="dash-action-block">
+        <h3>Recent activity</h3>
+        <p class="dash-chart-hint">Latest recorded steps — click to open column</p>
+        ${activityHtml}
+      </div>
+    </div>`;
 }
 
 export function renderTraceDashboardHTML(data, open = false) {
@@ -130,10 +187,8 @@ export function renderTraceDashboardHTML(data, open = false) {
             <p class="dash-chart-hint">% signed off per area</p>
             <div class="dash-chart-wrap"><canvas id="chart-areas"></canvas></div>
           </div>
-          <div class="dash-chart-card dash-chart-wide">
-            <h3>Audit activity</h3>
-            <p class="dash-chart-hint">Recorded steps per day (last 14 days)</p>
-            <div class="dash-chart-wrap dash-chart-short"><canvas id="chart-activity"></canvas></div>
+          <div class="dash-chart-card dash-chart-wide dash-action-panel">
+            ${renderActionPanel(data)}
           </div>
         </div>
       </div>
@@ -146,6 +201,18 @@ export function destroyDashboardCharts() {
 }
 
 const chartFont = { family: '"DM Sans", system-ui, sans-serif' };
+const chartBaseOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  resizeDelay: 100,
+};
+
+export function scheduleDashboardCharts(mappings) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => mountDashboardCharts(mappings));
+  });
+}
 
 export function mountDashboardCharts(mappings) {
   if (typeof Chart === 'undefined') return;
@@ -168,9 +235,8 @@ export function mountDashboardCharts(mappings) {
         }],
       },
       options: {
+        ...chartBaseOptions,
         indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -208,8 +274,7 @@ export function mountDashboardCharts(mappings) {
         }],
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        ...chartBaseOptions,
         cutout: '62%',
         plugins: {
           legend: { position: 'bottom', labels: { font: chartFont, boxWidth: 10, padding: 10 } },
@@ -232,42 +297,12 @@ export function mountDashboardCharts(mappings) {
         }],
       },
       options: {
+        ...chartBaseOptions,
         indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
           x: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, font: chartFont }, grid: { color: '#f1f5f9' } },
           y: { ticks: { font: chartFont }, grid: { display: false } },
-        },
-      },
-    });
-  }
-
-  const activityEl = document.getElementById('chart-activity');
-  if (activityEl) {
-    charts.activity = new Chart(activityEl, {
-      type: 'line',
-      data: {
-        labels: data.activity.labels,
-        datasets: [{
-          label: 'Steps recorded',
-          data: data.activity.counts,
-          borderColor: '#0d5c63',
-          backgroundColor: 'rgba(13, 92, 99, 0.12)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointBackgroundColor: '#0d5c63',
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { font: chartFont, maxRotation: 0 }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { stepSize: 1, font: chartFont }, grid: { color: '#f1f5f9' } },
         },
       },
     });

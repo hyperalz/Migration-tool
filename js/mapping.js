@@ -1,5 +1,6 @@
 import { uid } from './store.js';
 import { defaultVerification } from './verification.js';
+import { getSchemaColumn, valuesFormatMismatch } from './schema.js';
 
 export class MappingCanvas {
   constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping, getActor }) {
@@ -57,17 +58,58 @@ export class MappingCanvas {
     return schema.tables.map(table => `
       <details class="table-group" open>
         <summary>${table.name} <span>${table.columns.length} cols</span></summary>
-        ${table.columns.map(col => {
-          const key = `${table.name}.${col.name}`;
-          const mapped = mappedSet.has(key);
-          return `
-            <div class="col-item ${mapped ? 'mapped' : 'unmapped'}" data-side="${side}" data-table="${table.name}" data-column="${col.name}">
-              <span>${col.name}<span class="col-type">${col.type}</span></span>
-              <span class="handle ${side}" data-handle="${side}" data-table="${table.name}" data-column="${col.name}" title="Connect"></span>
-            </div>`;
-        }).join('')}
+        ${table.columns.map(col => this.renderColumnItem(table.name, col, side, mappedSet)).join('')}
       </details>
     `).join('');
+  }
+
+  renderColumnItem(tableName, col, side, mappedSet) {
+    const key = `${tableName}.${col.name}`;
+    const mapped = mappedSet.has(key);
+    const schema = side === 'source' ? this.sourceSchema : this.targetSchema;
+    const otherSchema = side === 'source' ? this.targetSchema : this.sourceSchema;
+
+    let pairCol = null;
+    let mismatch = false;
+    if (mapped) {
+      const m = this.mappings.find(x =>
+        side === 'source'
+          ? x.sourceTable === tableName && x.sourceColumn === col.name
+          : x.targetTable === tableName && x.targetColumn === col.name
+      );
+      if (m) {
+        pairCol = side === 'source'
+          ? getSchemaColumn(otherSchema, m.targetTable, m.targetColumn)
+          : getSchemaColumn(otherSchema, m.sourceTable, m.sourceColumn);
+        mismatch = valuesFormatMismatch(
+          side === 'source' ? col : pairCol,
+          side === 'source' ? pairCol : col
+        );
+      }
+    }
+
+    const desc = col.description
+      ? `<div class="col-desc">${escHtml(col.description)}</div>`
+      : `<div class="col-desc col-desc-missing">No definition provided</div>`;
+    const values = col.values
+      ? `<div class="col-values"><span class="col-values-label">Values:</span> <span class="value-chip">${escHtml(col.values)}</span></div>`
+      : `<div class="col-values col-values-missing"><span class="col-values-label">Values:</span> not documented</div>`;
+    const mismatchNote = mismatch && pairCol?.values
+      ? `<div class="col-values-warn">Format differs from ${side === 'source' ? 'target' : 'source'} (${escHtml(pairCol.values)})</div>`
+      : '';
+
+    return `
+      <div class="col-item ${mapped ? 'mapped' : 'unmapped'}${mismatch ? ' value-mismatch' : ''}" data-side="${side}" data-table="${tableName}" data-column="${col.name}">
+        <div class="col-main">
+          <div class="col-name-row">
+            <span class="col-name">${escHtml(col.name)}<span class="col-type">${escHtml(col.type)}</span></span>
+          </div>
+          ${desc}
+          ${values}
+          ${mismatchNote}
+        </div>
+        <span class="handle ${side}" data-handle="${side}" data-table="${tableName}" data-column="${col.name}" title="Connect"></span>
+      </div>`;
   }
 
   bindEvents() {
@@ -239,4 +281,12 @@ export class MappingCanvas {
 function bezier(x1, y1, x2, y2) {
   const mx = (x1 + x2) / 2;
   return `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }

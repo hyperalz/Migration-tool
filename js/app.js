@@ -3,9 +3,10 @@ import {
   getProjects, getProject, saveProject, createProject, deleteProject,
   saveInvite, getInviteByToken, removeInvite, addMember, uid, getUsers,
 } from './store.js';
-import { synergySample, impulseSample, suggestedMappings } from './sampleData.js';
+import { synergySample, impulseSample, suggestedMappings, cloneSample } from './sampleData.js';
 import {
   parseJSONSchema, parseCSVTemplate, schemaStats, mappingProgress, readFileAsText,
+  getSchemaColumn, valuesFormatMismatch,
 } from './schema.js';
 import {
   buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs, mappingsToRows,
@@ -21,7 +22,7 @@ import {
   countStepAttempts,
 } from './verification.js';
 import {
-  buildTraceDashboardData, renderTraceDashboardHTML, mountDashboardCharts, destroyDashboardCharts,
+  buildTraceDashboardData, renderTraceDashboardHTML, scheduleDashboardCharts, destroyDashboardCharts,
 } from './dashboard-charts.js';
 
 let canvasInstance = null;
@@ -268,16 +269,16 @@ function renderSetup({ id }) {
 
   mount(`
     ${projectSteps(project, 'setup')}
-    <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates, or load sample education schemas.</p></div></div>
+    <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates with column definitions and value formats — so both sides know what each field means.</p></div></div>
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Source · ${esc(project.sourceSystem)}</h3>
         <div class="upload-zone" id="source-upload">
           <input type="file" id="source-file" accept=".json,.csv">
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Metadata only — table & column definitions</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">JSON: <code>description</code> + <code>values</code> per column · CSV: optional rows 3–4</p>
         </div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:0.65rem" id="load-source-sample">Load Synergy sample</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:0.65rem" id="load-source-sample">Load Synergy sample (4 tables · definitions included)</button>
         ${project.sourceSchema ? renderSchemaPreview(project.sourceSchema, srcStats) : ''}
       </div>
       <div class="card">
@@ -285,12 +286,13 @@ function renderSetup({ id }) {
         <div class="upload-zone" id="target-upload">
           <input type="file" id="target-file" accept=".json,.csv">
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Impulse-style CSV templates supported</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Include vendor value lists — e.g. Y/N vs 1/0</p>
         </div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:0.65rem" id="load-target-sample">Load Impulse sample</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:0.65rem" id="load-target-sample">Load Impulse sample (4 tables · definitions included)</button>
         ${project.targetSchema ? renderSchemaPreview(project.targetSchema, tgtStats) : ''}
       </div>
     </div>
+    ${renderSchemaExamples()}
     <div style="margin-top:1.25rem;display:flex;gap:0.65rem">
       <a href="#/projects/${id}/invite" class="btn btn-secondary">Next: Invite party →</a>
       ${project.sourceSchema && project.targetSchema ? `
@@ -302,14 +304,14 @@ function renderSetup({ id }) {
   setupUpload('target', id, project);
   document.getElementById('load-source-sample').addEventListener('click', () => {
     const p = getProject(id);
-    p.sourceSchema = { ...synergySample };
+    p.sourceSchema = cloneSample(synergySample);
     saveProject(p);
     toast('Synergy sample loaded');
     renderSetup({ id });
   });
   document.getElementById('load-target-sample').addEventListener('click', () => {
     const p = getProject(id);
-    p.targetSchema = { ...impulseSample };
+    p.targetSchema = cloneSample(impulseSample);
     saveProject(p);
     toast('Impulse sample loaded');
     renderSetup({ id });
@@ -348,15 +350,103 @@ async function handleSchemaFile(file, side, projectId) {
   }
 }
 
+function renderSchemaExamples() {
+  return `
+    <details class="card schema-examples-card">
+      <summary class="schema-examples-summary">
+        <span class="schema-examples-title">Schema examples</span>
+        <span class="schema-examples-meta">How to document definitions and value formats</span>
+      </summary>
+      <div class="schema-examples-body">
+        <p class="schema-examples-lede">Each column can include a plain-English <strong>definition</strong> and a <strong>values</strong> note. MapBridge shows these on both sides when mapping and flags format mismatches — e.g. you send <code>1/0</code> but the vendor expects <code>Y/N</code>.</p>
+        <div class="schema-examples-grid">
+          <div class="schema-example-block">
+            <h4>JSON example</h4>
+            <pre class="schema-example-code">{
+  "system": "Synergy",
+  "tables": [{
+    "name": "mig_pupil",
+    "columns": [{
+      "name": "fsm_flag",
+      "type": "char(1)",
+      "required": false,
+      "description": "Free school meals eligibility at extract date",
+      "values": "1 = eligible, 0 = not eligible"
+    }]
+  }]
+}</pre>
+            <div class="schema-example-downloads">
+              <a href="/samples/synergy-schema.json" download class="btn btn-ghost btn-sm">Full Synergy JSON</a>
+              <a href="/samples/impulse-schema.json" download class="btn btn-ghost btn-sm">Full Impulse JSON</a>
+            </div>
+          </div>
+          <div class="schema-example-block">
+            <h4>CSV example</h4>
+            <p class="schema-example-hint">Row 1: names · Row 2: types · Row 3: definitions · Row 4: values — same as the Load sample buttons</p>
+            <pre class="schema-example-code">pupil_id,forename,fsm_flag
+int,varchar(50),char(1)
+Internal pupil ID,Pupil given name,FSM eligibility flag
+Numeric ID,Free text,"1 = eligible, 0 = not eligible"</pre>
+            <div class="schema-example-downloads">
+              <a href="/samples/synergy-pupil-extract.csv" download class="btn btn-ghost btn-sm">Source CSV</a>
+              <a href="/samples/impulse-pupil-template.csv" download class="btn btn-ghost btn-sm">Target CSV</a>
+            </div>
+          </div>
+        </div>
+        <div class="schema-example-pairs">
+          <h4>Side-by-side: document both formats</h4>
+          <table class="schema-pairs-table">
+            <thead><tr><th>Column</th><th>Source (you)</th><th>Target (vendor)</th><th>Why it matters</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>fsm_flag</code> → <code>FSM_STATUS</code></td>
+                <td><span class="value-chip">1 = eligible, 0 = not eligible</span></td>
+                <td><span class="value-chip">Y = eligible, N = not eligible</span></td>
+                <td>Needs a transform rule — flagged when mapped</td>
+              </tr>
+              <tr>
+                <td><code>relationship</code> → <code>REL_CODE</code></td>
+                <td><span class="value-chip">Synergy lookup code</span></td>
+                <td><span class="value-chip">Impulse code list required</span></td>
+                <td>Vendor must supply their code list</td>
+              </tr>
+              <tr>
+                <td><code>pupil_id</code> → <code>PUPIL_REF</code></td>
+                <td><span class="value-chip">Numeric ID</span></td>
+                <td><span class="value-chip">Vendor-assigned pupil key</span></td>
+                <td>ID strategy must be agreed upfront</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>`;
+}
+
 function renderSchemaPreview(schema, stats) {
   return `
     <div class="alert alert-success" style="margin-top:0.75rem">${stats.tables} tables · ${stats.columns} columns loaded</div>
     <div class="schema-preview"><table>
-      <thead><tr><th>Table</th><th>Column</th><th>Type</th></tr></thead>
+      <thead><tr><th>Table</th><th>Column</th><th>Type</th><th>Definition</th><th>Values</th></tr></thead>
       <tbody>${schema.tables.flatMap(t => t.columns.slice(0, 8).map(c =>
-        `<tr><td>${esc(t.name)}</td><td>${esc(c.name)}</td><td>${esc(c.type)}</td></tr>`
-      )).join('')}</tbody>
-    </table></div>`;
+        `<tr><td>${esc(t.name)}</td><td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${esc(c.description || '—')}</td><td>${esc(c.values || '—')}</td></tr>`
+      )).join('')}${stats.columns > 8 ? `<tr><td colspan="5" style="color:var(--muted);font-size:0.82rem">… and ${stats.columns - 8} more columns</td></tr>` : ''}
+      </tbody></table></div>`;
+}
+
+function renderColumnDefinitionCard(label, col, sideClass) {
+  if (!col) {
+    return `<div class="col-def-card ${sideClass}"><div class="col-def-label">${esc(label)}</div><p class="col-def-empty">Column not found in schema</p></div>`;
+  }
+  return `
+    <div class="col-def-card ${sideClass}">
+      <div class="col-def-label">${esc(label)}</div>
+      <div class="col-def-name">${esc(col.name)} <span class="col-type">${esc(col.type)}</span></div>
+      <p class="col-def-text">${col.description ? esc(col.description) : '<span class="col-def-missing">No definition provided — ask the vendor to document this column.</span>'}</p>
+      <div class="col-def-values">${col.values
+        ? `<span class="value-chip">${esc(col.values)}</span>`
+        : '<span class="col-def-missing">Values not documented</span>'}</div>
+    </div>`;
 }
 
 function renderInvite({ id }) {
@@ -476,7 +566,7 @@ function renderMap({ id }) {
   mount(`
     ${projectSteps(project, 'map')}
     <div class="page-head">
-      <div><h1>Mapping workspace</h1><p>Drag from source ● to target ● to create mappings. Click a line to edit rules.</p></div>
+      <div><h1>Mapping workspace</h1><p>Drag from source ● to target ● to map columns. Definitions and value formats are shown on each side — mismatches like 1/0 vs Y/N are flagged.</p></div>
       <div style="display:flex;gap:0.5rem">
         <button class="btn btn-ghost btn-sm" id="auto-suggest">Auto-suggest mappings</button>
         <a href="#/projects/${id}/verify" class="btn btn-secondary btn-sm">Test & live →</a>
@@ -875,17 +965,34 @@ function renderVerify({ id }) {
         openMappingDrawer(m, id, null, getProject(id));
       });
     });
+    bindDashboardActivityClicks(id);
     document.getElementById('trace-dashboard-panel')?.addEventListener('toggle', e => {
       dashboardOpen = e.target.open;
       if (dashboardOpen) {
-        requestAnimationFrame(() => mountDashboardCharts(getProject(id).mappings));
+        scheduleDashboardCharts(getProject(id).mappings);
       } else {
         destroyDashboardCharts();
       }
     });
     if (dashboardOpen) {
-      requestAnimationFrame(() => mountDashboardCharts(project.mappings));
+      scheduleDashboardCharts(project.mappings);
     }
+  }
+
+  function bindDashboardActivityClicks(projectId) {
+    document.querySelectorAll('.dash-activity-item[data-mapping-id]').forEach(el => {
+      const open = () => {
+        const m = getProject(projectId).mappings.find(x => x.id === el.dataset.mappingId);
+        if (m) openMappingDrawer(m, projectId, null, getProject(projectId));
+      };
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open();
+        }
+      });
+    });
   }
 
   render();
@@ -1088,6 +1195,9 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
   const serviceAreas = getProjectServiceAreaNames(proj);
   const history = [...mapping.verification.history];
   const current = statusMeta(mapping.verification.status);
+  const sourceCol = getSchemaColumn(proj.sourceSchema, mapping.sourceTable, mapping.sourceColumn);
+  const targetCol = getSchemaColumn(proj.targetSchema, mapping.targetTable, mapping.targetColumn);
+  const valueMismatch = valuesFormatMismatch(sourceCol, targetCol);
 
   drawer.classList.add('open');
   backdrop?.classList.add('open');
@@ -1108,10 +1218,22 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
         </select>
       </div>
       <p style="margin:0.5rem 0 0"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></p>
-      <p class="drawer-hint">Click + to record the next step. Click a completed tick to go back. Every action is kept in the audit log below.</p>
+      <p class="drawer-hint">${fromVerify
+    ? 'Click + to record the next step. Click a completed tick to go back. Every action is kept in the audit log below.'
+    : 'Column definitions from each schema are shown below. Flag value format differences before you map.'}</p>
     </div>
     <div class="drawer-body">
       <details class="drawer-section" open>
+        <summary>Column definitions</summary>
+        <div class="drawer-section-body">
+          <div class="col-def-grid">
+            ${renderColumnDefinitionCard('Source', sourceCol, 'col-def-source')}
+            ${renderColumnDefinitionCard('Target', targetCol, 'col-def-target')}
+          </div>
+          ${valueMismatch ? `<div class="alert alert-warn col-def-alert">Value formats differ — e.g. source sends <strong>${esc(sourceCol?.values || '')}</strong> but target expects <strong>${esc(targetCol?.values || '')}</strong>. Document the conversion in transform or lookup rules.</div>` : ''}
+        </div>
+      </details>
+      <details class="drawer-section"${fromVerify ? ' open' : ''}>
         <summary>Traceability</summary>
         <div class="drawer-section-body">${renderTraceDetail(mapping, { interactive: fromVerify, mappingId: mapping.id })}</div>
       </details>

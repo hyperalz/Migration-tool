@@ -1,0 +1,44 @@
+{
+  "system": "Impulse",
+  "tables": [
+    {
+      "name": "Pupil_Template",
+      "columns": [
+        { "name": "PUPIL_REF", "type": "string", "required": true, "description": "Impulse pupil reference", "values": "Vendor-assigned pupil key" },
+        { "name": "FIRST_NAME", "type": "string", "required": true, "description": "Pupil given name", "values": "Free text" },
+        { "name": "LAST_NAME", "type": "string", "required": true, "description": "Pupil family name", "values": "Free text" },
+        { "name": "DATE_OF_BIRTH", "type": "date", "required": true, "description": "Date of birth", "values": "YYYY-MM-DD" },
+        { "name": "UPN", "type": "string", "required": false, "description": "Unique Pupil Number", "values": "13-character UPN or blank" },
+        { "name": "FSM_STATUS", "type": "code", "required": false, "description": "Free school meals status", "values": "Y = eligible, N = not eligible" },
+        { "name": "SEN_CODE", "type": "lookup", "required": false, "description": "SEN provision code", "values": "Impulse SEN code list" }
+      ]
+    },
+    {
+      "name": "Guardian_Template",
+      "columns": [
+        { "name": "CONTACT_REF", "type": "string", "required": true, "description": "Impulse contact reference", "values": "Vendor-assigned contact key" },
+        { "name": "PUPIL_REF", "type": "string", "required": true, "description": "Linked pupil reference", "values": "Must match PUPIL_REF" },
+        { "name": "CONTACT_NAME", "type": "string", "required": true, "description": "Contact full name", "values": "Free text" },
+        { "name": "REL_CODE", "type": "lookup", "required": true, "description": "Relationship to pupil", "values": "Impulse relationship code — vendor list required" },
+        { "name": "EMAIL", "type": "string", "required": false, "description": "Contact email address", "values": "Valid email or blank" }
+      ]
+    },
+    {
+      "name": "School_History_Template",
+      "columns": [
+        { "name": "PUPIL_REF", "type": "string", "required": true, "description": "Linked pupil reference", "values": "Must match PUPIL_REF" },
+        { "name": "ESTABLISHMENT", "type": "string", "required": true, "description": "School name or establishment code", "values": "Free text or vendor code" },
+        { "name": "START_DATE", "type": "date", "required": true, "description": "Start date at school", "values": "YYYY-MM-DD" },
+        { "name": "END_DATE", "type": "date", "required": false, "description": "End date at school", "values": "YYYY-MM-DD or blank if current" }
+      ]
+    },
+    {
+      "name": "FSM_Template",
+      "columns": [
+        { "name": "PUPIL_REF", "type": "string", "required": true, "description": "Linked pupil reference", "values": "Must match PUPIL_REF" },
+        { "name": "CLAIM_FROM", "type": "date", "required": true, "description": "FSM claim start date", "values": "YYYY-MM-DD" },
+        { "name": "FSM_TYPE", "type": "code", "required": true, "description": "FSM claim type", "values": "Impulse FSM type code — vendor list required" }
+      ]
+    }
+  ]
+}

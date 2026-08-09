@@ -4,21 +4,40 @@
     {
       "name": "mig_pupil",
       "columns": [
-        { "name": "pupil_id", "type": "int", "required": true },
-        { "name": "forename", "type": "varchar(50)", "required": true },
-        { "name": "surname", "type": "varchar(50)", "required": true },
-        { "name": "dob", "type": "date", "required": true },
-        { "name": "upn", "type": "varchar(13)", "required": false },
-        { "name": "fsm_flag", "type": "char(1)", "required": false }
+        { "name": "pupil_id", "type": "int", "required": true, "description": "Internal Synergy pupil identifier", "values": "Numeric ID" },
+        { "name": "forename", "type": "varchar(50)", "required": true, "description": "Pupil given name", "values": "Free text" },
+        { "name": "surname", "type": "varchar(50)", "required": true, "description": "Pupil family name", "values": "Free text" },
+        { "name": "dob", "type": "date", "required": true, "description": "Date of birth", "values": "YYYY-MM-DD" },
+        { "name": "upn", "type": "varchar(13)", "required": false, "description": "Unique Pupil Number", "values": "13-character UPN or blank" },
+        { "name": "fsm_flag", "type": "char(1)", "required": false, "description": "Free school meals eligibility at extract date", "values": "1 = eligible, 0 = not eligible" },
+        { "name": "sen_stage", "type": "lookup", "required": false, "description": "SEN provision stage", "values": "Synergy SEN lookup code" }
       ]
     },
     {
       "name": "mig_guardian",
       "columns": [
-        { "name": "guardian_id", "type": "int", "required": true },
-        { "name": "pupil_id", "type": "int", "required": true },
-        { "name": "guardian_name", "type": "varchar(100)", "required": true },
-        { "name": "relationship", "type": "lookup", "required": true }
+        { "name": "guardian_id", "type": "int", "required": true, "description": "Internal guardian/contact identifier", "values": "Numeric ID" },
+        { "name": "pupil_id", "type": "int", "required": true, "description": "Linked pupil", "values": "Numeric pupil ID" },
+        { "name": "guardian_name", "type": "varchar(100)", "required": true, "description": "Contact full name", "values": "Free text" },
+        { "name": "relationship", "type": "lookup", "required": true, "description": "Relationship to pupil", "values": "Synergy lookup code — see relationship table" },
+        { "name": "email", "type": "varchar(100)", "required": false, "description": "Contact email address", "values": "Valid email or blank" }
+      ]
+    },
+    {
+      "name": "mig_edhistory",
+      "columns": [
+        { "name": "pupil_id", "type": "int", "required": true, "description": "Linked pupil", "values": "Numeric pupil ID" },
+        { "name": "school_code", "type": "varchar(10)", "required": true, "description": "Previous school establishment code", "values": "DFE / establishment code" },
+        { "name": "start_date", "type": "date", "required": true, "description": "Start date at school", "values": "YYYY-MM-DD" },
+        { "name": "end_date", "type": "date", "required": false, "description": "End date at school", "values": "YYYY-MM-DD or blank if current" }
+      ]
+    },
+    {
+      "name": "mig_fsm_claim",
+      "columns": [
+        { "name": "pupil_id", "type": "int", "required": true, "description": "Linked pupil", "values": "Numeric pupil ID" },
+        { "name": "claim_date", "type": "date", "required": true, "description": "FSM claim effective date", "values": "YYYY-MM-DD" },
+        { "name": "fsm_code", "type": "lookup", "required": true, "description": "FSM claim type", "values": "Synergy FSM lookup code" }
       ]
     }
   ]

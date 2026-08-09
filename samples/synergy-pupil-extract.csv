@@ -1,0 +1,4 @@
+pupil_id,forename,surname,fsm_flag
+int,varchar(50),varchar(50),char(1)
+Internal Synergy pupil ID,Pupil given name,Pupil family name,Free school meals eligibility at extract date
+Numeric ID,Free text,Free text,"1 = eligible, 0 = not eligible"
