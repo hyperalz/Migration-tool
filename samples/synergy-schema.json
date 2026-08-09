@@ -1,0 +1,25 @@
+{
+  "system": "Synergy",
+  "tables": [
+    {
+      "name": "mig_pupil",
+      "columns": [
+        { "name": "pupil_id", "type": "int", "required": true },
+        { "name": "forename", "type": "varchar(50)", "required": true },
+        { "name": "surname", "type": "varchar(50)", "required": true },
+        { "name": "dob", "type": "date", "required": true },
+        { "name": "upn", "type": "varchar(13)", "required": false },
+        { "name": "fsm_flag", "type": "char(1)", "required": false }
+      ]
+    },
+    {
+      "name": "mig_guardian",
+      "columns": [
+        { "name": "guardian_id", "type": "int", "required": true },
+        { "name": "pupil_id", "type": "int", "required": true },
+        { "name": "guardian_name", "type": "varchar(100)", "required": true },
+        { "name": "relationship", "type": "lookup", "required": true }
+      ]
+    }
+  ]
+}

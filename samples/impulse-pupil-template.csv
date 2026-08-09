@@ -1,0 +1,4 @@
+PUPIL_REF,FIRST_NAME,LAST_NAME,DATE_OF_BIRTH,UPN,FSM_STATUS
+string,string,string,date,string,code
+CONTACT_REF,PUPIL_REF,CONTACT_NAME,REL_CODE,EMAIL
+string,string,string,lookup,string
