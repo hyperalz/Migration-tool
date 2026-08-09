@@ -8,9 +8,16 @@ import {
   parseJSONSchema, parseCSVTemplate, schemaStats, mappingProgress, readFileAsText,
 } from './schema.js';
 import {
-  buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs,
+  buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs, mappingsToRows,
 } from './export.js';
 import { MappingCanvas } from './mapping.js';
+import {
+  VERIFICATION_STATUSES, PHASE_GROUPS, ensureVerification,
+  verificationSummary, statusMeta, formatColumnRef, defaultVerification,
+  countByPhase, filterMappings, columnTraceability, TRACE_STEPS, traceStepSummary,
+  nextTraceStepKey, traceStepVisualState, recordTraceStep, canRevertTraceStep, revertToTraceStep,
+  countStepAttempts,
+} from './verification.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -23,6 +30,7 @@ const routes = {
   '/projects/:id/setup': renderSetup,
   '/projects/:id/invite': renderInvite,
   '/projects/:id/map': renderMap,
+  '/projects/:id/verify': renderVerify,
   '/projects/:id/export': renderExport,
   '/invite/:token': renderAcceptInvite,
 };
@@ -88,6 +96,7 @@ function projectSteps(project, active) {
     { key: 'setup', label: 'Connect schemas', path: 'setup' },
     { key: 'invite', label: 'Invite party', path: 'invite' },
     { key: 'map', label: 'Map columns', path: 'map' },
+    { key: 'verify', label: 'Test & live', path: 'verify' },
     { key: 'export', label: 'Export & close', path: 'export' },
   ];
   return `<div class="steps-bar">${steps.map(s => `
@@ -112,6 +121,7 @@ function toast(msg) {
 
 function closeDrawer() {
   document.getElementById('mapping-drawer')?.classList.remove('open');
+  document.getElementById('drawer-backdrop')?.classList.remove('open');
 }
 
 function renderLogin() {
@@ -376,7 +386,8 @@ function renderInvite({ id }) {
       </div>
     </div>
     <div style="margin-top:1.25rem">
-      <a href="#/projects/${id}/map" class="btn btn-primary">Continue to mapping →</a>
+      <a href="#/projects/${id}/map" class="btn btn-secondary">Continue to mapping →</a>
+      <a href="#/projects/${id}/verify" class="btn btn-primary" style="margin-left:0.5rem">Test & live →</a>
     </div>
   `);
   attachLogout();
@@ -463,7 +474,8 @@ function renderMap({ id }) {
       <div><h1>Mapping workspace</h1><p>Drag from source ● to target ● to create mappings. Click a line to edit rules.</p></div>
       <div style="display:flex;gap:0.5rem">
         <button class="btn btn-ghost btn-sm" id="auto-suggest">Auto-suggest mappings</button>
-        <a href="#/projects/${id}/export" class="btn btn-secondary btn-sm">Export →</a>
+        <a href="#/projects/${id}/verify" class="btn btn-secondary btn-sm">Test & live →</a>
+        <a href="#/projects/${id}/export" class="btn btn-ghost btn-sm">Export</a>
       </div>
     </div>
     <div id="mapping-container"></div>
@@ -475,6 +487,7 @@ function renderMap({ id }) {
     sourceSchema: project.sourceSchema,
     targetSchema: project.targetSchema,
     mappings: [...project.mappings],
+    getActor: () => getCurrentUser()?.name || 'unknown',
     onChange: mappings => {
       const p = getProject(id);
       p.mappings = mappings;
@@ -487,13 +500,19 @@ function renderMap({ id }) {
   });
 
   const stats = mappingProgress(project.sourceSchema, project.targetSchema, project.mappings);
+  project.mappings.forEach(ensureVerification);
+  saveProject(project);
   canvasInstance.updateFooter(stats);
 
   document.getElementById('auto-suggest').addEventListener('click', () => {
     const p = getProject(id);
     for (const s of suggestedMappings) {
       if (!p.mappings.some(m => m.sourceColumn === s.sourceColumn && m.targetColumn === s.targetColumn)) {
-        p.mappings.push({ id: uid(), ...s, transformNotes: '', lookupRule: '', defaultValue: '' });
+        p.mappings.push({
+          id: uid(), ...s,
+          transformNotes: '', lookupRule: '', defaultValue: '',
+          verification: defaultVerification('Auto-suggested mapping', getCurrentUser()?.name || 'unknown'),
+        });
       }
     }
     saveProject(p);
@@ -502,47 +521,370 @@ function renderMap({ id }) {
   });
 }
 
-function openMappingDrawer(mapping, projectId) {
-  const drawer = document.getElementById('mapping-drawer');
-  if (!mapping) {
-    drawer.classList.remove('open');
+function renderVerify({ id }) {
+  if (!getProject(id)) return renderNotFound();
+  const initial = getProject(id);
+  if (!initial.mappings?.length) {
+    location.hash = `#/projects/${id}/map`;
     return;
   }
+  initial.mappings.forEach(ensureVerification);
+  saveProject(initial);
+
+  let filterStep = null;
+  let filterPhase = null;
+  let filterStatus = null;
+
+  document.getElementById('app-shell').innerHTML = nav(initial.name) + '<main class="app-main" id="app-main"></main>';
+
+  function render() {
+    const project = getProject(id);
+    const traceCounts = traceStepSummary(project.mappings);
+    const counts = verificationSummary(project.mappings);
+    const filtered = filterMappings(project.mappings, {
+      traceStep: filterStep,
+      phase: filterPhase,
+      status: filterStatus,
+    });
+
+    mount(`
+      ${projectSteps(project, 'verify')}
+      <div class="alert alert-info">Mapping defines the contract. This page records <strong>delivery & checks</strong> — SQL sent, test upload, verification, live push. Cleaning data happens elsewhere.</div>
+      <div class="page-head">
+        <div>
+          <h1>Test & live verification</h1>
+          <p>Click the next tick to record progress. Every change is logged with name and timestamp — including reverts and resends.</p>
+        </div>
+        <a href="#/projects/${id}/export" class="btn btn-secondary btn-sm">Export log →</a>
+      </div>
+      ${renderPhaseBar(traceCounts, filterStep)}
+      <div class="verification-summary" id="verify-filters">
+        <button class="verification-pill ${!filterStep && !filterPhase && !filterStatus ? 'active' : ''}" data-filter-type="all">All <span class="count">${project.mappings.length}</span></button>
+        ${Object.entries(PHASE_GROUPS).filter(([key]) => key === 'test' || key === 'live').map(([key, group]) => {
+          const n = countByPhase(project.mappings, key);
+          return `<button class="verification-pill ${filterPhase === key ? 'active' : ''}" data-filter-type="phase" data-filter="${key}">
+            ${group.label} <span class="count">${n}</span></button>`;
+        }).join('')}
+        ${Object.entries(VERIFICATION_STATUSES).map(([key, meta]) => counts[key] ? `
+          <button class="verification-pill ${filterStatus === key ? 'active' : ''}" data-filter-type="status" data-filter="${key}" style="border-color:${meta.color}40">
+            ${meta.label} <span class="count">${counts[key]}</span>
+          </button>` : '').join('')}
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        ${filtered.length ? `<table class="verification-table">
+          <thead><tr>
+            <th>Column mapping</th>
+            <th>Traceability</th>
+          </tr></thead>
+          <tbody>${filtered.map(m => {
+            const phase = statusMeta(m.verification.status).phase;
+            const status = m.verification.status;
+            const rowClass = [
+              phase === 'live' ? 'row-live' : '',
+              status === 'live_failed' ? 'row-live-failed' : '',
+              status === 'signed_off' ? 'row-done' : '',
+            ].filter(Boolean).join(' ');
+            return `<tr${rowClass ? ` class="${rowClass}"` : ''} data-mapping-id="${m.id}">
+              <td class="col-mapping"><code style="font-size:0.75rem">${esc(formatColumnRef(m))}</code></td>
+              <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id })}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>` : `<div class="empty-state" style="padding:2rem">
+          <p>No columns in this phase yet.</p>
+          <p style="font-size:0.85rem;margin-top:0.5rem">Click the highlighted tick on a row to record the next step.</p>
+        </div>`}
+      </div>
+    `);
+
+    document.querySelectorAll('#verify-filters .verification-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.filterType === 'all') {
+          filterStep = null;
+          filterPhase = null;
+          filterStatus = null;
+        } else if (btn.dataset.filterType === 'phase') {
+          filterStep = null;
+          filterPhase = btn.dataset.filter;
+          filterStatus = null;
+        } else {
+          filterStatus = btn.dataset.filter;
+          filterStep = null;
+          filterPhase = null;
+        }
+        render();
+      });
+    });
+    document.querySelectorAll('.phase-step-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterStep = btn.dataset.phase;
+        filterPhase = null;
+        filterStatus = null;
+        render();
+      });
+    });
+    bindTraceClicks(id, render);
+    document.querySelectorAll('.verification-table tr[data-mapping-id] .col-mapping').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const row = cell.closest('tr');
+        const m = getProject(id).mappings.find(x => x.id === row.dataset.mappingId);
+        openMappingDrawer(m, id, null, getProject(id));
+      });
+    });
+  }
+
+  render();
+  attachLogout();
+}
+
+function handleTraceRevertClick(projectId, mappingId, stepKey, rerender) {
+  const p = getProject(projectId);
+  const m = p.mappings.find(x => x.id === mappingId);
+  if (!m || !canRevertTraceStep(m, stepKey)) return;
+
+  const step = TRACE_STEPS.find(s => s.key === stepKey);
+  if (!step) return;
+
+  const ok = confirm(
+    `Go back to "${step.action}"?\n\nYou can re-do from here. All previous attempts stay in the audit log with dates and names.`
+  );
+  if (!ok) return;
+
+  const user = getCurrentUser();
+  if (!revertToTraceStep(m, stepKey, { by: user?.name || 'unknown' })) {
+    toast('Could not revert');
+    return;
+  }
+  saveProject(p);
+  toast(`Reverted — re-do from ${step.action}`);
+  rerender?.();
+}
+
+function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
+  const p = getProject(projectId);
+  const m = p.mappings.find(x => x.id === mappingId);
+  if (!m || nextTraceStepKey(m) !== stepKey) return;
+
+  const step = TRACE_STEPS.find(s => s.key === stepKey);
+  if (!step) return;
+
+  let pass = true;
+  let note = '';
+  if (step.checkStep) {
+    pass = confirm(`${step.action} — did this pass?\n\nOK = Pass · Cancel = Fail`);
+    if (!pass) {
+      note = window.prompt('Note required — describe the issue:')?.trim() || '';
+      if (!note) {
+        toast('Not recorded — note required for failures');
+        return;
+      }
+    }
+  }
+
+  const user = getCurrentUser();
+  if (!recordTraceStep(m, stepKey, { by: user?.name || 'unknown', pass, note })) {
+    toast('Could not record step');
+    return;
+  }
+  saveProject(p);
+  toast(`${step.action} recorded`);
+  rerender?.();
+}
+
+function bindTraceClicks(projectId, rerender) {
+  document.querySelectorAll('.trace-node-btn[data-action="record"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      handleTraceStepClick(projectId, btn.dataset.mappingId, btn.dataset.stepKey, rerender);
+    });
+  });
+  document.querySelectorAll('.trace-node-btn[data-action="revert"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      handleTraceRevertClick(projectId, btn.dataset.mappingId, btn.dataset.stepKey, rerender);
+    });
+  });
+}
+
+function traceNodeTitle(mapping, step, t, visual) {
+  const attempts = countStepAttempts(mapping, step.key);
+  const attemptNote = attempts > 1 ? ` · ${attempts} attempts logged` : '';
+  if (t && visual === 'done') {
+    return `${step.action} · ${t.by} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back`;
+  }
+  if (t && visual === 'failed') {
+    return `${step.action} failed · ${t.by} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back and re-do`;
+  }
+  if (visual === 'next') return `Click to record: ${step.action}`;
+  return `${step.action} — not yet`;
+}
+
+function renderTraceStrip(mapping, { interactive = false, mappingId = '' } = {}) {
+  const trace = columnTraceability(mapping);
+  return `<div class="trace-pipeline">${TRACE_STEPS.map((step, i) => {
+    const t = trace[step.key];
+    const visual = traceStepVisualState(mapping, step.key);
+    const prevVisual = i > 0 ? traceStepVisualState(mapping, TRACE_STEPS[i - 1].key) : null;
+    const prevDone = prevVisual === 'done' || prevVisual === 'failed';
+    const title = traceNodeTitle(mapping, step, t, visual);
+    const connector = i > 0
+      ? `<div class="trace-connector ${prevDone ? 'done' : ''}" aria-hidden="true"></div>`
+      : '';
+    const inner = `
+      <div class="trace-node-marker" aria-hidden="true">${visual === 'done' || visual === 'failed' ? (visual === 'failed' ? '!' : '✓') : visual === 'next' ? '+' : ''}</div>
+      <div class="trace-node-text">
+        <span class="trace-action">${esc(step.action)}</span>
+        <span class="trace-person">${t ? esc(t.by) : visual === 'next' ? 'Click to record' : 'Pending'}${t && countStepAttempts(mapping, step.key) > 1 ? ` · ×${countStepAttempts(mapping, step.key)}` : ''}</span>
+      </div>`;
+    if (interactive && visual === 'next') {
+      return `${connector}<button type="button" class="trace-node trace-node-btn ${visual}" title="${esc(title)}"
+        data-action="record" data-mapping-id="${mappingId}" data-step-key="${step.key}" aria-label="Record ${esc(step.action)}">${inner}</button>`;
+    }
+    if (interactive && canRevertTraceStep(mapping, step.key)) {
+      return `${connector}<button type="button" class="trace-node trace-node-btn revert ${visual}" title="${esc(title)}"
+        data-action="revert" data-mapping-id="${mappingId}" data-step-key="${step.key}" aria-label="Go back to ${esc(step.action)}">${inner}</button>`;
+    }
+    return `${connector}<div class="trace-node ${visual}" title="${esc(title)}">${inner}</div>`;
+  }).join('')}</div>`;
+}
+
+function renderTraceDetail(mapping, { interactive = false, mappingId = '' } = {}) {
+  const trace = columnTraceability(mapping);
+  return `<div class="trace-timeline">${TRACE_STEPS.map((step, i) => {
+    const t = trace[step.key];
+    const visual = traceStepVisualState(mapping, step.key);
+    const isLast = i === TRACE_STEPS.length - 1;
+    const markerContent = visual === 'done' ? '✓' : visual === 'failed' ? '!' : visual === 'next' ? '+' : '';
+    const title = traceNodeTitle(mapping, step, t, visual);
+    const body = `
+      <div class="trace-timeline-content">
+        <div class="trace-action">${esc(step.action)}</div>
+        ${t
+          ? `<div class="trace-meta"><span class="trace-person-name">${esc(t.by)}</span><span class="trace-date">${new Date(t.at).toLocaleString()}${countStepAttempts(mapping, step.key) > 1 ? ` · ${countStepAttempts(mapping, step.key)} attempts logged` : ''}</span></div>`
+          : visual === 'next'
+            ? '<div class="trace-meta trace-meta-next">Click the tick to record</div>'
+            : '<div class="trace-meta trace-meta-pending">Not yet recorded</div>'}
+        ${interactive && canRevertTraceStep(mapping, step.key) ? '<div class="trace-meta trace-meta-revert">Click to go back and re-do</div>' : ''}
+      </div>`;
+    if (interactive && visual === 'next') {
+      return `<button type="button" class="trace-timeline-item trace-timeline-btn ${visual} trace-node-btn"
+        data-action="record" data-mapping-id="${mappingId}" data-step-key="${step.key}" aria-label="Record ${esc(step.action)}" title="${esc(title)}">
+        <div class="trace-timeline-rail"${isLast ? ' aria-hidden="true"' : ''}>
+          <div class="trace-timeline-marker">${markerContent}</div>
+          ${isLast ? '' : '<div class="trace-timeline-line"></div>'}
+        </div>
+        ${body}
+      </button>`;
+    }
+    if (interactive && canRevertTraceStep(mapping, step.key)) {
+      return `<button type="button" class="trace-timeline-item trace-timeline-btn revert ${visual} trace-node-btn"
+        data-action="revert" data-mapping-id="${mappingId}" data-step-key="${step.key}" aria-label="Go back to ${esc(step.action)}" title="${esc(title)}">
+        <div class="trace-timeline-rail"${isLast ? ' aria-hidden="true"' : ''}>
+          <div class="trace-timeline-marker">${markerContent}</div>
+          ${isLast ? '' : '<div class="trace-timeline-line"></div>'}
+        </div>
+        ${body}
+      </button>`;
+    }
+    return `<div class="trace-timeline-item ${visual}">
+      <div class="trace-timeline-rail"${isLast ? ' aria-hidden="true"' : ''}>
+        <div class="trace-timeline-marker">${markerContent}</div>
+        ${isLast ? '' : '<div class="trace-timeline-line"></div>'}
+      </div>
+      ${body}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderPhaseBar(traceCounts, activeStep = null) {
+  return `<div class="phase-bar">${TRACE_STEPS.map(step => {
+    const n = traceCounts[step.key] || 0;
+    const isActive = activeStep === step.key;
+    return `<button type="button" class="phase-step-btn phase-step ${isActive ? 'current' : ''}" data-phase="${step.key}" title="${esc(step.action)} completed">
+      ${step.action}<span class="phase-count">${n}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
+function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project = null) {
+  const drawer = document.getElementById('mapping-drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+  if (!mapping) {
+    closeDrawer();
+    return;
+  }
+  ensureVerification(mapping);
+  const fromVerify = location.hash.includes('/verify');
+  const history = [...mapping.verification.history];
+  const current = statusMeta(mapping.verification.status);
+
   drawer.classList.add('open');
+  backdrop?.classList.add('open');
+
   drawer.innerHTML = `
-    <button class="drawer-close" id="close-drawer">×</button>
-    <h3>Mapping rule</h3>
-    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-family:monospace">
-      ${esc(mapping.sourceTable)}.${esc(mapping.sourceColumn)} → ${esc(mapping.targetTable)}.${esc(mapping.targetColumn)}
-    </p>
-    <div class="field"><label>Transform notes</label><textarea id="transform-notes">${esc(mapping.transformNotes || '')}</textarea></div>
-    <div class="field"><label>Lookup conversion rule</label><textarea id="lookup-rule" placeholder="e.g. Synergy FSM code 1 → Impulse FSM_ACTIVE">${esc(mapping.lookupRule || '')}</textarea></div>
-    <div class="field"><label>Default value</label><input id="default-value" value="${esc(mapping.defaultValue || '')}"></div>
-    <div style="display:flex;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-primary btn-sm" id="save-mapping">Save</button>
+    <div class="drawer-header">
+      <div class="drawer-header-top">
+        <div>
+          <div class="drawer-title">Column</div>
+          <div class="drawer-col-ref">${esc(mapping.sourceTable)}.${esc(mapping.sourceColumn)}<br>→ ${esc(mapping.targetTable)}.${esc(mapping.targetColumn)}</div>
+        </div>
+        <button class="drawer-close" id="close-drawer" aria-label="Close">×</button>
+      </div>
+      <p style="margin:0"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></p>
+      <p class="drawer-hint">Click + to record the next step. Click a completed tick to go back. Every action is kept in the audit log below.</p>
+    </div>
+    <div class="drawer-body">
+      <details class="drawer-section" open>
+        <summary>Traceability</summary>
+        <div class="drawer-section-body">${renderTraceDetail(mapping, { interactive: fromVerify, mappingId: mapping.id })}</div>
+      </details>
+      <details class="drawer-section" open>
+        <summary>Audit log · ${history.length} entries</summary>
+        <div class="drawer-section-body" style="padding-top:0.5rem">
+          ${history.length ? `<ul class="history-timeline">${history.map(h => {
+            if (h.revertTo) {
+              return `<li class="hist-revert">
+                <div class="hist-status">↩ Reverted</div>
+                ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
+                <div class="hist-meta">${esc(h.by)} · ${new Date(h.at).toLocaleString()}</div>
+              </li>`;
+            }
+            const hm = statusMeta(h.status);
+            return `<li>
+              <div class="hist-status" style="color:${hm.color}">${hm.label}</div>
+              ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
+              <div class="hist-meta">${esc(h.by)} · ${new Date(h.at).toLocaleString()}${h.reference ? ` · ${esc(h.reference)}` : ''}</div>
+            </li>`;
+          }).join('')}</ul>` : `<p style="font-size:0.8rem;color:var(--muted)">No history yet.</p>`}
+        </div>
+      </details>
+    </div>
+    <div class="drawer-footer">
       <button class="btn btn-danger btn-sm" id="delete-mapping">Delete mapping</button>
     </div>
   `;
 
-  document.getElementById('close-drawer').onclick = () => drawer.classList.remove('open');
-  document.getElementById('save-mapping').onclick = () => {
-    canvasInstance.updateMapping(mapping.id, {
-      transformNotes: document.getElementById('transform-notes').value,
-      lookupRule: document.getElementById('lookup-rule').value,
-      defaultValue: document.getElementById('default-value').value,
+  document.getElementById('close-drawer').onclick = closeDrawer;
+  backdrop.onclick = closeDrawer;
+
+  if (fromVerify) {
+    bindTraceClicks(projectId, () => {
+      renderVerify({ id: projectId });
+      const updated = getProject(projectId).mappings.find(x => x.id === mapping.id);
+      if (updated) openMappingDrawer(updated, projectId, null, getProject(projectId));
     });
-    const p = getProject(projectId);
-    p.mappings = canvasInstance.mappings;
-    saveProject(p);
-    toast('Mapping saved');
-  };
+  }
+
   document.getElementById('delete-mapping').onclick = () => {
-    canvasInstance.deleteMapping(mapping.id);
-    const p = getProject(projectId);
-    p.mappings = canvasInstance.mappings;
-    saveProject(p);
-    drawer.classList.remove('open');
+    if (!confirm('Delete this mapping?')) return;
+    if (canvasInstance) canvasInstance.deleteMapping(mapping.id);
+    else {
+      const p = getProject(projectId);
+      p.mappings = p.mappings.filter(x => x.id !== mapping.id);
+      saveProject(p);
+    }
+    closeDrawer();
     toast('Mapping deleted');
+    if (location.hash.includes('/verify')) renderVerify({ id: projectId });
   };
 }
 
@@ -552,18 +894,23 @@ function renderExport({ id }) {
   const user = getCurrentUser();
   const stats = mappingProgress(project.sourceSchema, project.targetSchema, project.mappings);
 
+  project.mappings.forEach(ensureVerification);
+  const vCounts = verificationSummary(project.mappings);
+
   document.getElementById('app-shell').innerHTML = nav(project.name) + '<main class="app-main" id="app-main"></main>';
   mount(`
     ${projectSteps(project, 'export')}
-    <div class="page-head"><div><h1>Export & close project</h1><p>Download your mapping artefact, then permanently delete all project data.</p></div></div>
+    <div class="page-head"><div><h1>Export & close project</h1><p>Export mapping spec and column-level verification log, then permanently delete project data.</p></div></div>
+    <div class="card" style="margin-bottom:1rem">
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">${stats.mappedCount} mappings · ${stats.percent}% target columns mapped · ${vCounts.signed_off || 0} columns signed off</p>
+    </div>
     <div class="grid-2">
       <div class="card">
-        <h3 style="margin-bottom:0.75rem">Export mapping</h3>
-        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">${stats.mappedCount} mappings · ${stats.percent}% of target columns mapped</p>
+        <h3 style="margin-bottom:0.75rem">Export</h3>
         <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
           <button class="btn btn-primary btn-sm" id="export-json">Download JSON package</button>
           <button class="btn btn-secondary btn-sm" id="export-csv">Download CSV</button>
-          <button class="btn btn-secondary btn-sm" id="export-xlsx">Download Excel</button>
+          <button class="btn btn-secondary btn-sm" id="export-xlsx">Download Excel (mappings + log)</button>
           <button class="btn btn-ghost btn-sm" id="export-sql">Download SQL stubs</button>
         </div>
       </div>
@@ -581,11 +928,7 @@ function renderExport({ id }) {
     toast('JSON exported');
   };
   document.getElementById('export-csv').onclick = () => {
-    downloadCSV(project.mappings.map(m => ({
-      source_table: m.sourceTable, source_column: m.sourceColumn,
-      target_table: m.targetTable, target_column: m.targetColumn,
-      transform_notes: m.transformNotes, lookup_rule: m.lookupRule, default_value: m.defaultValue,
-    })), `${slug(project.name)}-mapping.csv`);
+    downloadCSV(mappingsToRows(project.mappings), `${slug(project.name)}-mapping.csv`);
     toast('CSV exported');
   };
   document.getElementById('export-xlsx').onclick = () => {

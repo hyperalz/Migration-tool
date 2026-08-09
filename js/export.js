@@ -1,3 +1,5 @@
+import { formatTraceabilityRows } from './verification.js';
+
 export function buildExportPackage(project, user) {
   return {
     exportedAt: new Date().toISOString(),
@@ -19,6 +21,8 @@ export function buildExportPackage(project, user) {
       transformNotes: m.transformNotes || '',
       lookupRule: m.lookupRule || '',
       defaultValue: m.defaultValue || '',
+      verificationStatus: m.verification?.status || 'mapped',
+      verificationHistory: m.verification?.history || [],
     })),
     summary: {
       totalMappings: project.mappings.length,
@@ -44,15 +48,28 @@ export function downloadCSV(rows, filename) {
 }
 
 export function mappingsToRows(mappings) {
-  return mappings.map(m => ({
-    source_table: m.sourceTable,
-    source_column: m.sourceColumn,
-    target_table: m.targetTable,
-    target_column: m.targetColumn,
-    transform_notes: m.transformNotes || '',
-    lookup_rule: m.lookupRule || '',
-    default_value: m.defaultValue || '',
-  }));
+  return formatTraceabilityRows(mappings);
+}
+
+export function verificationHistoryRows(mappings) {
+  const rows = [];
+  for (const m of mappings) {
+    for (const h of m.verification?.history || []) {
+      rows.push({
+        source_table: m.sourceTable,
+        source_column: m.sourceColumn,
+        target_table: m.targetTable,
+        target_column: m.targetColumn,
+        status: h.status,
+        at: h.at,
+        by: h.by,
+        note: h.note,
+        reference: h.reference || '',
+        revert_to: h.revertTo || '',
+      });
+    }
+  }
+  return rows;
 }
 
 export function downloadExcel(mappings, filename) {
@@ -60,10 +77,12 @@ export function downloadExcel(mappings, filename) {
     downloadCSV(mappingsToRows(mappings), filename.replace('.xlsx', '.csv'));
     return;
   }
-  const rows = mappingsToRows(mappings);
-  const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Mappings');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mappingsToRows(mappings)), 'Mappings');
+  const history = verificationHistoryRows(mappings);
+  if (history.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(history), 'Verification log');
+  }
   XLSX.writeFile(wb, filename);
 }
 

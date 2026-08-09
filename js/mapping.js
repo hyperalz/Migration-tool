@@ -1,13 +1,15 @@
 import { uid } from './store.js';
+import { defaultVerification } from './verification.js';
 
 export class MappingCanvas {
-  constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping }) {
+  constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping, getActor }) {
     this.container = container;
     this.sourceSchema = sourceSchema;
     this.targetSchema = targetSchema;
     this.mappings = mappings || [];
     this.onChange = onChange;
     this.onSelectMapping = onSelectMapping;
+    this.getActor = getActor;
     this.dragSource = null;
     this.tempLine = null;
     this.selectedId = null;
@@ -156,6 +158,7 @@ export class MappingCanvas {
       transformNotes: '',
       lookupRule: '',
       defaultValue: '',
+      verification: defaultVerification('Mapping created', this.getActor?.() || 'unknown'),
     };
     this.mappings.push(mapping);
     this.refreshPanels();
