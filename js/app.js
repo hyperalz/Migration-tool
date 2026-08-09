@@ -15,9 +15,14 @@ import {
   VERIFICATION_STATUSES, PHASE_GROUPS, ensureVerification,
   verificationSummary, statusMeta, formatColumnRef, defaultVerification,
   countByPhase, filterMappings, columnTraceability, TRACE_STEPS, traceStepSummary,
+  ensureProjectTeam, getProjectTeamNames, ensureProjectServiceAreas, getProjectServiceAreaNames,
+  ensureMappingFields, countByServiceArea,
   nextTraceStepKey, traceStepVisualState, recordTraceStep, canRevertTraceStep, revertToTraceStep,
   countStepAttempts,
 } from './verification.js';
+import {
+  buildTraceDashboardData, renderTraceDashboardHTML, mountDashboardCharts, destroyDashboardCharts,
+} from './dashboard-charts.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -510,7 +515,7 @@ function renderMap({ id }) {
       if (!p.mappings.some(m => m.sourceColumn === s.sourceColumn && m.targetColumn === s.targetColumn)) {
         p.mappings.push({
           id: uid(), ...s,
-          transformNotes: '', lookupRule: '', defaultValue: '',
+          transformNotes: '', lookupRule: '', defaultValue: '', serviceArea: '',
           verification: defaultVerification('Auto-suggested mapping', getCurrentUser()?.name || 'unknown'),
         });
       }
@@ -521,6 +526,168 @@ function renderMap({ id }) {
   });
 }
 
+function formatStepNames(t) {
+  if (!t?.names?.length) return t?.by || '';
+  return t.names.join(', ');
+}
+
+function showParticipantModal({ step, teamNames, defaultName, multi }) {
+  return new Promise(resolve => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'record-modal-backdrop';
+    const names = [...new Set([defaultName, ...teamNames].filter(Boolean))];
+    const selected = new Set(multi ? [defaultName].filter(Boolean) : [defaultName || names[0] || '']);
+
+    backdrop.innerHTML = `
+      <div class="record-modal" role="dialog" aria-modal="true">
+        <h3>${multi ? 'Who checked?' : 'Recorded by'}</h3>
+        <p class="record-modal-sub">${esc(step.action)}${multi ? ' — select everyone who checked' : ''}</p>
+        <div class="record-modal-list">${names.length ? names.map(name => `
+          <label class="record-modal-option">
+            <input type="${multi ? 'checkbox' : 'radio'}" name="participant" value="${esc(name)}"
+              ${selected.has(name) ? 'checked' : ''}${!multi ? '' : ''}>
+            <span>${esc(name)}</span>
+          </label>`).join('') : '<p class="record-modal-empty">Add names to the migration team below first.</p>'}
+        <div class="field" style="margin:0.75rem 0 0">
+          <label>${multi ? 'Add someone not listed' : 'Or type a name'}</label>
+          <input id="participant-custom" placeholder="Full name">
+        </div>
+        <div class="record-modal-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="participant-cancel">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm" id="participant-confirm">Record</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(backdrop);
+
+    function close(result) {
+      backdrop.remove();
+      resolve(result);
+    }
+
+    backdrop.querySelector('#participant-cancel').onclick = () => close(null);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) close(null); });
+
+    backdrop.querySelector('#participant-confirm').onclick = () => {
+      const custom = backdrop.querySelector('#participant-custom').value.trim();
+      let picked;
+      if (multi) {
+        picked = [...backdrop.querySelectorAll('input[name="participant"]:checked')].map(el => el.value);
+        if (custom && !picked.includes(custom)) picked.push(custom);
+      } else {
+        picked = custom ? [custom] : [...backdrop.querySelectorAll('input[name="participant"]:checked')].map(el => el.value).slice(0, 1);
+      }
+      if (!picked.length) {
+        toast('Select or enter at least one name');
+        return;
+      }
+      close(picked);
+    };
+  });
+}
+
+function renderServiceAreaOptions(areas, selected = '') {
+  return `<option value="">—</option>${areas.map(a =>
+    `<option value="${esc(a)}" ${selected === a ? 'selected' : ''}>${esc(a)}</option>`
+  ).join('')}`;
+}
+
+function renderProjectSetupCard(project) {
+  ensureProjectTeam(project);
+  ensureProjectServiceAreas(project);
+  const teamNames = getProjectTeamNames(project, getUsers());
+  const areas = getProjectServiceAreaNames(project);
+  return `
+    <div class="card project-setup-card">
+      <div class="project-setup-grid">
+        <section>
+          <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Migration team</h3>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Everyone who may be recorded on column steps.</p>
+          <div class="team-chips">${teamNames.length
+            ? teamNames.map(n => `<span class="team-chip">${esc(n)}<button type="button" class="team-chip-remove" data-list="team" data-name="${esc(n)}" aria-label="Remove">×</button></span>`).join('')
+            : '<span style="font-size:0.82rem;color:var(--muted)">No names yet.</span>'}</div>
+          <form id="team-form" class="team-add-form">
+            <input name="name" placeholder="Full name" required>
+            <button type="submit" class="btn btn-secondary btn-sm">Add</button>
+          </form>
+        </section>
+        <section>
+          <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Service areas</h3>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Group columns — e.g. Pupil, Attendance, Staff. Assign per row below.</p>
+          <div class="team-chips">${areas.length
+            ? areas.map(a => `<span class="team-chip area-chip">${esc(a)}<button type="button" class="team-chip-remove" data-list="area" data-name="${esc(a)}" aria-label="Remove">×</button></span>`).join('')
+            : '<span style="font-size:0.82rem;color:var(--muted)">No areas yet.</span>'}</div>
+          <form id="area-form" class="team-add-form">
+            <input name="name" placeholder="Area name" required>
+            <button type="submit" class="btn btn-secondary btn-sm">Add</button>
+          </form>
+        </section>
+      </div>
+    </div>`;
+}
+
+function bindProjectSetupForms(projectId, onUpdate) {
+  document.getElementById('team-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = new FormData(e.target).get('name')?.trim();
+    if (!name) return;
+    const p = getProject(projectId);
+    ensureProjectTeam(p);
+    if (!p.team.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+      p.team.push({ name });
+      saveProject(p);
+      toast(`${name} added to team`);
+    }
+    onUpdate?.();
+  });
+  document.getElementById('area-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = new FormData(e.target).get('name')?.trim();
+    if (!name) return;
+    const p = getProject(projectId);
+    ensureProjectServiceAreas(p);
+    if (!p.serviceAreas.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+      p.serviceAreas.push({ name });
+      saveProject(p);
+      toast(`${name} added`);
+    }
+    onUpdate?.();
+  });
+  document.querySelectorAll('.team-chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = getProject(projectId);
+      if (btn.dataset.list === 'area') {
+        ensureProjectServiceAreas(p);
+        p.serviceAreas = p.serviceAreas.filter(a => a.name !== btn.dataset.name);
+      } else {
+        ensureProjectTeam(p);
+        p.team = p.team.filter(t => t.name !== btn.dataset.name);
+      }
+      saveProject(p);
+      onUpdate?.();
+    });
+  });
+}
+
+function bindServiceAreaSelects(projectId, rerender) {
+  document.querySelectorAll('.service-area-select').forEach(sel => {
+    sel.addEventListener('click', e => e.stopPropagation());
+    sel.addEventListener('change', e => {
+      e.stopPropagation();
+      const p = getProject(projectId);
+      const m = p.mappings.find(x => x.id === sel.dataset.mappingId);
+      if (!m) return;
+      m.serviceArea = sel.value;
+      saveProject(p);
+      if (canvasInstance) {
+        const cm = canvasInstance.mappings.find(x => x.id === m.id);
+        if (cm) cm.serviceArea = sel.value;
+      }
+      rerender?.();
+    });
+  });
+}
+
 function renderVerify({ id }) {
   if (!getProject(id)) return renderNotFound();
   const initial = getProject(id);
@@ -528,25 +695,40 @@ function renderVerify({ id }) {
     location.hash = `#/projects/${id}/map`;
     return;
   }
-  initial.mappings.forEach(ensureVerification);
+  initial.mappings.forEach(m => ensureMappingFields(m));
+  ensureProjectServiceAreas(initial);
+  ensureProjectTeam(initial);
   saveProject(initial);
 
   let filterStep = null;
   let filterPhase = null;
   let filterStatus = null;
+  let filterServiceArea = null;
+  let dashboardOpen = false;
 
   document.getElementById('app-shell').innerHTML = nav(initial.name) + '<main class="app-main" id="app-main"></main>';
 
   function render() {
+    const panel = document.getElementById('trace-dashboard-panel');
+    if (panel?.open) dashboardOpen = true;
+
     const project = getProject(id);
+    ensureProjectTeam(project);
+    ensureProjectServiceAreas(project);
+    project.mappings.forEach(ensureMappingFields);
     const traceCounts = traceStepSummary(project.mappings);
     const counts = verificationSummary(project.mappings);
+    const areaCounts = countByServiceArea(project.mappings);
+    const serviceAreas = getProjectServiceAreaNames(project);
     const filtered = filterMappings(project.mappings, {
       traceStep: filterStep,
       phase: filterPhase,
       status: filterStatus,
+      serviceArea: filterServiceArea,
     });
+    const dashData = buildTraceDashboardData(project.mappings);
 
+    destroyDashboardCharts();
     mount(`
       ${projectSteps(project, 'verify')}
       <div class="alert alert-info">Mapping defines the contract. This page records <strong>delivery & checks</strong> — SQL sent, test upload, verification, live push. Cleaning data happens elsewhere.</div>
@@ -557,9 +739,19 @@ function renderVerify({ id }) {
         </div>
         <a href="#/projects/${id}/export" class="btn btn-secondary btn-sm">Export log →</a>
       </div>
+      ${renderTraceDashboardHTML(dashData, dashboardOpen)}
+      ${renderProjectSetupCard(project)}
       ${renderPhaseBar(traceCounts, filterStep)}
       <div class="verification-summary" id="verify-filters">
-        <button class="verification-pill ${!filterStep && !filterPhase && !filterStatus ? 'active' : ''}" data-filter-type="all">All <span class="count">${project.mappings.length}</span></button>
+        <button class="verification-pill ${!filterStep && !filterPhase && !filterStatus && !filterServiceArea ? 'active' : ''}" data-filter-type="all">All <span class="count">${project.mappings.length}</span></button>
+        ${serviceAreas.map(area => areaCounts[area] ? `
+          <button class="verification-pill ${filterServiceArea === area ? 'active' : ''}" data-filter-type="service-area" data-filter="${esc(area)}">
+            ${esc(area)} <span class="count">${areaCounts[area]}</span>
+          </button>` : '').join('')}
+        ${areaCounts.__unassigned__ ? `
+          <button class="verification-pill ${filterServiceArea === '__unassigned__' ? 'active' : ''}" data-filter-type="service-area" data-filter="__unassigned__">
+            Unassigned <span class="count">${areaCounts.__unassigned__}</span>
+          </button>` : ''}
         ${Object.entries(PHASE_GROUPS).filter(([key]) => key === 'test' || key === 'live').map(([key, group]) => {
           const n = countByPhase(project.mappings, key);
           return `<button class="verification-pill ${filterPhase === key ? 'active' : ''}" data-filter-type="phase" data-filter="${key}">
@@ -573,6 +765,7 @@ function renderVerify({ id }) {
       <div class="card" style="padding:0;overflow:hidden">
         ${filtered.length ? `<table class="verification-table">
           <thead><tr>
+            <th>Service area</th>
             <th>Column mapping</th>
             <th>Traceability</th>
           </tr></thead>
@@ -585,6 +778,11 @@ function renderVerify({ id }) {
               status === 'signed_off' ? 'row-done' : '',
             ].filter(Boolean).join(' ');
             return `<tr${rowClass ? ` class="${rowClass}"` : ''} data-mapping-id="${m.id}">
+              <td class="col-service-area">
+                <select class="service-area-select" data-mapping-id="${m.id}" aria-label="Service area">
+                  ${renderServiceAreaOptions(serviceAreas, m.serviceArea || '')}
+                </select>
+              </td>
               <td class="col-mapping"><code style="font-size:0.75rem">${esc(formatColumnRef(m))}</code></td>
               <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id })}</td>
             </tr>`;
@@ -602,14 +800,22 @@ function renderVerify({ id }) {
           filterStep = null;
           filterPhase = null;
           filterStatus = null;
+          filterServiceArea = null;
+        } else if (btn.dataset.filterType === 'service-area') {
+          filterServiceArea = btn.dataset.filter;
+          filterStep = null;
+          filterPhase = null;
+          filterStatus = null;
         } else if (btn.dataset.filterType === 'phase') {
           filterStep = null;
           filterPhase = btn.dataset.filter;
           filterStatus = null;
+          filterServiceArea = null;
         } else {
           filterStatus = btn.dataset.filter;
           filterStep = null;
           filterPhase = null;
+          filterServiceArea = null;
         }
         render();
       });
@@ -619,9 +825,12 @@ function renderVerify({ id }) {
         filterStep = btn.dataset.phase;
         filterPhase = null;
         filterStatus = null;
+        filterServiceArea = null;
         render();
       });
     });
+    bindProjectSetupForms(id, () => render());
+    bindServiceAreaSelects(id, render);
     bindTraceClicks(id, render);
     document.querySelectorAll('.verification-table tr[data-mapping-id] .col-mapping').forEach(cell => {
       cell.addEventListener('click', () => {
@@ -630,6 +839,17 @@ function renderVerify({ id }) {
         openMappingDrawer(m, id, null, getProject(id));
       });
     });
+    document.getElementById('trace-dashboard-panel')?.addEventListener('toggle', e => {
+      dashboardOpen = e.target.open;
+      if (dashboardOpen) {
+        requestAnimationFrame(() => mountDashboardCharts(getProject(id).mappings));
+      } else {
+        destroyDashboardCharts();
+      }
+    });
+    if (dashboardOpen) {
+      requestAnimationFrame(() => mountDashboardCharts(project.mappings));
+    }
   }
 
   render();
@@ -659,7 +879,7 @@ function handleTraceRevertClick(projectId, mappingId, stepKey, rerender) {
   rerender?.();
 }
 
-function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
+async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
   const p = getProject(projectId);
   const m = p.mappings.find(x => x.id === mappingId);
   if (!m || nextTraceStepKey(m) !== stepKey) return;
@@ -681,7 +901,16 @@ function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
   }
 
   const user = getCurrentUser();
-  if (!recordTraceStep(m, stepKey, { by: user?.name || 'unknown', pass, note })) {
+  const teamNames = getProjectTeamNames(p, getUsers());
+  const participants = await showParticipantModal({
+    step,
+    teamNames,
+    defaultName: user?.name || '',
+    multi: step.checkStep,
+  });
+  if (!participants?.length) return;
+
+  if (!recordTraceStep(m, stepKey, { by: participants[0], participants, pass, note })) {
     toast('Could not record step');
     return;
   }
@@ -708,11 +937,12 @@ function bindTraceClicks(projectId, rerender) {
 function traceNodeTitle(mapping, step, t, visual) {
   const attempts = countStepAttempts(mapping, step.key);
   const attemptNote = attempts > 1 ? ` · ${attempts} attempts logged` : '';
+  const who = t ? formatStepNames(t) : '';
   if (t && visual === 'done') {
-    return `${step.action} · ${t.by} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back`;
+    return `${step.action} · ${who} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back`;
   }
   if (t && visual === 'failed') {
-    return `${step.action} failed · ${t.by} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back and re-do`;
+    return `${step.action} failed · ${who} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back and re-do`;
   }
   if (visual === 'next') return `Click to record: ${step.action}`;
   return `${step.action} — not yet`;
@@ -733,7 +963,7 @@ function renderTraceStrip(mapping, { interactive = false, mappingId = '' } = {})
       <div class="trace-node-marker" aria-hidden="true">${visual === 'done' || visual === 'failed' ? (visual === 'failed' ? '!' : '✓') : visual === 'next' ? '+' : ''}</div>
       <div class="trace-node-text">
         <span class="trace-action">${esc(step.action)}</span>
-        <span class="trace-person">${t ? esc(t.by) : visual === 'next' ? 'Click to record' : 'Pending'}${t && countStepAttempts(mapping, step.key) > 1 ? ` · ×${countStepAttempts(mapping, step.key)}` : ''}</span>
+        <span class="trace-person">${t ? esc(formatStepNames(t)) : visual === 'next' ? 'Click to record' : 'Pending'}${t && countStepAttempts(mapping, step.key) > 1 ? ` · ×${countStepAttempts(mapping, step.key)}` : ''}</span>
       </div>`;
     if (interactive && visual === 'next') {
       return `${connector}<button type="button" class="trace-node trace-node-btn ${visual}" title="${esc(title)}"
@@ -759,7 +989,7 @@ function renderTraceDetail(mapping, { interactive = false, mappingId = '' } = {}
       <div class="trace-timeline-content">
         <div class="trace-action">${esc(step.action)}</div>
         ${t
-          ? `<div class="trace-meta"><span class="trace-person-name">${esc(t.by)}</span><span class="trace-date">${new Date(t.at).toLocaleString()}${countStepAttempts(mapping, step.key) > 1 ? ` · ${countStepAttempts(mapping, step.key)} attempts logged` : ''}</span></div>`
+          ? `<div class="trace-meta"><span class="trace-person-name">${esc(formatStepNames(t))}</span><span class="trace-date">${new Date(t.at).toLocaleString()}${countStepAttempts(mapping, step.key) > 1 ? ` · ${countStepAttempts(mapping, step.key)} attempts logged` : ''}</span></div>`
           : visual === 'next'
             ? '<div class="trace-meta trace-meta-next">Click the tick to record</div>'
             : '<div class="trace-meta trace-meta-pending">Not yet recorded</div>'}
@@ -814,6 +1044,9 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
   }
   ensureVerification(mapping);
   const fromVerify = location.hash.includes('/verify');
+  const proj = project || getProject(projectId);
+  ensureProjectServiceAreas(proj);
+  const serviceAreas = getProjectServiceAreaNames(proj);
   const history = [...mapping.verification.history];
   const current = statusMeta(mapping.verification.status);
 
@@ -829,7 +1062,13 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
         </div>
         <button class="drawer-close" id="close-drawer" aria-label="Close">×</button>
       </div>
-      <p style="margin:0"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></p>
+      <div class="field" style="margin:0.65rem 0 0">
+        <label>Service area</label>
+        <select class="service-area-select" id="drawer-service-area" data-mapping-id="${mapping.id}">
+          ${renderServiceAreaOptions(serviceAreas, mapping.serviceArea || '')}
+        </select>
+      </div>
+      <p style="margin:0.5rem 0 0"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></p>
       <p class="drawer-hint">Click + to record the next step. Click a completed tick to go back. Every action is kept in the audit log below.</p>
     </div>
     <div class="drawer-body">
@@ -852,7 +1091,7 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
             return `<li>
               <div class="hist-status" style="color:${hm.color}">${hm.label}</div>
               ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
-              <div class="hist-meta">${esc(h.by)} · ${new Date(h.at).toLocaleString()}${h.reference ? ` · ${esc(h.reference)}` : ''}</div>
+              <div class="hist-meta">${esc(h.participants?.length ? h.participants.join(', ') : h.by)} · ${new Date(h.at).toLocaleString()}${h.reference ? ` · ${esc(h.reference)}` : ''}</div>
             </li>`;
           }).join('')}</ul>` : `<p style="font-size:0.8rem;color:var(--muted)">No history yet.</p>`}
         </div>
@@ -868,6 +1107,11 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
 
   if (fromVerify) {
     bindTraceClicks(projectId, () => {
+      renderVerify({ id: projectId });
+      const updated = getProject(projectId).mappings.find(x => x.id === mapping.id);
+      if (updated) openMappingDrawer(updated, projectId, null, getProject(projectId));
+    });
+    bindServiceAreaSelects(projectId, () => {
       renderVerify({ id: projectId });
       const updated = getProject(projectId).mappings.find(x => x.id === mapping.id);
       if (updated) openMappingDrawer(updated, projectId, null, getProject(projectId));

@@ -158,6 +158,7 @@ export class MappingCanvas {
       transformNotes: '',
       lookupRule: '',
       defaultValue: '',
+      serviceArea: '',
       verification: defaultVerification('Mapping created', this.getActor?.() || 'unknown'),
     };
     this.mappings.push(mapping);

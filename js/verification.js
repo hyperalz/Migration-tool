@@ -73,7 +73,7 @@ export function ensureVerification(mapping) {
   return mapping;
 }
 
-export function recordTransition(mapping, { status, by, note = '', reference = '', revertTo = null }) {
+export function recordTransition(mapping, { status, by, note = '', reference = '', revertTo = null, participants = null }) {
   ensureVerification(mapping);
   mapping.verification.status = status;
   const entry = {
@@ -84,6 +84,7 @@ export function recordTransition(mapping, { status, by, note = '', reference = '
     reference,
   };
   if (revertTo) entry.revertTo = revertTo;
+  if (participants?.length) entry.participants = participants;
   mapping.verification.history.push(entry);
   return mapping;
 }
@@ -116,8 +117,9 @@ export function filterByTraceStep(mappings, stepKey) {
   });
 }
 
-export function filterMappings(mappings, { phase, status, traceStep } = {}) {
+export function filterMappings(mappings, { phase, status, traceStep, serviceArea } = {}) {
   if (status) return mappings.filter(m => m.verification?.status === status);
+  if (serviceArea) return filterByServiceArea(mappings, serviceArea);
   if (traceStep) return filterByTraceStep(mappings, traceStep);
   if (phase) return filterByPhase(mappings, phase);
   return mappings;
@@ -173,6 +175,59 @@ export function countStepAttempts(mapping, stepKey) {
   return mapping.verification.history.filter(h => step.statuses.includes(h.status)).length;
 }
 
+export function ensureProjectServiceAreas(project) {
+  if (!project.serviceAreas) project.serviceAreas = [];
+  return project;
+}
+
+export function getProjectServiceAreaNames(project) {
+  ensureProjectServiceAreas(project);
+  return project.serviceAreas.map(a => a.name?.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
+export function ensureMappingFields(mapping) {
+  if (mapping.serviceArea == null) mapping.serviceArea = '';
+  ensureVerification(mapping);
+  return mapping;
+}
+
+export function countByServiceArea(mappings) {
+  const counts = {};
+  for (const m of mappings) {
+    ensureMappingFields(m);
+    const key = m.serviceArea?.trim() || '__unassigned__';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
+
+export function filterByServiceArea(mappings, areaKey) {
+  if (areaKey === '__unassigned__') {
+    return mappings.filter(m => !m.serviceArea?.trim());
+  }
+  return mappings.filter(m => m.serviceArea?.trim() === areaKey);
+}
+
+export function ensureProjectTeam(project) {
+  if (!project.team) project.team = [];
+  return project;
+}
+
+export function getProjectTeamNames(project, users = []) {
+  ensureProjectTeam(project);
+  const fromTeam = project.team.map(t => t.name?.trim()).filter(Boolean);
+  const fromMembers = (project.members || []).map(m => {
+    const u = users.find(x => x.id === m.userId);
+    return u?.name?.trim();
+  }).filter(Boolean);
+  return [...new Set([...fromTeam, ...fromMembers])].sort((a, b) => a.localeCompare(b));
+}
+
+function stepEntryNames(entry) {
+  if (entry.participants?.length) return entry.participants;
+  return entry.by ? [entry.by] : [];
+}
+
 export function columnTraceability(mapping) {
   ensureVerification(mapping);
   const history = getEffectiveHistory(mapping);
@@ -191,7 +246,12 @@ export function columnTraceability(mapping) {
       }
     }
     trace[step.key] = entry
-      ? { by: entry.by, at: entry.at, status: entry.status }
+      ? {
+        by: entry.by,
+        at: entry.at,
+        status: entry.status,
+        names: stepEntryNames(entry),
+      }
       : null;
   }
   return trace;
@@ -225,7 +285,7 @@ export function traceStepVisualState(mapping, stepKey) {
   return 'pending';
 }
 
-export function recordTraceStep(mapping, stepKey, { by, pass = true, note = '' }) {
+export function recordTraceStep(mapping, stepKey, { by, participants, pass = true, note = '' }) {
   const step = TRACE_STEPS.find(s => s.key === stepKey);
   if (!step?.recordStatus) return null;
 
@@ -235,9 +295,11 @@ export function recordTraceStep(mapping, stepKey, { by, pass = true, note = '' }
     if (requiresNote(status) && !note) return null;
   }
 
+  const names = participants?.length ? participants : [by || 'unknown'];
   recordTransition(mapping, {
     status,
-    by: by || 'unknown',
+    by: names[0],
+    participants: names,
     note: note || (pass ? step.action : `${step.action} — failed`),
   });
   return mapping;
@@ -284,9 +346,10 @@ export function formatTraceabilityRows(mappings) {
       lookup_rule: m.lookupRule || '',
       default_value: m.defaultValue || '',
       verification_status: m.verification?.status || 'mapped',
+      service_area: m.serviceArea || '',
     };
     for (const step of TRACE_STEPS) {
-      row[step.key + '_by'] = trace[step.key]?.by || '';
+      row[step.key + '_by'] = trace[step.key]?.names?.join(', ') || trace[step.key]?.by || '';
       row[step.key + '_at'] = trace[step.key]?.at || '';
       row[step.key + '_attempts'] = countStepAttempts(m, step.key);
     }

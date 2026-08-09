@@ -21,6 +21,7 @@ export function buildExportPackage(project, user) {
       transformNotes: m.transformNotes || '',
       lookupRule: m.lookupRule || '',
       defaultValue: m.defaultValue || '',
+      serviceArea: m.serviceArea || '',
       verificationStatus: m.verification?.status || 'mapped',
       verificationHistory: m.verification?.history || [],
     })),
@@ -66,6 +67,7 @@ export function verificationHistoryRows(mappings) {
         note: h.note,
         reference: h.reference || '',
         revert_to: h.revertTo || '',
+        participants: (h.participants || []).join(', '),
       });
     }
   }

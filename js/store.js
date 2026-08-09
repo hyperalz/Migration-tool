@@ -103,6 +103,8 @@ export function createProject({ name, sourceSystem, targetSystem, ownerId }) {
       consultant: { name: '', email: '', label: 'Delivery consultant' },
     },
     members: [{ userId: ownerId, role: 'owner', status: 'active' }],
+    team: [],
+    serviceAreas: [],
     sourceSchema: null,
     targetSchema: null,
     mappings: [],

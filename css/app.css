@@ -796,10 +796,9 @@ a { color: inherit; text-decoration: none; }
   font-weight: 500;
   color: #059669;
   line-height: 1.15;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
 }
 .trace-node.pending .trace-person {
   color: #94a3b8;
@@ -961,4 +960,265 @@ a { color: inherit; text-decoration: none; }
   .workspace { grid-template-columns: 1fr; height: auto; }
   .canvas-wrap { min-height: 200px; order: -1; }
   .grid-2 { grid-template-columns: 1fr; }
+}
+
+.team-card { margin-bottom: 1rem; }
+.project-setup-card { margin-bottom: 1rem; }
+.project-setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 768px) {
+  .project-setup-grid { grid-template-columns: 1fr; }
+}
+.team-chip.area-chip { background: #eff6ff; border-color: #bfdbfe; }
+.service-area-select {
+  width: 100%;
+  min-width: 6.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.78rem;
+  background: white;
+  cursor: pointer;
+}
+.verification-table .col-service-area { min-width: 7rem; }
+.team-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.team-chip-remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+.team-chip-remove:hover { color: var(--ink); }
+.team-add-form {
+  display: flex;
+  gap: 0.5rem;
+}
+.team-add-form input {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.record-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.record-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  width: min(360px, 100%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+.record-modal h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+.record-modal-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0 0 0.85rem;
+}
+.record-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.record-modal-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+.record-modal-option:has(input:checked) {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+.record-modal-empty {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0;
+}
+.record-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Traceability dashboard */
+.trace-dashboard {
+  margin-bottom: 1.25rem;
+  padding: 0;
+  overflow: hidden;
+}
+.trace-dashboard summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.85rem 1.25rem;
+  background: #fafbfc;
+  border-bottom: 1px solid transparent;
+}
+.trace-dashboard[open] summary {
+  border-bottom-color: var(--line);
+}
+.trace-dashboard summary::-webkit-details-marker { display: none; }
+.dash-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dash-summary-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  min-width: 0;
+}
+.dash-summary-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.dash-summary-title::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 0.4rem;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+.trace-dashboard[open] .dash-summary-title::before {
+  transform: rotate(90deg);
+}
+.dash-summary-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.dash-body {
+  padding: 1.25rem;
+}
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+.dash-live {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dash-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: dash-pulse 2s ease-in-out infinite;
+}
+@keyframes dash-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { opacity: 0.85; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+}
+.dash-stat {
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-align: center;
+}
+.dash-stat-brand { background: var(--brand-light); border-color: rgba(13, 92, 99, 0.2); }
+.dash-stat-warn { background: #fef2f2; border-color: #fecaca; }
+.dash-stat-value {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.dash-stat-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+.dash-charts-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1rem;
+}
+.dash-chart-card {
+  padding: 1rem;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.dash-chart-card h3 { font-size: 0.88rem; margin: 0; }
+.dash-chart-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0.2rem 0 0.65rem;
+}
+.dash-chart-wrap { position: relative; height: 220px; }
+.dash-chart-square { height: 200px; }
+.dash-chart-short { height: 160px; }
+.dash-chart-main { grid-row: span 2; }
+.dash-chart-main .dash-chart-wrap { height: 100%; min-height: 280px; }
+.dash-chart-wide { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .dash-stats { grid-template-columns: repeat(3, 1fr); }
+  .dash-charts-grid { grid-template-columns: 1fr; }
+  .dash-chart-main { grid-row: span 1; }
+  .dash-chart-main .dash-chart-wrap { min-height: 220px; }
+}
+@media (max-width: 520px) {
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
 }
