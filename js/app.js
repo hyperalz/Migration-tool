@@ -12,9 +12,9 @@ import {
 } from './export.js';
 import { MappingCanvas } from './mapping.js';
 import {
-  VERIFICATION_STATUSES, PHASE_GROUPS, ensureVerification,
+  ensureVerification,
   verificationSummary, statusMeta, formatColumnRef, defaultVerification,
-  countByPhase, filterMappings, columnTraceability, TRACE_STEPS, traceStepSummary,
+  filterMappings, columnTraceability, TRACE_STEPS, traceStepSummary,
   ensureProjectTeam, getProjectTeamNames, ensureProjectServiceAreas, getProjectServiceAreaNames,
   ensureMappingFields, countByServiceArea,
   nextTraceStepKey, traceStepVisualState, recordTraceStep, canRevertTraceStep, revertToTraceStep,
@@ -592,13 +592,21 @@ function renderServiceAreaOptions(areas, selected = '') {
   ).join('')}`;
 }
 
-function renderProjectSetupCard(project) {
+function renderProjectSetupCard(project, open = false) {
   ensureProjectTeam(project);
   ensureProjectServiceAreas(project);
   const teamNames = getProjectTeamNames(project, getUsers());
   const areas = getProjectServiceAreaNames(project);
+  const summary = [
+    teamNames.length ? `${teamNames.length} team` : null,
+    areas.length ? `${areas.length} areas` : null,
+  ].filter(Boolean).join(' · ') || 'Add team names and service areas';
   return `
-    <div class="card project-setup-card">
+    <details class="project-setup-card card" id="project-setup-panel"${open ? ' open' : ''}>
+      <summary class="setup-summary">
+        <span class="setup-summary-title">Project setup</span>
+        <span class="setup-summary-meta">${summary}</span>
+      </summary>
       <div class="project-setup-grid">
         <section>
           <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Migration team</h3>
@@ -613,7 +621,7 @@ function renderProjectSetupCard(project) {
         </section>
         <section>
           <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Service areas</h3>
-          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Group columns — e.g. Pupil, Attendance, Staff. Assign per row below.</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Group columns — e.g. Pupil, Attendance, Staff.</p>
           <div class="team-chips">${areas.length
             ? areas.map(a => `<span class="team-chip area-chip">${esc(a)}<button type="button" class="team-chip-remove" data-list="area" data-name="${esc(a)}" aria-label="Remove">×</button></span>`).join('')
             : '<span style="font-size:0.82rem;color:var(--muted)">No areas yet.</span>'}</div>
@@ -623,7 +631,7 @@ function renderProjectSetupCard(project) {
           </form>
         </section>
       </div>
-    </div>`;
+    </details>`;
 }
 
 function bindProjectSetupForms(projectId, onUpdate) {
@@ -704,118 +712,145 @@ function renderVerify({ id }) {
   let filterPhase = null;
   let filterStatus = null;
   let filterServiceArea = null;
+  let filterQuick = null;
   let dashboardOpen = false;
+  let setupOpen = false;
 
   document.getElementById('app-shell').innerHTML = nav(initial.name) + '<main class="app-main" id="app-main"></main>';
 
   function render() {
     const panel = document.getElementById('trace-dashboard-panel');
     if (panel?.open) dashboardOpen = true;
+    const setupPanel = document.getElementById('project-setup-panel');
+    if (setupPanel?.open) setupOpen = true;
 
     const project = getProject(id);
     ensureProjectTeam(project);
     ensureProjectServiceAreas(project);
     project.mappings.forEach(ensureMappingFields);
     const traceCounts = traceStepSummary(project.mappings);
-    const counts = verificationSummary(project.mappings);
     const areaCounts = countByServiceArea(project.mappings);
     const serviceAreas = getProjectServiceAreaNames(project);
-    const filtered = filterMappings(project.mappings, {
+    let filtered = filterMappings(project.mappings, {
       traceStep: filterStep,
       phase: filterPhase,
       status: filterStatus,
       serviceArea: filterServiceArea,
     });
+    if (filterQuick === 'active') {
+      filtered = filtered.filter(m => m.verification?.status !== 'signed_off');
+    } else if (filterQuick === 'issues') {
+      filtered = filtered.filter(m => ['test_failed', 'live_failed'].includes(m.verification?.status));
+    } else if (filterQuick === 'done') {
+      filtered = filtered.filter(m => m.verification?.status === 'signed_off');
+    }
+    const quickCounts = {
+      active: project.mappings.filter(m => m.verification?.status !== 'signed_off').length,
+      issues: project.mappings.filter(m => ['test_failed', 'live_failed'].includes(m.verification?.status)).length,
+      done: project.mappings.filter(m => m.verification?.status === 'signed_off').length,
+    };
     const dashData = buildTraceDashboardData(project.mappings);
 
     destroyDashboardCharts();
     mount(`
       ${projectSteps(project, 'verify')}
-      <div class="alert alert-info">Mapping defines the contract. This page records <strong>delivery & checks</strong> — SQL sent, test upload, verification, live push. Cleaning data happens elsewhere.</div>
-      <div class="page-head">
+      <div class="page-head verify-page-head">
         <div>
-          <h1>Test & live verification</h1>
-          <p>Click the next tick to record progress. Every change is logged with name and timestamp — including reverts and resends.</p>
+          <h1>Test & live</h1>
+          <p class="verify-lede">Record delivery and checks per column — click <strong>+</strong> on a row to advance, or open a row for full history.</p>
         </div>
         <a href="#/projects/${id}/export" class="btn btn-secondary btn-sm">Export log →</a>
       </div>
       ${renderTraceDashboardHTML(dashData, dashboardOpen)}
-      ${renderProjectSetupCard(project)}
-      ${renderPhaseBar(traceCounts, filterStep)}
-      <div class="verification-summary" id="verify-filters">
-        <button class="verification-pill ${!filterStep && !filterPhase && !filterStatus && !filterServiceArea ? 'active' : ''}" data-filter-type="all">All <span class="count">${project.mappings.length}</span></button>
-        ${serviceAreas.map(area => areaCounts[area] ? `
-          <button class="verification-pill ${filterServiceArea === area ? 'active' : ''}" data-filter-type="service-area" data-filter="${esc(area)}">
-            ${esc(area)} <span class="count">${areaCounts[area]}</span>
-          </button>` : '').join('')}
-        ${areaCounts.__unassigned__ ? `
-          <button class="verification-pill ${filterServiceArea === '__unassigned__' ? 'active' : ''}" data-filter-type="service-area" data-filter="__unassigned__">
-            Unassigned <span class="count">${areaCounts.__unassigned__}</span>
-          </button>` : ''}
-        ${Object.entries(PHASE_GROUPS).filter(([key]) => key === 'test' || key === 'live').map(([key, group]) => {
-          const n = countByPhase(project.mappings, key);
-          return `<button class="verification-pill ${filterPhase === key ? 'active' : ''}" data-filter-type="phase" data-filter="${key}">
-            ${group.label} <span class="count">${n}</span></button>`;
-        }).join('')}
-        ${Object.entries(VERIFICATION_STATUSES).map(([key, meta]) => counts[key] ? `
-          <button class="verification-pill ${filterStatus === key ? 'active' : ''}" data-filter-type="status" data-filter="${key}" style="border-color:${meta.color}40">
-            ${meta.label} <span class="count">${counts[key]}</span>
-          </button>` : '').join('')}
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        ${filtered.length ? `<table class="verification-table">
-          <thead><tr>
-            <th>Service area</th>
-            <th>Column mapping</th>
-            <th>Traceability</th>
-          </tr></thead>
-          <tbody>${filtered.map(m => {
+      ${renderProjectSetupCard(project, setupOpen)}
+      <div class="verify-workspace card">
+        <div class="verify-toolbar">
+          <div class="verify-toolbar-block">
+            <span class="verify-toolbar-label">Filter by step</span>
+            ${renderPhaseBar(traceCounts, filterStep)}
+          </div>
+          <div class="verify-toolbar-row">
+            <div class="verify-toolbar-block verify-toolbar-areas">
+              <span class="verify-toolbar-label">Area</span>
+              <div class="verify-filter-pills" id="verify-area-filters">
+                <button class="verification-pill ${!filterServiceArea ? 'active' : ''}" data-filter-type="area-all">All</button>
+                ${serviceAreas.map(area => areaCounts[area] ? `
+                  <button class="verification-pill ${filterServiceArea === area ? 'active' : ''}" data-filter-type="service-area" data-filter="${esc(area)}">
+                    ${esc(area)} <span class="count">${areaCounts[area]}</span>
+                  </button>` : '').join('')}
+                ${areaCounts.__unassigned__ ? `
+                  <button class="verification-pill ${filterServiceArea === '__unassigned__' ? 'active' : ''}" data-filter-type="service-area" data-filter="__unassigned__">
+                    Unassigned <span class="count">${areaCounts.__unassigned__}</span>
+                  </button>` : ''}
+              </div>
+            </div>
+            <div class="verify-toolbar-block verify-toolbar-show">
+              <span class="verify-toolbar-label">Show</span>
+              <div class="verify-filter-pills" id="verify-quick-filters">
+                <button class="verification-pill ${!filterQuick && !filterStep ? 'active' : ''}" data-filter-type="all">All <span class="count">${project.mappings.length}</span></button>
+                <button class="verification-pill ${filterQuick === 'active' ? 'active' : ''}" data-filter-type="quick" data-filter="active">In progress <span class="count">${quickCounts.active}</span></button>
+                <button class="verification-pill verify-pill-warn ${filterQuick === 'issues' ? 'active' : ''}" data-filter-type="quick" data-filter="issues"${quickCounts.issues ? '' : ' disabled'}>Issues <span class="count">${quickCounts.issues}</span></button>
+                <button class="verification-pill ${filterQuick === 'done' ? 'active' : ''}" data-filter-type="quick" data-filter="done">Done <span class="count">${quickCounts.done}</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="verify-table-wrap">
+          ${filtered.length ? `<table class="verification-table">
+            <thead><tr>
+              <th>Column</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th class="col-service-area">Area</th>
+            </tr></thead>
+            <tbody>${filtered.map(m => {
             const phase = statusMeta(m.verification.status).phase;
             const status = m.verification.status;
+            const current = statusMeta(status);
             const rowClass = [
               phase === 'live' ? 'row-live' : '',
               status === 'live_failed' ? 'row-live-failed' : '',
               status === 'signed_off' ? 'row-done' : '',
             ].filter(Boolean).join(' ');
             return `<tr${rowClass ? ` class="${rowClass}"` : ''} data-mapping-id="${m.id}">
+              <td class="col-mapping"><code class="col-mapping-code">${esc(formatColumnRef(m))}</code></td>
+              <td class="col-status"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></td>
+              <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id, compact: true })}</td>
               <td class="col-service-area">
                 <select class="service-area-select" data-mapping-id="${m.id}" aria-label="Service area">
                   ${renderServiceAreaOptions(serviceAreas, m.serviceArea || '')}
                 </select>
               </td>
-              <td class="col-mapping"><code style="font-size:0.75rem">${esc(formatColumnRef(m))}</code></td>
-              <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id })}</td>
             </tr>`;
           }).join('')}</tbody>
-        </table>` : `<div class="empty-state" style="padding:2rem">
-          <p>No columns in this phase yet.</p>
-          <p style="font-size:0.85rem;margin-top:0.5rem">Click the highlighted tick on a row to record the next step.</p>
-        </div>`}
+          </table>` : `<div class="empty-state verify-empty">
+            <p>No columns match this filter.</p>
+            <p class="verify-empty-hint">Try clearing filters, or click <strong>+</strong> on a row to record the next step.</p>
+          </div>`}
+        </div>
       </div>
     `);
 
-    document.querySelectorAll('#verify-filters .verification-pill').forEach(btn => {
+    document.querySelectorAll('#verify-area-filters .verification-pill, #verify-quick-filters .verification-pill').forEach(btn => {
+      if (btn.disabled) return;
       btn.addEventListener('click', () => {
-        if (btn.dataset.filterType === 'all') {
-          filterStep = null;
-          filterPhase = null;
-          filterStatus = null;
+        if (btn.dataset.filterType === 'area-all') {
           filterServiceArea = null;
         } else if (btn.dataset.filterType === 'service-area') {
           filterServiceArea = btn.dataset.filter;
           filterStep = null;
-          filterPhase = null;
-          filterStatus = null;
-        } else if (btn.dataset.filterType === 'phase') {
-          filterStep = null;
-          filterPhase = btn.dataset.filter;
-          filterStatus = null;
-          filterServiceArea = null;
-        } else {
-          filterStatus = btn.dataset.filter;
+          filterQuick = null;
+        } else if (btn.dataset.filterType === 'all') {
           filterStep = null;
           filterPhase = null;
+          filterStatus = null;
           filterServiceArea = null;
+          filterQuick = null;
+        } else if (btn.dataset.filterType === 'quick') {
+          filterQuick = btn.dataset.filter;
+          filterStep = null;
+          filterPhase = null;
+          filterStatus = null;
         }
         render();
       });
@@ -826,13 +861,14 @@ function renderVerify({ id }) {
         filterPhase = null;
         filterStatus = null;
         filterServiceArea = null;
+        filterQuick = null;
         render();
       });
     });
     bindProjectSetupForms(id, () => render());
     bindServiceAreaSelects(id, render);
     bindTraceClicks(id, render);
-    document.querySelectorAll('.verification-table tr[data-mapping-id] .col-mapping').forEach(cell => {
+    document.querySelectorAll('.verification-table tr[data-mapping-id] .col-mapping, .verification-table tr[data-mapping-id] .col-status').forEach(cell => {
       cell.addEventListener('click', () => {
         const row = cell.closest('tr');
         const m = getProject(id).mappings.find(x => x.id === row.dataset.mappingId);
@@ -948,9 +984,9 @@ function traceNodeTitle(mapping, step, t, visual) {
   return `${step.action} — not yet`;
 }
 
-function renderTraceStrip(mapping, { interactive = false, mappingId = '' } = {}) {
+function renderTraceStrip(mapping, { interactive = false, mappingId = '', compact = false } = {}) {
   const trace = columnTraceability(mapping);
-  return `<div class="trace-pipeline">${TRACE_STEPS.map((step, i) => {
+  return `<div class="trace-pipeline${compact ? ' trace-pipeline-compact' : ''}">${TRACE_STEPS.map((step, i) => {
     const t = trace[step.key];
     const visual = traceStepVisualState(mapping, step.key);
     const prevVisual = i > 0 ? traceStepVisualState(mapping, TRACE_STEPS[i - 1].key) : null;
@@ -959,7 +995,9 @@ function renderTraceStrip(mapping, { interactive = false, mappingId = '' } = {})
     const connector = i > 0
       ? `<div class="trace-connector ${prevDone ? 'done' : ''}" aria-hidden="true"></div>`
       : '';
-    const inner = `
+    const inner = compact
+      ? `<div class="trace-node-marker" aria-hidden="true">${visual === 'done' || visual === 'failed' ? (visual === 'failed' ? '!' : '✓') : visual === 'next' ? '+' : ''}</div>`
+      : `
       <div class="trace-node-marker" aria-hidden="true">${visual === 'done' || visual === 'failed' ? (visual === 'failed' ? '!' : '✓') : visual === 'next' ? '+' : ''}</div>
       <div class="trace-node-text">
         <span class="trace-action">${esc(step.action)}</span>
@@ -1029,8 +1067,9 @@ function renderPhaseBar(traceCounts, activeStep = null) {
   return `<div class="phase-bar">${TRACE_STEPS.map(step => {
     const n = traceCounts[step.key] || 0;
     const isActive = activeStep === step.key;
-    return `<button type="button" class="phase-step-btn phase-step ${isActive ? 'current' : ''}" data-phase="${step.key}" title="${esc(step.action)} completed">
-      ${step.action}<span class="phase-count">${n}</span>
+    const short = step.action.replace('Checked in ', '').replace('Checked ', '');
+    return `<button type="button" class="phase-step-btn phase-step ${isActive ? 'current' : ''}" data-phase="${step.key}" title="${esc(step.action)} — ${n} completed">
+      <span class="phase-step-label">${esc(short)}</span><span class="phase-count">${n}</span>
     </button>`;
   }).join('')}</div>`;
 }
