@@ -376,8 +376,8 @@ function renderSchemaExamples() {
   }]
 }</pre>
             <div class="schema-example-downloads">
-              <a href="/samples/synergy-schema.json" download class="btn btn-ghost btn-sm">Full Synergy JSON</a>
-              <a href="/samples/impulse-schema.json" download class="btn btn-ghost btn-sm">Full Impulse JSON</a>
+              <a href="samples/synergy-schema.json" download class="btn btn-ghost btn-sm">Full Synergy JSON</a>
+              <a href="samples/impulse-schema.json" download class="btn btn-ghost btn-sm">Full Impulse JSON</a>
             </div>
           </div>
           <div class="schema-example-block">
@@ -388,8 +388,8 @@ int,varchar(50),char(1)
 Internal pupil ID,Pupil given name,FSM eligibility flag
 Numeric ID,Free text,"1 = eligible, 0 = not eligible"</pre>
             <div class="schema-example-downloads">
-              <a href="/samples/synergy-pupil-extract.csv" download class="btn btn-ghost btn-sm">Source CSV</a>
-              <a href="/samples/impulse-pupil-template.csv" download class="btn btn-ghost btn-sm">Target CSV</a>
+              <a href="samples/synergy-pupil-extract.csv" download class="btn btn-ghost btn-sm">Source CSV</a>
+              <a href="samples/impulse-pupil-template.csv" download class="btn btn-ghost btn-sm">Target CSV</a>
             </div>
           </div>
         </div>
