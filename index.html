@@ -3,31 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MapBridge — Migration mapping with test & live traceability</title>
-  <meta name="description" content="Secure, project-based source-to-target mapping for education MIS migrations. Connect schemas, map columns, record test and live traceability per column, export and delete.">
+  
+  <title>MapBridge — System and data migration with every field signed off</title>
+  <meta name="description" content="Moving to a new finance, HR, housing, CRM or case management system? MapBridge helps you and your supplier match every field in the old system to the new one, with full sign-off tracking.">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://hyperalz.github.io/Migration-tool/">
+  <meta property="og:title" content="MapBridge — System and data migration with every field signed off">
+  <meta property="og:description" content="Match every field in your old system to the new one. Track who checked and signed off each field. Keep personal data where it is.">
+  <meta property="og:image" content="https://hyperalz.github.io/Migration-tool/landing-page-honest-marketing.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://hyperalz.github.io/Migration-tool/">
+  <meta property="twitter:title" content="MapBridge — System and data migration with every field signed off">
+  <meta property="twitter:description" content="Match every field in your old system to the new one. Track who checked and signed off each field.">
+  <meta property="twitter:image" content="https://hyperalz.github.io/Migration-tool/landing-page-honest-marketing.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔀</text></svg>">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --bg: #f4f6f9;
+      --bg: #f8fafc;
       --surface: #ffffff;
       --ink: #0f172a;
       --muted: #64748b;
       --line: #e2e8f0;
       --brand: #0d5c63;
       --brand-light: #e6f3f4;
-      --accent: #e07a5f;
-      --accent-soft: #fdf0ec;
-      --source: #2563eb;
-      --source-bg: #eff6ff;
-      --target: #059669;
-      --target-bg: #ecfdf5;
-      --warn: #d97706;
+      --orange: #f97316;
+      --orange-light: #fff7ed;
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --green: #059669;
+      --green-light: #ecfdf5;
       --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
       --radius: 14px;
     }
-
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -50,7 +69,7 @@
       top: 0;
       z-index: 50;
       backdrop-filter: blur(12px);
-      background: rgba(244, 246, 249, 0.85);
+      background: rgba(248, 250, 252, 0.9);
       border-bottom: 1px solid var(--line);
     }
 
@@ -66,19 +85,19 @@
       align-items: center;
       gap: 0.65rem;
       font-weight: 700;
-      font-size: 1.15rem;
-      letter-spacing: -0.02em;
+      font-size: 1.1rem;
+      letter-spacing: -0.01em;
     }
 
     .logo-mark {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       background: linear-gradient(135deg, var(--brand), #1a8a94);
       display: grid;
       place-items: center;
       color: white;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 700;
     }
 
@@ -86,24 +105,61 @@
       display: flex;
       align-items: center;
       gap: 1.75rem;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       color: var(--muted);
     }
 
     .nav-links a:hover { color: var(--ink); }
+    
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      color: var(--ink);
+    }
+    
+    .mobile-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border-bottom: 1px solid var(--line);
+      padding: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    
+    .mobile-menu.open {
+      display: block;
+    }
+    
+    .mobile-menu a {
+      display: block;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+    }
+    
+    .mobile-menu a:last-child {
+      border-bottom: none;
+    }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.45rem;
-      padding: 0.65rem 1.15rem;
+      padding: 0.7rem 1.2rem;
       border-radius: 10px;
       font-weight: 600;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       border: none;
       cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
+      text-decoration: none;
     }
 
     .btn:hover { transform: translateY(-1px); }
@@ -128,7 +184,7 @@
 
     /* Hero */
     .hero {
-      padding: 4.5rem 0 3rem;
+      padding: 4rem 0 3rem;
     }
 
     .hero-grid {
@@ -139,10 +195,8 @@
     }
 
     .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.75rem;
+      display: inline-block;
+      padding: 0.4rem 0.85rem;
       border-radius: 999px;
       background: var(--brand-light);
       color: var(--brand);
@@ -151,51 +205,57 @@
       margin-bottom: 1.25rem;
     }
 
-    .eyebrow-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--brand);
-    }
-
     h1 {
-      font-size: clamp(2.2rem, 4vw, 3.2rem);
-      line-height: 1.08;
-      letter-spacing: -0.03em;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
       margin-bottom: 1rem;
+      color: var(--ink);
     }
 
     .hero-lead {
-      font-size: 1.12rem;
-      color: var(--muted);
-      max-width: 34rem;
-      margin-bottom: 1.75rem;
+      font-size: 1.08rem;
+      color: #475569;
+      max-width: 36rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.65;
+    }
+    
+    .hero-bullets {
+      list-style: none;
+      margin: 0 0 1.75rem 0;
+      padding: 0;
+    }
+    
+    .hero-bullets li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.95rem;
+      color: #334155;
+      line-height: 1.5;
+    }
+    
+    .hero-bullets li svg {
+      flex-shrink: 0;
+      margin-top: 0.15rem;
     }
 
     .hero-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.75rem;
     }
-
-    .trust-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.25rem;
+    
+    .hero-note {
       font-size: 0.85rem;
       color: var(--muted);
+      font-style: italic;
     }
 
-    .trust-row span {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .trust-row svg { flex-shrink: 0; }
-
-    /* Demo workspace preview */
+    /* Demo workspace */
     .demo-card {
       background: var(--surface);
       border: 1px solid var(--line);
@@ -216,6 +276,7 @@
 
     .demo-project {
       font-weight: 600;
+      color: var(--ink);
     }
 
     .demo-status {
@@ -224,8 +285,8 @@
       gap: 0.35rem;
       padding: 0.2rem 0.55rem;
       border-radius: 999px;
-      background: #fef3c7;
-      color: #92400e;
+      background: var(--green-light);
+      color: #047857;
       font-size: 0.75rem;
       font-weight: 600;
     }
@@ -233,7 +294,7 @@
     .demo-body {
       display: grid;
       grid-template-columns: 1fr 1.2fr 1fr;
-      min-height: 460px;
+      min-height: 420px;
       position: relative;
     }
 
@@ -242,8 +303,8 @@
       overflow: hidden;
     }
 
-    .panel-source { background: var(--source-bg); border-right: 1px solid var(--line); }
-    .panel-target { background: var(--target-bg); border-left: 1px solid var(--line); }
+    .panel-source { background: var(--blue-light); border-right: 1px solid var(--line); }
+    .panel-target { background: var(--green-light); border-left: 1px solid var(--line); }
     .panel-canvas {
       background: #fbfcfd;
       position: relative;
@@ -256,16 +317,7 @@
       letter-spacing: 0.08em;
       font-weight: 700;
       margin-bottom: 0.65rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .panel-title .badge {
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
-      font-size: 0.65rem;
-      background: rgba(0,0,0,0.06);
+      color: var(--ink);
     }
 
     .table-block {
@@ -283,6 +335,7 @@
       font-weight: 500;
       background: rgba(255,255,255,0.7);
       border-bottom: 1px solid var(--line);
+      color: var(--ink);
     }
 
     .col-row {
@@ -290,21 +343,21 @@
       font-family: "JetBrains Mono", monospace;
       font-size: 0.68rem;
       border-bottom: 1px solid #f1f5f9;
-      cursor: grab;
+      cursor: pointer;
       transition: background 0.12s;
+      color: var(--ink);
     }
 
     .col-row:last-child { border-bottom: none; }
     .col-row:hover { background: rgba(0,0,0,0.03); }
     .col-row.mapped { background: rgba(37, 99, 235, 0.08); }
-    .col-row.unmapped { color: var(--warn); }
-    .col-row.value-mismatch { background: #fffbeb; border-left: 2px solid var(--warn); }
+    .col-row.value-mismatch { background: #fffbeb; border-left: 2px solid var(--orange); }
 
-    .col-row-name { font-weight: 600; }
+    .col-row-name { font-weight: 600; color: var(--ink); }
     .col-row-desc {
       font-family: "DM Sans", system-ui, sans-serif;
       font-size: 0.58rem;
-      color: var(--ink);
+      color: #475569;
       line-height: 1.35;
       margin-top: 0.15rem;
     }
@@ -312,6 +365,7 @@
       font-family: "DM Sans", system-ui, sans-serif;
       font-size: 0.55rem;
       margin-top: 0.15rem;
+      color: #64748b;
     }
     .demo-value-chip {
       display: inline-block;
@@ -321,21 +375,14 @@
       border: 1px solid var(--line);
       font-family: "JetBrains Mono", monospace;
       font-size: 0.52rem;
-      color: var(--ink);
+      color: #334155;
     }
     .col-row-warn {
       font-family: "DM Sans", system-ui, sans-serif;
       font-size: 0.52rem;
-      color: #92400e;
+      color: #c2410c;
       font-weight: 600;
       margin-top: 0.12rem;
-    }
-
-    .col-type {
-      font-size: 0.6rem;
-      color: var(--muted);
-      font-weight: 400;
-      margin-left: 0.3rem;
     }
 
     .mapping-svg {
@@ -353,7 +400,7 @@
     }
 
     .mapping-line.active {
-      stroke: var(--accent);
+      stroke: var(--orange);
       stroke-dasharray: 6 4;
       animation: dash 1.2s linear infinite;
     }
@@ -397,7 +444,7 @@
 
     .progress-fill {
       height: 100%;
-      width: 68%;
+      width: 60%;
       background: linear-gradient(90deg, var(--brand), #1a8a94);
       border-radius: 999px;
     }
@@ -406,227 +453,274 @@
     section { padding: 4rem 0; }
 
     .section-head {
-      max-width: 640px;
+      max-width: 720px;
       margin-bottom: 2.5rem;
     }
 
     .section-head h2 {
       font-size: clamp(1.6rem, 2.5vw, 2.1rem);
       letter-spacing: -0.02em;
-      margin-bottom: 0.65rem;
+      margin-bottom: 0.75rem;
+      color: var(--ink);
     }
 
-    .section-head p { color: var(--muted); }
-
-    .trace-preview {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-      margin-top: 0.85rem;
+    .section-head p { 
+      color: #475569;
+      font-size: 1.05rem;
+      line-height: 1.6;
     }
-
-    .trace-preview-step {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.25rem 0.45rem;
-      border-radius: 999px;
-      background: #f8fafc;
-      border: 1px solid var(--line);
-      font-size: 0.68rem;
-      font-weight: 600;
-      color: var(--muted);
-    }
-
-    .trace-preview-step.done {
-      background: var(--target-bg);
-      border-color: rgba(5, 150, 105, 0.25);
-      color: #047857;
-    }
-
-    .trace-preview-step.next {
-      background: var(--brand-light);
-      border-color: rgba(13, 92, 99, 0.25);
-      color: var(--brand);
-    }
-
-    .trace-preview-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      border: 2px solid currentColor;
+    
+    .problem-grid {
       display: grid;
-      place-items: center;
-      font-size: 0.55rem;
-      line-height: 1;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
     }
-
-    .trace-preview-step.done .trace-preview-dot {
-      background: #059669;
-      border-color: #059669;
-      color: white;
+    
+    .problem-item h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--orange);
+      margin-bottom: 0.75rem;
+      font-weight: 700;
     }
-
-    .trace-preview-step.next .trace-preview-dot {
-      border-color: var(--brand);
-      color: var(--brand);
+    
+    .problem-item p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: #334155;
     }
 
     .steps {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 1rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
     }
 
     .step {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      padding: 1.25rem;
+      padding: 1.5rem 1.25rem;
     }
 
     .step-num {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
       background: var(--brand-light);
       color: var(--brand);
       display: grid;
       place-items: center;
       font-weight: 700;
-      font-size: 0.85rem;
-      margin-bottom: 0.85rem;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
     }
 
     .step h3 {
-      font-size: 1rem;
-      margin-bottom: 0.4rem;
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+      color: var(--ink);
     }
 
     .step p {
-      font-size: 0.88rem;
-      color: var(--muted);
+      font-size: 0.9rem;
+      color: #475569;
+      line-height: 1.6;
     }
 
     .features {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
     }
 
     .feature {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      padding: 1.35rem;
-    }
-
-    .feature-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      margin-bottom: 0.85rem;
-      font-size: 1.1rem;
-    }
-
-    .feature h3 {
-      font-size: 1rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .feature p {
-      font-size: 0.88rem;
-      color: var(--muted);
-    }
-
-    .connectors {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.65rem;
-    }
-
-    .connector {
-      padding: 0.55rem 0.85rem;
-      border-radius: 999px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .connector.highlight {
-      border-color: rgba(13, 92, 99, 0.35);
-      background: var(--brand-light);
-      color: var(--brand);
-    }
-
-    .security-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    .security-card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
       padding: 1.5rem;
     }
 
-    .security-card.accent {
-      background: linear-gradient(135deg, #0d5c63 0%, #134e4a 100%);
-      color: white;
-      border: none;
+    .feature h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.65rem;
+      color: var(--ink);
     }
 
-    .security-card.accent p { color: rgba(255,255,255,0.82); }
-
-    .security-card h3 { margin-bottom: 0.5rem; }
-
-    .security-card p {
+    .feature p {
       font-size: 0.9rem;
-      color: var(--muted);
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+    
+    .feature-screenshot {
+      margin-top: 1rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    
+    .feature-screenshot img {
+      width: 100%;
+      display: block;
     }
 
-    .compare-table {
+    .table-comparison {
       width: 100%;
       border-collapse: collapse;
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       overflow: hidden;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
     }
 
-    .compare-table th,
-    .compare-table td {
-      padding: 0.85rem 1rem;
+    .table-comparison th,
+    .table-comparison td {
+      padding: 1rem;
       text-align: left;
       border-bottom: 1px solid var(--line);
     }
 
-    .compare-table th {
+    .table-comparison th {
       background: #fafbfc;
       font-weight: 600;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
+      font-size: 0.85rem;
+      color: var(--ink);
     }
 
-    .compare-table tr:last-child td { border-bottom: none; }
+    .table-comparison td {
+      color: #334155;
+    }
 
-    .check { color: var(--target); font-weight: 700; }
-    .partial { color: var(--warn); }
+    .table-comparison tr:last-child td { border-bottom: none; }
+
+    .check { 
+      color: var(--green); 
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .data-flow {
+      background: var(--blue-light);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      margin: 1.5rem 0;
+    }
+    
+    .data-flow h4 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: var(--ink);
+    }
+    
+    .data-flow p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: #334155;
+      margin-bottom: 0.75rem;
+    }
+    
+    .data-flow p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .data-flow code {
+      background: white;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      color: var(--blue);
+    }
+    
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+    
+    .audience-item {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    
+    .audience-item h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.75rem;
+      color: var(--ink);
+    }
+    
+    .audience-item p {
+      font-size: 0.9rem;
+      color: #475569;
+      line-height: 1.6;
+    }
+    
+    .about-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 2rem;
+    }
+    
+    .about-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      color: var(--ink);
+    }
+    
+    .about-card p {
+      font-size: 0.95rem;
+      color: #334155;
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+    
+    .about-card p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .about-card a {
+      color: var(--blue);
+      text-decoration: underline;
+    }
+    
+    .faq {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .faq-item h3 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      color: var(--ink);
+    }
+    
+    .faq-item p {
+      font-size: 0.9rem;
+      color: #475569;
+      line-height: 1.7;
+    }
 
     .cta {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: calc(var(--radius) + 6px);
-      padding: 2.5rem;
+      padding: 3rem 2rem;
       text-align: center;
       box-shadow: var(--shadow);
     }
@@ -634,17 +728,20 @@
     .cta h2 {
       font-size: 1.75rem;
       letter-spacing: -0.02em;
-      margin-bottom: 0.65rem;
+      margin-bottom: 0.75rem;
+      color: var(--ink);
     }
 
     .cta p {
-      color: var(--muted);
-      max-width: 520px;
-      margin: 0 auto 1.5rem;
+      color: #475569;
+      max-width: 540px;
+      margin: 0 auto 1.75rem;
+      font-size: 1.05rem;
+      line-height: 1.6;
     }
 
     footer {
-      padding: 2rem 0 3rem;
+      padding: 2.5rem 0 3rem;
       color: var(--muted);
       font-size: 0.85rem;
       border-top: 1px solid var(--line);
@@ -657,96 +754,23 @@
       flex-wrap: wrap;
       gap: 1rem;
     }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 1rem;
+    
+    .footer-inner a {
+      color: var(--blue);
+      text-decoration: underline;
     }
 
-    .modal-overlay.open { display: flex; }
-
-    .modal {
-      background: var(--surface);
-      border-radius: var(--radius);
-      width: min(420px, 100%);
-      padding: 1.75rem;
-      box-shadow: var(--shadow);
-    }
-
-    .modal h3 {
-      font-size: 1.2rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .modal p {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .field {
-      margin-bottom: 0.85rem;
-    }
-
-    .field label {
-      display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      margin-bottom: 0.35rem;
-    }
-
-    .field input,
-    .field select {
-      width: 100%;
-      padding: 0.65rem 0.75rem;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      font: inherit;
-      font-size: 0.9rem;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 0.65rem;
-      margin-top: 1.25rem;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      background: var(--ink);
-      color: white;
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
-      font-size: 0.88rem;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 0.2s, transform 0.2s;
-      z-index: 110;
-      pointer-events: none;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
+    /* Responsive */
     @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: repeat(2, 1fr); }
-      .features { grid-template-columns: 1fr; }
-      .security-grid { grid-template-columns: 1fr; }
       .nav-links { display: none; }
+      .mobile-menu-btn { display: block; }
+      .hero-grid { grid-template-columns: 1fr; }
       .demo-body { grid-template-columns: 1fr; min-height: auto; }
       .panel-canvas { display: none; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: repeat(2, 1fr); }
+      .features { grid-template-columns: 1fr; }
+      .audience-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
@@ -763,97 +787,90 @@
         MapBridge
       </a>
       <div class="nav-links">
-        <a href="#how">How it works</a>
-        <a href="#features">Features</a>
-        <a href="#connectors">Connectors</a>
-        <a href="#security">Security</a>
+        <a href="#problem">The problem</a>
+        <a href="#how">How we work</a>
+        <a href="#what">What it does</a>
+        <a href="#who">Who it's for</a>
+        <a href="app.html">Open the tool</a>
       </div>
-      <a href="app.html" class="btn btn-primary">Open app</a>
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="#problem">The problem</a>
+      <a href="#how">How we work</a>
+      <a href="#what">What it does</a>
+      <a href="#who">Who it's for</a>
+      <a href="app.html">Open the tool</a>
     </div>
   </nav>
 
   <header class="hero">
     <div class="wrap hero-grid">
       <div>
-        <div class="alert alert-info" style="margin-bottom:1rem;padding:0.75rem 1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:0.88rem">
-          <strong>Current version:</strong> All data is stored in your browser only (localStorage). No server, no backend. Export your work regularly. Production version with secure backend is on the roadmap.
-        </div>
-        <div class="eyebrow">
-          <span class="eyebrow-dot"></span>
-          Migration mapping · test & live traceability
-        </div>
-        <h1>Map source to target.<br>Track test & live. Then delete.</h1>
+        <div class="eyebrow">Foam Works Digital · system and data migration</div>
+        <h1>Move to your new system with nothing lost and every field signed off</h1>
         <p class="hero-lead">
-          A secure collaboration workspace for Local Authorities, system suppliers, and delivery partners.
-          Connect schemas, map columns visually, then record who sent SQL, who checked test, and who signed off live — per column, with a full audit trail.
+          Are you replacing a finance, HR, housing, CRM or case management system? We work with you and your supplier. We match every field in the old system to its place in the new one. MapBridge shows what is missing. It records who checked and approved each field.
         </p>
+        <ul class="hero-bullets">
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            See every field. See what is matched and what is not. See how old codes become new ones.
+          </li>
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Know who checked it. Each test and sign-off is recorded by name and date.
+          </li>
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Keep personal data where it is. We work from the list of fields, not the records themselves.
+          </li>
+        </ul>
         <div class="hero-actions">
-          <a href="app.html" class="btn btn-primary">Start a project</a>
+          <!-- TODO: Replace LinkedIn with booking link when available -->
+          <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a 30-minute call</a>
           <a href="#how" class="btn btn-secondary">See how it works</a>
         </div>
-        <div class="trust-row">
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            Test & live traceability
-          </span>
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Browser-only storage
-          </span>
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-            Delete on completion
-          </span>
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Invite LA ↔ vendor
-          </span>
-        </div>
+        <p class="hero-note">MapBridge currently runs in your web browser, and we use it with you during your project.</p>
       </div>
 
-      <div class="demo-card" aria-label="Interactive mapping preview">
+      <div class="demo-card" aria-label="Example of field matching">
         <div class="demo-topbar">
-          <span class="demo-project">Synergy → Impulse · Birmingham LA</span>
-          <span class="demo-status" style="background:#ecfdf5;color:#047857">● 18/42 signed off in live</span>
+          <span class="demo-project">Legacy HR System → New HR System</span>
+          <span class="demo-status">● 9/15 signed off</span>
         </div>
         <div class="demo-body" id="mapping-demo">
           <div class="panel panel-source">
-            <div class="panel-title">Source <span class="badge">Synergy</span></div>
+            <div class="panel-title">Old system</div>
             <div class="table-block">
-              <div class="table-name">mig_pupil</div>
-              <div class="col-row mapped" data-source="pupil_id">
-                <div class="col-row-name">pupil_id<span class="col-type">int</span></div>
-                <div class="col-row-desc">Internal Synergy pupil identifier</div>
-                <div class="col-row-values"><span class="demo-value-chip">Numeric ID</span></div>
+              <div class="table-name">employees</div>
+              <div class="col-row mapped" data-source="employee_id">
+                <div class="col-row-name">employee_id</div>
+                <div class="col-row-desc">Internal employee identifier</div>
+                <div class="col-row-values"><span class="demo-value-chip">Number</span></div>
               </div>
-              <div class="col-row mapped" data-source="forename">
-                <div class="col-row-name">forename<span class="col-type">varchar</span></div>
-                <div class="col-row-desc">Pupil given name</div>
-                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              <div class="col-row mapped" data-source="start_date">
+                <div class="col-row-name">start_date</div>
+                <div class="col-row-desc">Employment start date</div>
+                <div class="col-row-values"><span class="demo-value-chip">Date</span></div>
               </div>
-              <div class="col-row mapped" data-source="surname">
-                <div class="col-row-name">surname<span class="col-type">varchar</span></div>
-                <div class="col-row-desc">Pupil family name</div>
-                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
-              </div>
-              <div class="col-row mapped value-mismatch" data-source="fsm_flag">
-                <div class="col-row-name">fsm_flag<span class="col-type">char(1)</span></div>
-                <div class="col-row-desc">Free school meals eligibility at extract date</div>
-                <div class="col-row-values"><span class="demo-value-chip">1 = eligible, 0 = not eligible</span></div>
-                <div class="col-row-warn">Target expects Y/N — transform required</div>
-              </div>
-            </div>
-            <div class="table-block">
-              <div class="table-name">mig_guardian</div>
-              <div class="col-row mapped" data-source="guardian_name">
-                <div class="col-row-name">guardian_name<span class="col-type">varchar</span></div>
-                <div class="col-row-desc">Contact full name</div>
-                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
-              </div>
-              <div class="col-row" data-source="relationship">
-                <div class="col-row-name">relationship<span class="col-type">lookup</span></div>
-                <div class="col-row-desc">Relationship to pupil</div>
-                <div class="col-row-values"><span class="demo-value-chip">Synergy lookup code</span></div>
+              <div class="col-row mapped value-mismatch" data-source="active_flag">
+                <div class="col-row-name">active_flag</div>
+                <div class="col-row-desc">Whether employee is currently active</div>
+                <div class="col-row-values"><span class="demo-value-chip">1 = active, 0 = inactive</span></div>
+                <div class="col-row-warn">New system expects Y and N — needs translating</div>
               </div>
             </div>
           </div>
@@ -862,192 +879,133 @@
             <svg class="mapping-svg" id="mapping-lines">
               <path class="mapping-line" stroke="#2563eb" d="M0,52 C40,52 40,52 80,52"/>
               <path class="mapping-line" stroke="#2563eb" d="M0,82 C40,82 40,82 80,82"/>
-              <path class="mapping-line" stroke="#2563eb" d="M0,112 C40,112 40,112 80,112"/>
-              <path class="mapping-line active" stroke="#e07a5f" d="M0,142 C40,142 40,142 80,142"/>
-              <path class="mapping-line" stroke="#059669" d="M80,52 C120,52 120,52 160,52"/>
-              <path class="mapping-line" stroke="#059669" d="M80,82 C120,82 120,82 160,82"/>
+              <path class="mapping-line active" stroke="#f97316" d="M0,112 C40,112 40,112 80,112"/>
             </svg>
-            <div class="canvas-hint">Drag from source column → target column</div>
+            <div class="canvas-hint">Click old field → new field</div>
           </div>
 
           <div class="panel panel-target">
-            <div class="panel-title">Target <span class="badge">Impulse</span></div>
+            <div class="panel-title">New system</div>
             <div class="table-block">
-              <div class="table-name">Pupil_Template</div>
-              <div class="col-row mapped" data-target="PUPIL_REF">
-                <div class="col-row-name">PUPIL_REF<span class="col-type">string</span></div>
-                <div class="col-row-desc">Impulse pupil reference</div>
-                <div class="col-row-values"><span class="demo-value-chip">Vendor-assigned pupil key</span></div>
+              <div class="table-name">staff</div>
+              <div class="col-row mapped" data-target="staff_id">
+                <div class="col-row-name">staff_id</div>
+                <div class="col-row-desc">Staff member reference</div>
+                <div class="col-row-values"><span class="demo-value-chip">Number</span></div>
               </div>
-              <div class="col-row mapped" data-target="FIRST_NAME">
-                <div class="col-row-name">FIRST_NAME<span class="col-type">string</span></div>
-                <div class="col-row-desc">Pupil given name</div>
-                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
+              <div class="col-row mapped" data-target="hire_date">
+                <div class="col-row-name">hire_date</div>
+                <div class="col-row-desc">Date of hire</div>
+                <div class="col-row-values"><span class="demo-value-chip">Date</span></div>
               </div>
-              <div class="col-row mapped" data-target="LAST_NAME">
-                <div class="col-row-name">LAST_NAME<span class="col-type">string</span></div>
-                <div class="col-row-desc">Pupil family name</div>
-                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
-              </div>
-              <div class="col-row mapped value-mismatch" data-target="FSM_STATUS">
-                <div class="col-row-name">FSM_STATUS<span class="col-type">code</span></div>
-                <div class="col-row-desc">Free school meals status</div>
-                <div class="col-row-values"><span class="demo-value-chip">Y = eligible, N = not eligible</span></div>
-              </div>
-            </div>
-            <div class="table-block">
-              <div class="table-name">Guardian_Template</div>
-              <div class="col-row mapped" data-target="CONTACT_NAME">
-                <div class="col-row-name">CONTACT_NAME<span class="col-type">string</span></div>
-                <div class="col-row-desc">Contact full name</div>
-                <div class="col-row-values"><span class="demo-value-chip">Free text</span></div>
-              </div>
-              <div class="col-row" data-target="REL_CODE">
-                <div class="col-row-name">REL_CODE<span class="col-type">lookup</span></div>
-                <div class="col-row-desc">Relationship to pupil</div>
-                <div class="col-row-values"><span class="demo-value-chip">Impulse code list required</span></div>
+              <div class="col-row mapped value-mismatch" data-target="status_code">
+                <div class="col-row-name">status_code</div>
+                <div class="col-row-desc">Employment status</div>
+                <div class="col-row-values"><span class="demo-value-chip">Y = active, N = inactive</span></div>
               </div>
             </div>
           </div>
         </div>
         <div class="demo-footer">
-          <span>42 columns · 68% mapped · 18 signed off · 2 blocked in test</span>
-          <div class="progress-bar"><div class="progress-fill" style="width:43%"></div></div>
+          <span>15 fields · 60% matched · 9 signed off</span>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
         </div>
       </div>
     </div>
   </header>
 
+  <section id="problem">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>The problem with changing systems</h2>
+        <p>Mistakes hide in spreadsheets, and it is hard to show who checked what.</p>
+      </div>
+      <div class="problem-grid">
+        <div class="problem-item">
+          <h3>The problem</h3>
+          <p>Changing systems puts years of records at risk. Mistakes hide in the spreadsheet that matches old fields to new ones, and it is hard to show who checked what.</p>
+        </div>
+        <div class="problem-item">
+          <h3>What we do</h3>
+          <p>We run the migration with your team and your supplier. MapBridge suggests matches, your people approve them, and every test and sign-off is recorded by name.</p>
+        </div>
+        <div class="problem-item">
+          <h3>Why it works</h3>
+          <p>Fields with no match are flagged, so nothing is dropped by accident. MapBridge never needs personal records. You finish with a record you can show auditors.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="how">
     <div class="wrap">
       <div class="section-head">
-        <h2>How a migration project works</h2>
-        <p>Built for the real pattern: an LA, a target system supplier, and a delivery partner all need the same mapping truth — without another spreadsheet.</p>
+        <h2>How we work</h2>
+        <p>Four steps from the list of old fields to sign-off on every match.</p>
       </div>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <h3>Create & invite</h3>
-          <p>Sign in, create a project, invite the other party by email. Role-based access from day one.</p>
+          <h3>Get the field lists</h3>
+          <p>You give us the list of fields in your old system, and your supplier gives us the list for the new system. Just field names and types, not the data itself.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <h3>Upload schemas</h3>
-          <p>JSON or CSV upload. Schema metadata only — table names, columns, types, lookups. Live connectors are on the roadmap.</p>
+          <h3>MapBridge suggests matches</h3>
+          <p>MapBridge looks at field names, types and notes to suggest which old field goes to which new field. You and your supplier review the suggestions.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <h3>Map visually</h3>
-          <p>Drag arrows between columns. Add transforms, lookup rules, and service area groupings.</p>
+          <h3>Test and check</h3>
+          <p>Your supplier sends test data through. Your team checks it matches what you expected. MapBridge records who checked and when, field by field.</p>
         </div>
         <div class="step">
           <div class="step-num">4</div>
-          <h3>Test & live checks</h3>
-          <p>Record SQL sent, test upload, checks, live push, and sign-off — per column, with names and timestamps.</p>
-          <div class="trace-preview" aria-hidden="true">
-            <span class="trace-preview-step done"><span class="trace-preview-dot">✓</span>SQL sent</span>
-            <span class="trace-preview-step done"><span class="trace-preview-dot">✓</span>Test</span>
-            <span class="trace-preview-step next"><span class="trace-preview-dot">+</span>Live</span>
-            <span class="trace-preview-step">Done</span>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">5</div>
-          <h3>Export & close</h3>
-          <p>Download mappings plus full traceability log. Close the project — all data permanently deleted.</p>
+          <h3>Sign off and finish</h3>
+          <p>Once all fields are checked in test and then in live, you sign them off. MapBridge gives you a full record of who approved what and when.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="features">
+  <section id="what">
     <div class="wrap">
       <div class="section-head">
-        <h2>Built for migration pain, not generic ETL</h2>
-        <p>The spreadsheet master document problem — unmapped fields, lookup conversions, and "not convinced this was sent to test" — is what this replaces.</p>
+        <h2>What MapBridge does today</h2>
+        <p>These features work now and are being used on real projects.</p>
       </div>
       <div class="features">
         <div class="feature">
-          <div class="feature-icon" style="background: var(--target-bg);">✓</div>
-          <h3>Test & live traceability</h3>
-          <p>Per-column pipeline from SQL sent through test checks, live push, and sign-off. Click to record, revert with history kept.</p>
+          <h3>AI-suggested matches a named person approves</h3>
+          <p>MapBridge reads the field names, types and notes from both systems and suggests which fields match. You review the suggestions and approve or reject each one. The approval is recorded by your name.</p>
+          <p>You can use the built-in matcher (works offline, no API key needed) or connect your own AI API key for smarter suggestions. Only field definitions are sent, never personal data.</p>
+          <div class="feature-screenshot">
+            <img src="ai-suggestions-list.png" alt="Screenshot showing AI-suggested field matches with confidence scores and approve/reject buttons">
+          </div>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: var(--brand-light);">👤</div>
-          <h3>Who did what</h3>
-          <p>Migration team roster. Every step records who checked — including resends, failures, and reverts — with timestamps.</p>
+          <h3>Value and code translations</h3>
+          <p>When the old system uses different codes to the new one (like 1 and 0 instead of Y and N), MapBridge spots this and suggests the translation. You approve it, and the SQL export includes the translation rule.</p>
+          <div class="feature-screenshot">
+            <img src="connector-imported-schema.png" alt="Screenshot showing field definitions with value formats">
+          </div>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: var(--accent-soft);">⚡</div>
-          <h3>Lookup & transform rules</h3>
-          <p>Capture Synergy → Impulse code conversions, defaults, and join conditions on each mapping line.</p>
+          <h3>Sign-off tracking field by field</h3>
+          <p>For each matched field, you record who sent test data, who checked it, who pushed to live, and who signed it off. Each step is recorded by name and date. Nothing is anonymous.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: #fef3c7;">📊</div>
-          <h3>Live dashboard</h3>
-          <p>Pipeline completion, status mix, service area progress, and audit activity — updated as your team records steps.</p>
+          <h3>Starter SQL for your supplier</h3>
+          <p>MapBridge writes starter SQL queries for your supplier, with the translation rules already in place. This gives them a head start on writing the real migration queries.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: var(--source-bg);">↔</div>
-          <h3>Visual column mapping</h3>
-          <p>Side-by-side schemas with drag-and-drop lines. Unmapped and type-mismatch columns flagged instantly.</p>
+          <h3>Read-only tool for SQL Server and Oracle</h3>
+          <p>If you use SQL Server or Oracle, your IT team can run our read-only tool inside your network. It reads the list of fields (not the data) and gives MapBridge the field names and types. No access to personal records.</p>
+          <p>See the <a href="https://github.com/hyperalz/Migration-tool/blob/main/connector/README.md" style="color: var(--blue); text-decoration: underline;">technical guide</a> and <a href="https://github.com/hyperalz/Migration-tool/blob/main/connector/SECURITY.md" style="color: var(--blue); text-decoration: underline;">security document for IT</a>.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon" style="background: #f3e8ff;">📤</div>
-          <h3>Exportable artefacts</h3>
-          <p>Excel or JSON with mappings, verification status, traceability columns, and full audit history.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="connectors">
-    <div class="wrap">
-      <div class="section-head">
-        <h2>Roadmap: Education platform connectors</h2>
-        <p>These systems are on the roadmap. Currently, MapBridge supports JSON and CSV schema upload only.</p>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem;">Planned source systems</p>
-      <div class="connectors" style="margin-bottom: 1.5rem;">
-        <span class="connector">Synergy (Access Group)</span>
-        <span class="connector">Capita One</span>
-        <span class="connector">SIMS</span>
-        <span class="connector">Tribal</span>
-        <span class="connector">SQL Server</span>
-        <span class="connector highlight">CSV / flat file ✓</span>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem;">Planned target systems</p>
-      <div class="connectors">
-        <span class="connector">Impulse (CACI)</span>
-        <span class="connector">Impulse Nexus</span>
-        <span class="connector">Generic PostgreSQL</span>
-        <span class="connector highlight">Staged CSV landing ✓</span>
-      </div>
-    </div>
-  </section>
-
-  <section id="security">
-    <div class="wrap">
-      <div class="section-head">
-        <h2>Data privacy</h2>
-        <p>In this version, all data is stored in your browser's local storage only. No server, no backend.</p>
-      </div>
-      <div class="security-grid">
-        <div class="security-card accent">
-          <h3>Browser-only storage (current version)</h3>
-          <p>All schemas, mappings, and project data are stored in your browser's localStorage. Nothing is sent to a server. Clear your browser data to permanently delete. Export your work before doing so.</p>
-        </div>
-        <div class="security-card">
-          <h3>Roadmap: Server-backed lifecycle</h3>
-          <p>Planned: project-scoped workspaces with secure authentication, invite-based access, and a delete-on-completion workflow. When a migration completes, you'll export the mapping package and trigger permanent deletion.</p>
-        </div>
-        <div class="security-card">
-          <h3>Roadmap: Metadata-only connectors</h3>
-          <p>Planned: connectors pull table and column definitions, types, and lookup structures from source systems. No pupil records required for the mapping layer.</p>
-        </div>
-        <div class="security-card">
-          <h3>Audit trail while active</h3>
-          <p>Append-only history per column while the project is open — every check, resend, and revert logged with who and when. In the current browser version, audit logs are kept in local storage.</p>
+          <h3>Works in your web browser</h3>
+          <p>MapBridge runs in your web browser. All data is stored on your computer, not on a server. We use it with you during your migration project.</p>
         </div>
       </div>
     </div>
@@ -1056,47 +1014,51 @@
   <section>
     <div class="wrap">
       <div class="section-head">
-        <h2>How MapBridge compares</h2>
-        <p>Enterprise mapping tools exist. MapBridge brings the education migration pattern to a lightweight browser tool.</p>
+        <h2>Works today, coming next</h2>
       </div>
-      <table class="compare-table">
+      <table class="table-comparison">
         <thead>
           <tr>
-            <th>Capability</th>
-            <th>Generic ETL / enterprise STM</th>
-            <th>MapBridge</th>
+            <th>Feature</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Education MIS connectors</td>
-            <td class="partial">Generic only</td>
-            <td class="partial">Roadmap — CSV upload today</td>
+            <td>AI-suggested field matches</td>
+            <td><span class="check">✓</span> Works today</td>
           </tr>
           <tr>
-            <td>LA ↔ vendor invite model</td>
-            <td class="partial">Enterprise setup</td>
-            <td class="partial">Roadmap — browser-only today</td>
+            <td>Value and code translations</td>
+            <td><span class="check">✓</span> Works today</td>
           </tr>
           <tr>
-            <td>Delete everything on close</td>
-            <td class="partial">Not standard</td>
-            <td class="check">✓ Browser clear = gone</td>
+            <td>Sign-off tracking field by field</td>
+            <td><span class="check">✓</span> Works today</td>
           </tr>
           <tr>
-            <td>Per-column test & live traceability</td>
-            <td class="partial">Status fields only</td>
-            <td class="check">✓ Full pipeline + audit log</td>
+            <td>Starter SQL export</td>
+            <td><span class="check">✓</span> Works today</td>
           </tr>
           <tr>
-            <td>Mapping export as deliverable</td>
-            <td class="check">✓</td>
-            <td class="check">✓ Explicit requirement</td>
+            <td>Read-only tool for SQL Server and Oracle</td>
+            <td><span class="check">✓</span> Works today</td>
           </tr>
           <tr>
-            <td>Self-serve / lightweight</td>
-            <td class="partial">Often PS engagement</td>
-            <td class="check">✓ Project-based SaaS</td>
+            <td>Shared online workspace with invites and roles</td>
+            <td>Coming next</td>
+          </tr>
+          <tr>
+            <td>Data quality checks (null rates, value ranges)</td>
+            <td>Coming next</td>
+          </tr>
+          <tr>
+            <td>Reconciliation of counts and totals</td>
+            <td>Coming next</td>
+          </tr>
+          <tr>
+            <td>Cutover plan generator</td>
+            <td>Coming next</td>
           </tr>
         </tbody>
       </table>
@@ -1105,109 +1067,161 @@
 
   <section>
     <div class="wrap">
+      <div class="section-head">
+        <h2>For IT and data protection officers</h2>
+        <p>What data moves where, and what the AI mode sends.</p>
+      </div>
+      
+      <div class="data-flow">
+        <h4>What MapBridge reads and stores</h4>
+        <p><strong>Reads:</strong> Field names (like <code>employee_id</code> or <code>start_date</code>), field types (like <code>number</code> or <code>date</code>), allowed values (like <code>Y and N</code>), and field notes from your supplier.</p>
+        <p><strong>Never reads:</strong> Employee names, salaries, addresses, or any other personal data. The read-only tool for SQL Server and Oracle only queries the system catalog (the list of tables and fields), not the tables themselves.</p>
+        <p><strong>Where it's stored:</strong> In the web browser on your computer. Not on a server. When you close the browser, it stays on your computer unless you clear your browser data.</p>
+      </div>
+      
+      <div class="data-flow">
+        <h4>What the AI suggestion mode sends</h4>
+        <p><strong>If you use the built-in matcher:</strong> Nothing is sent anywhere. It runs entirely in your web browser.</p>
+        <p><strong>If you use your own AI API key:</strong> Only field names, types, and notes are sent to the AI service you choose (like OpenAI or Azure). No employee names, salaries, or any personal data. Your API key is stored in your web browser only.</p>
+      </div>
+      
+      <p style="margin-top: 1.5rem; font-size: 0.95rem; color: #334155; line-height: 1.7;">
+        For full technical details, see our <a href="https://github.com/hyperalz/Migration-tool/blob/main/connector/README.md" style="color: var(--blue); text-decoration: underline;">connector technical guide</a> and <a href="https://github.com/hyperalz/Migration-tool/blob/main/connector/SECURITY.md" style="color: var(--blue); text-decoration: underline;">security document for IT and DPOs</a>.
+      </p>
+    </div>
+  </section>
+
+  <section id="who">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Who it's for</h2>
+      </div>
+      <div class="audience-grid">
+        <div class="audience-item">
+          <h3>Councils and public bodies</h3>
+          <p>Moving from one system to another puts years of records at risk. MapBridge helps you track every field match and show auditors who checked and signed off what.</p>
+          <p>Used for migrations in finance, HR, housing, case management, and other core systems.</p>
+        </div>
+        <div class="audience-item">
+          <h3>Businesses replacing core systems</h3>
+          <p>If you are moving to a new finance system, HR system, CRM or other core system, MapBridge helps you and your supplier agree what goes where and track who approved it.</p>
+          <p>Particularly useful for businesses with strict audit requirements or regulated data.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <h2>About</h2>
+      </div>
+      <div class="about-card">
+        <h3>Alex Osborne MSc · Foam Works Digital</h3>
+        <p>MapBridge is built by Alex Osborne of Foam Works Digital. Alex specialises in product-led transformation for councils and businesses replacing core systems.</p>
+        <p>Previously Acting Head of Product at Ocado Technology, and product transformation roles at Investec. Recent work includes council migrations at Caerphilly and other public bodies.</p>
+        <p>See <a href="https://hyperalz.github.io/casestudies/">case studies</a> and <a href="https://www.linkedin.com/in/alexosfwd/">connect on LinkedIn</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Common questions</h2>
+      </div>
+      <div class="faq">
+        <div class="faq-item">
+          <h3>Does MapBridge move the data itself?</h3>
+          <p>No. MapBridge helps you and your supplier agree which fields match between the old system and the new system. Your supplier writes the queries that move the data.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Do you need access to our personal data?</h3>
+          <p>No. MapBridge only needs the list of field names and types. For example, it needs to know there is a field called <code>employee_id</code> of type <code>number</code>, but it does not need to see any employee names or salaries.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Where is the data stored?</h3>
+          <p>In your web browser on your computer. Not on a server. When you close the browser, the data stays on your computer unless you clear your browser data.</p>
+        </div>
+        <div class="faq-item">
+          <h3>What does the AI suggestion mode do?</h3>
+          <p>It looks at field names, types and notes to suggest which old fields match which new fields. You can use the built-in matcher (runs in your browser, no API key) or connect your own AI API. Only field definitions are sent, never personal data.</p>
+        </div>
+        <div class="faq-item">
+          <h3>How much does it cost?</h3>
+          <p>MapBridge is included when Foam Works Digital runs your migration. For pricing, <a href="https://www.linkedin.com/in/alexosfwd/" style="color: var(--blue); text-decoration: underline;">book a call with Alex</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
       <div class="cta">
-        <h2>Try the working demo</h2>
-        <p>Interactive mapping canvas, test & live verification, team traceability, schema upload, and export/delete — all running locally in your browser.</p>
-        <a href="app.html" class="btn btn-primary">Open MapBridge app</a>
+        <h2>Start your migration project</h2>
+        <p>Book a 30-minute call to discuss your move to a new system.</p>
+        <!-- TODO: Replace LinkedIn with booking link when available -->
+        <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a call with Alex</a>
       </div>
     </div>
   </section>
 
   <footer>
     <div class="wrap footer-inner">
-      <span>© 2026 MapBridge · Concept demo</span>
-      <span>Built for education MIS migration specialists</span>
+      <span>© 2026 Foam Works Digital</span>
+      <span><a href="https://www.linkedin.com/in/alexosfwd/">LinkedIn</a> · <a href="https://hyperalz.github.io/casestudies/">Case studies</a> · <a href="app.html">Open MapBridge</a></span>
     </div>
   </footer>
 
-  <!-- Demo modal -->
-  <div class="modal-overlay" id="modal">
-    <div class="modal" role="dialog" aria-labelledby="modal-title">
-      <h3 id="modal-title">Start a migration project</h3>
-      <p>This demo captures interest. In the full product, you'd create a project and invite your counterpart.</p>
-      <div class="field">
-        <label for="role">Your role</label>
-        <select id="role">
-          <option>Local Authority</option>
-          <option>System supplier / vendor</option>
-          <option>Delivery consultant</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="email">Work email</label>
-        <input type="email" id="email" placeholder="you@authority.gov.uk">
-      </div>
-      <div class="field">
-        <label for="systems">Systems involved</label>
-        <input type="text" id="systems" placeholder="e.g. Synergy → Impulse">
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-primary" id="submit-demo">Create project (demo)</button>
-        <button class="btn btn-ghost" id="close-modal">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">Demo: project created. Invite sent to counterpart.</div>
-
   <script>
-    const modal = document.getElementById('modal');
-    const toast = document.getElementById('toast');
-
-    function openModal() {
-      modal.classList.add('open');
-    }
-
-    function closeModal() {
-      modal.classList.remove('open');
-    }
-
-    function showToast(msg) {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3200);
-    }
-
-    ['open-demo', 'open-demo-2', 'open-demo-3'].forEach(id => {
-      document.getElementById(id).addEventListener('click', openModal);
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+    });
+    
+    // Close mobile menu when clicking a link
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+      });
     });
 
-    document.getElementById('close-modal').addEventListener('click', closeModal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-
-    document.getElementById('submit-demo').addEventListener('click', () => {
-      closeModal();
-      showToast('Demo: project created. Invite sent to counterpart.');
-    });
-
-    // Simple interactive mapping demo
+    // Simple interactive mapping demo (fixed JS errors)
     let dragSource = null;
     const demo = document.getElementById('mapping-demo');
+    
+    if (demo) {
+      const sourceRows = demo.querySelectorAll('[data-source]');
+      const targetRows = demo.querySelectorAll('[data-target]');
+      
+      if (sourceRows && targetRows) {
+        sourceRows.forEach(el => {
+          el.addEventListener('click', () => {
+            sourceRows.forEach(r => r.style.outline = '');
+            el.style.outline = '2px solid var(--blue)';
+            dragSource = el.dataset.source;
+          });
+        });
 
-    demo.querySelectorAll('[data-source]').forEach(el => {
-      el.addEventListener('click', () => {
-        demo.querySelectorAll('[data-source]').forEach(r => r.style.outline = '');
-        el.style.outline = '2px solid var(--source)';
-        dragSource = el.dataset.source;
-        showToast('Selected: ' + dragSource + ' — now click a target column');
-      });
-    });
-
-    demo.querySelectorAll('[data-target]').forEach(el => {
-      el.addEventListener('click', () => {
-        if (!dragSource) return;
-        el.classList.add('mapped');
-        el.style.outline = '';
-        const sourceEl = demo.querySelector('[data-source="' + dragSource + '"]');
-        if (sourceEl) {
-          sourceEl.classList.remove('unmapped');
-          sourceEl.classList.add('mapped');
-          sourceEl.style.outline = '';
-        }
-        showToast('Mapped ' + dragSource + ' → ' + el.dataset.target);
-        dragSource = null;
-      });
-    });
+        targetRows.forEach(el => {
+          el.addEventListener('click', () => {
+            if (!dragSource) return;
+            el.classList.add('mapped');
+            el.style.outline = '';
+            const sourceEl = demo.querySelector('[data-source="' + dragSource + '"]');
+            if (sourceEl) {
+              sourceEl.classList.remove('unmapped');
+              sourceEl.classList.add('mapped');
+              sourceEl.style.outline = '';
+            }
+            dragSource = null;
+          });
+        });
+      }
+    }
   </script>
 </body>
 </html>
