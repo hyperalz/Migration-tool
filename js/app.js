@@ -24,6 +24,9 @@ import {
 import {
   buildTraceDashboardData, renderTraceDashboardHTML, scheduleDashboardCharts, destroyDashboardCharts,
 } from './dashboard-charts.js';
+import {
+  getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions,
+} from './ai-suggestions.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -343,7 +346,15 @@ async function handleSchemaFile(file, side, projectId) {
     const p = getProject(projectId);
     p[side === 'source' ? 'sourceSchema' : 'targetSchema'] = schema;
     saveProject(p);
-    toast(`${side} schema imported`);
+    
+    const warnings = schema._warnings;
+    delete schema._warnings;
+    
+    if (warnings?.length) {
+      toast(`${side} schema imported with warnings: ${warnings[0]}`);
+    } else {
+      toast(`${side} schema imported`);
+    }
     renderSetup({ id: projectId });
   } catch (err) {
     toast(err.message);
@@ -568,7 +579,8 @@ function renderMap({ id }) {
     <div class="page-head">
       <div><h1>Mapping workspace</h1><p>Drag from source ● to target ● to map columns. Definitions and value formats are shown on each side — mismatches like 1/0 vs Y/N are flagged.</p></div>
       <div style="display:flex;gap:0.5rem">
-        <button class="btn btn-ghost btn-sm" id="auto-suggest">Auto-suggest mappings</button>
+        <button class="btn btn-primary btn-sm" id="ai-suggest">AI-suggest mappings</button>
+        <button class="btn btn-ghost btn-sm" id="ai-settings">Settings</button>
         <a href="#/projects/${id}/verify" class="btn btn-secondary btn-sm">Test & live →</a>
         <a href="#/projects/${id}/export" class="btn btn-ghost btn-sm">Export</a>
       </div>
@@ -599,20 +611,12 @@ function renderMap({ id }) {
   saveProject(project);
   canvasInstance.updateFooter(stats);
 
-  document.getElementById('auto-suggest').addEventListener('click', () => {
-    const p = getProject(id);
-    for (const s of suggestedMappings) {
-      if (!p.mappings.some(m => m.sourceColumn === s.sourceColumn && m.targetColumn === s.targetColumn)) {
-        p.mappings.push({
-          id: uid(), ...s,
-          transformNotes: '', lookupRule: '', defaultValue: '', serviceArea: '',
-          verification: defaultVerification('Auto-suggested mapping', getCurrentUser()?.name || 'unknown'),
-        });
-      }
-    }
-    saveProject(p);
-    toast('Suggested mappings added');
-    renderMap({ id });
+  document.getElementById('ai-settings').addEventListener('click', () => {
+    openAISettingsModal();
+  });
+
+  document.getElementById('ai-suggest').addEventListener('click', async () => {
+    await openAISuggestModal(id);
   });
 }
 
@@ -1368,3 +1372,230 @@ function esc(str) {
 function slug(name) {
   return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
 }
+
+function openAISettingsModal() {
+  const settings = getAISettings();
+  const backdrop = document.createElement('div');
+  backdrop.className = 'record-modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="record-modal ai-settings-modal" role="dialog" aria-modal="true" style="width:min(520px,calc(100% - 2rem))">
+      <h3>AI Mapping Settings</h3>
+      <p class="record-modal-sub">Configure how MapBridge suggests column mappings.</p>
+      
+      <div class="field" style="margin:1rem 0 0.5rem">
+        <label>Suggestion mode</label>
+        <select id="ai-mode">
+          <option value="heuristic" ${settings.mode === 'heuristic' ? 'selected' : ''}>Heuristic (offline, no API key needed)</option>
+          <option value="llm" ${settings.mode === 'llm' ? 'selected' : ''}>LLM (requires OpenAI-compatible API)</option>
+        </select>
+      </div>
+      
+      <div id="llm-settings" style="display:${settings.mode === 'llm' ? 'block' : 'none'}">
+        <div class="alert alert-info" style="font-size:0.82rem;margin:0.75rem 0">
+          <strong>Privacy:</strong> Only schema metadata (column names, types, definitions, allowed values) is sent to the LLM endpoint. 
+          No row data. Your API key is stored in browser localStorage only and never sent anywhere except the endpoint you configure.
+        </div>
+        
+        <div class="field">
+          <label>API Base URL</label>
+          <input type="text" id="ai-base-url" value="${esc(settings.baseURL)}" placeholder="https://api.openai.com/v1">
+        </div>
+        
+        <div class="field">
+          <label>Model</label>
+          <input type="text" id="ai-model" value="${esc(settings.model)}" placeholder="gpt-4o-mini">
+        </div>
+        
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="ai-api-key" value="${esc(settings.apiKey)}" placeholder="sk-...">
+        </div>
+      </div>
+      
+      <div class="record-modal-actions" style="margin-top:1.25rem">
+        <button type="button" class="btn btn-ghost btn-sm" id="ai-settings-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="ai-settings-save">Save settings</button>
+      </div>
+    </div>`;
+  
+  document.body.appendChild(backdrop);
+  
+  const modeSelect = backdrop.querySelector('#ai-mode');
+  const llmSettings = backdrop.querySelector('#llm-settings');
+  
+  modeSelect.addEventListener('change', () => {
+    llmSettings.style.display = modeSelect.value === 'llm' ? 'block' : 'none';
+  });
+  
+  backdrop.querySelector('#ai-settings-cancel').onclick = () => backdrop.remove();
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+  
+  backdrop.querySelector('#ai-settings-save').onclick = () => {
+    const newSettings = {
+      mode: modeSelect.value,
+      baseURL: backdrop.querySelector('#ai-base-url').value.trim(),
+      model: backdrop.querySelector('#ai-model').value.trim(),
+      apiKey: backdrop.querySelector('#ai-api-key').value.trim(),
+    };
+    saveAISettings(newSettings);
+    toast('AI settings saved');
+    backdrop.remove();
+  };
+}
+
+async function openAISuggestModal(projectId) {
+  const project = getProject(projectId);
+  const settings = getAISettings();
+  
+  const backdrop = document.createElement('div');
+  backdrop.className = 'record-modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="record-modal ai-suggest-modal" role="dialog" aria-modal="true" style="width:min(900px,calc(100% - 2rem));max-height:calc(100vh - 4rem);overflow:auto">
+      <h3>AI Mapping Suggestions</h3>
+      <p class="record-modal-sub">Mode: <strong>${settings.mode === 'heuristic' ? 'Heuristic (offline)' : 'LLM'}</strong> · 
+        <button type="button" class="btn-link" id="change-mode" style="color:var(--brand);text-decoration:underline;background:none;border:none;padding:0;cursor:pointer">Change in settings</button>
+      </p>
+      <div id="suggestion-status" style="margin:1rem 0;padding:0.75rem;background:#f8fafc;border:1px solid var(--line);border-radius:8px;text-align:center">
+        <button type="button" class="btn btn-primary btn-sm" id="generate-suggestions">Generate suggestions</button>
+      </div>
+      <div id="suggestions-list"></div>
+      <div class="record-modal-actions" style="margin-top:1.25rem">
+        <button type="button" class="btn btn-ghost btn-sm" id="ai-suggest-close">Close</button>
+      </div>
+    </div>`;
+  
+  document.body.appendChild(backdrop);
+  
+  backdrop.querySelector('#change-mode').onclick = () => {
+    backdrop.remove();
+    openAISettingsModal();
+  };
+  
+  backdrop.querySelector('#ai-suggest-close').onclick = () => backdrop.remove();
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+  
+  let suggestions = [];
+  
+  backdrop.querySelector('#generate-suggestions').onclick = async () => {
+    const statusEl = backdrop.querySelector('#suggestion-status');
+    const listEl = backdrop.querySelector('#suggestions-list');
+    
+    statusEl.innerHTML = '<p style="color:var(--muted)">Generating suggestions...</p>';
+    listEl.innerHTML = '';
+    
+    try {
+      if (settings.mode === 'heuristic') {
+        suggestions = generateHeuristicSuggestions(project.sourceSchema, project.targetSchema, project.mappings);
+      } else {
+        suggestions = await generateLLMSuggestions(project.sourceSchema, project.targetSchema, project.mappings, settings);
+      }
+      
+      if (suggestions.length === 0) {
+        statusEl.innerHTML = '<p style="color:var(--muted)">No new suggestions found. All potential mappings may already exist.</p>';
+        return;
+      }
+      
+      statusEl.innerHTML = `<p style="color:var(--ink)"><strong>${suggestions.length}</strong> suggestion${suggestions.length > 1 ? 's' : ''} found. Review and accept the ones you want:</p>`;
+      
+      listEl.innerHTML = `
+        <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;justify-content:flex-end">
+          <button type="button" class="btn btn-ghost btn-sm" id="accept-all-suggestions">Accept all</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="reject-all-suggestions">Reject all</button>
+        </div>
+        <div class="suggestions-grid">${suggestions.map((s, i) => renderSuggestion(s, i)).join('')}</div>`;
+      
+      listEl.querySelector('#accept-all-suggestions').onclick = () => {
+        suggestions.forEach((_, i) => acceptSuggestion(projectId, suggestions, i, backdrop));
+      };
+      
+      listEl.querySelector('#reject-all-suggestions').onclick = () => {
+        suggestions.forEach((_, i) => rejectSuggestion(suggestions, i, backdrop));
+      };
+      
+      listEl.querySelectorAll('.suggestion-accept').forEach(btn => {
+        btn.onclick = () => acceptSuggestion(projectId, suggestions, parseInt(btn.dataset.index), backdrop);
+      });
+      
+      listEl.querySelectorAll('.suggestion-reject').forEach(btn => {
+        btn.onclick = () => rejectSuggestion(suggestions, parseInt(btn.dataset.index), backdrop);
+      });
+      
+    } catch (err) {
+      statusEl.innerHTML = `<div class="alert alert-error" style="text-align:left">${esc(err.message)}</div>`;
+    }
+  };
+}
+
+function renderSuggestion(suggestion, index) {
+  const confidencePercent = Math.round(suggestion.confidence * 100);
+  const confidenceColor = suggestion.confidence >= 0.8 ? '#059669' : suggestion.confidence >= 0.6 ? '#d97706' : '#6b7280';
+  
+  return `
+    <div class="suggestion-card" id="suggestion-${index}" data-index="${index}">
+      <div class="suggestion-header">
+        <div class="suggestion-mapping">
+          <code>${esc(suggestion.sourceTable)}.${esc(suggestion.sourceColumn)}</code>
+          <span style="color:var(--muted);margin:0 0.5rem">→</span>
+          <code>${esc(suggestion.targetTable)}.${esc(suggestion.targetColumn)}</code>
+        </div>
+        <div class="suggestion-confidence" style="background:${confidenceColor}18;color:${confidenceColor}">
+          ${confidencePercent}% confident
+        </div>
+      </div>
+      <div class="suggestion-reason">${esc(suggestion.reason)}</div>
+      ${suggestion.valueTranslations?.length ? `
+        <div class="suggestion-translations">
+          <strong>Suggested value translations:</strong>
+          ${suggestion.valueTranslations.map(t => `<code class="value-chip">${esc(t)}</code>`).join(' ')}
+        </div>
+      ` : ''}
+      <div class="suggestion-actions">
+        <button type="button" class="btn btn-primary btn-sm suggestion-accept" data-index="${index}">Accept</button>
+        <button type="button" class="btn btn-ghost btn-sm suggestion-reject" data-index="${index}">Reject</button>
+      </div>
+    </div>`;
+}
+
+function acceptSuggestion(projectId, suggestions, index, backdrop) {
+  const card = backdrop.querySelector(`#suggestion-${index}`);
+  if (!card || card.classList.contains('suggestion-accepted')) return;
+  
+  const suggestion = suggestions[index];
+  const p = getProject(projectId);
+  
+  const lookupRule = suggestion.valueTranslations?.length 
+    ? suggestion.valueTranslations.join('\n')
+    : '';
+  
+  p.mappings.push({
+    id: uid(),
+    sourceTable: suggestion.sourceTable,
+    sourceColumn: suggestion.sourceColumn,
+    targetTable: suggestion.targetTable,
+    targetColumn: suggestion.targetColumn,
+    transformNotes: '',
+    lookupRule,
+    defaultValue: '',
+    serviceArea: '',
+    verification: defaultVerification(
+      `AI-suggested (${suggestion.method}, ${Math.round(suggestion.confidence * 100)}% confidence)`,
+      getCurrentUser()?.name || 'unknown'
+    ),
+  });
+  
+  saveProject(p);
+  
+  card.classList.add('suggestion-accepted');
+  card.querySelector('.suggestion-actions').innerHTML = '<span style="color:#059669;font-weight:600">✓ Accepted</span>';
+  
+  toast('Mapping accepted');
+}
+
+function rejectSuggestion(suggestions, index, backdrop) {
+  const card = backdrop.querySelector(`#suggestion-${index}`);
+  if (!card || card.classList.contains('suggestion-rejected')) return;
+  
+  card.classList.add('suggestion-rejected');
+  card.querySelector('.suggestion-actions').innerHTML = '<span style="color:var(--muted)">Rejected</span>';
+}
+
