@@ -775,6 +775,9 @@
   <header class="hero">
     <div class="wrap hero-grid">
       <div>
+        <div class="alert alert-info" style="margin-bottom:1rem;padding:0.75rem 1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:0.88rem">
+          <strong>Current version:</strong> All data is stored in your browser only (localStorage). No server, no backend. Export your work regularly. Production version with secure backend is on the roadmap.
+        </div>
         <div class="eyebrow">
           <span class="eyebrow-dot"></span>
           Migration mapping · test & live traceability
@@ -795,7 +798,7 @@
           </span>
           <span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Metadata-only by default
+            Browser-only storage
           </span>
           <span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
@@ -929,8 +932,8 @@
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <h3>Connect schemas</h3>
-          <p>Live connectors or schema upload. Metadata only — table names, columns, types, lookups.</p>
+          <h3>Upload schemas</h3>
+          <p>JSON or CSV upload. Schema metadata only — table names, columns, types, lookups. Live connectors are on the roadmap.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
@@ -1001,24 +1004,24 @@
   <section id="connectors">
     <div class="wrap">
       <div class="section-head">
-        <h2>Education platform connectors</h2>
-        <p>Start with the systems you know. Generic SQL and CSV upload always available as fallback.</p>
+        <h2>Roadmap: Education platform connectors</h2>
+        <p>These systems are on the roadmap. Currently, MapBridge supports JSON and CSV schema upload only.</p>
       </div>
-      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem;">Source systems</p>
+      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem;">Planned source systems</p>
       <div class="connectors" style="margin-bottom: 1.5rem;">
-        <span class="connector highlight">Synergy (Access Group)</span>
+        <span class="connector">Synergy (Access Group)</span>
         <span class="connector">Capita One</span>
         <span class="connector">SIMS</span>
         <span class="connector">Tribal</span>
         <span class="connector">SQL Server</span>
-        <span class="connector">CSV / flat file</span>
+        <span class="connector highlight">CSV / flat file ✓</span>
       </div>
-      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem;">Target systems</p>
+      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem;">Planned target systems</p>
       <div class="connectors">
-        <span class="connector highlight">Impulse (CACI)</span>
+        <span class="connector">Impulse (CACI)</span>
         <span class="connector">Impulse Nexus</span>
         <span class="connector">Generic PostgreSQL</span>
-        <span class="connector">Staged CSV landing</span>
+        <span class="connector highlight">Staged CSV landing ✓</span>
       </div>
     </div>
   </section>
@@ -1026,25 +1029,25 @@
   <section id="security">
     <div class="wrap">
       <div class="section-head">
-        <h2>Security by design</h2>
-        <p>Public-sector buyers need to know their schemas won't live on your platform forever.</p>
+        <h2>Data privacy</h2>
+        <p>In this version, all data is stored in your browser's local storage only. No server, no backend.</p>
       </div>
       <div class="security-grid">
         <div class="security-card accent">
-          <h3>Project lifecycle: use → export → delete</h3>
-          <p>When the migration completes, trigger project close. All schemas, credentials, mappings, and comments are permanently deleted. The client keeps only the exported mapping package.</p>
+          <h3>Browser-only storage (current version)</h3>
+          <p>All schemas, mappings, and project data are stored in your browser's localStorage. Nothing is sent to a server. Clear your browser data to permanently delete. Export your work before doing so.</p>
         </div>
         <div class="security-card">
-          <h3>Metadata-only processing</h3>
-          <p>Connectors pull table and column definitions, types, and lookup structures. No pupil records required for the mapping layer.</p>
+          <h3>Roadmap: Server-backed lifecycle</h3>
+          <p>Planned: project-scoped workspaces with secure authentication, invite-based access, and a delete-on-completion workflow. When a migration completes, you'll export the mapping package and trigger permanent deletion.</p>
         </div>
         <div class="security-card">
-          <h3>Project-scoped credentials</h3>
-          <p>Encrypted, revocable connection credentials scoped to a single project. Never shared across clients.</p>
+          <h3>Roadmap: Metadata-only connectors</h3>
+          <p>Planned: connectors pull table and column definitions, types, and lookup structures from source systems. No pupil records required for the mapping layer.</p>
         </div>
         <div class="security-card">
-          <h3>Audit trail & DPA-ready</h3>
-          <p>Append-only history per column while the project is active — every check, resend, and revert logged with who and when. Deletion confirmation on close.</p>
+          <h3>Audit trail while active</h3>
+          <p>Append-only history per column while the project is open — every check, resend, and revert logged with who and when. In the current browser version, audit logs are kept in local storage.</p>
         </div>
       </div>
     </div>
@@ -1054,7 +1057,7 @@
     <div class="wrap">
       <div class="section-head">
         <h2>How MapBridge compares</h2>
-        <p>Enterprise mapping tools exist. None are built for this specific education migration pattern.</p>
+        <p>Enterprise mapping tools exist. MapBridge brings the education migration pattern to a lightweight browser tool.</p>
       </div>
       <table class="compare-table">
         <thead>
@@ -1068,17 +1071,17 @@
           <tr>
             <td>Education MIS connectors</td>
             <td class="partial">Generic only</td>
-            <td class="check">✓ Synergy, Impulse, Capita…</td>
+            <td class="partial">Roadmap — CSV upload today</td>
           </tr>
           <tr>
             <td>LA ↔ vendor invite model</td>
             <td class="partial">Enterprise setup</td>
-            <td class="check">✓ Simple email invite</td>
+            <td class="partial">Roadmap — browser-only today</td>
           </tr>
           <tr>
             <td>Delete everything on close</td>
             <td class="partial">Not standard</td>
-            <td class="check">✓ Core design</td>
+            <td class="check">✓ Browser clear = gone</td>
           </tr>
           <tr>
             <td>Per-column test & live traceability</td>

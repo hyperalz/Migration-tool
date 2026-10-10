@@ -10,26 +10,46 @@ export function parseJSONSchema(text) {
 }
 
 export function parseCSVTemplate(text, tableName = 'Uploaded_Template') {
-  const lines = text.trim().split(/\r?\n/).filter(Boolean);
-  if (lines.length < 1) throw new Error('CSV file is empty.');
+  if (typeof Papa === 'undefined') {
+    throw new Error('Papa Parse library not loaded. Cannot parse CSV.');
+  }
 
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  const typeRow = lines[1]?.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+  const parsed = Papa.parse(text, { skipEmptyLines: true });
+  
+  if (parsed.errors?.length) {
+    const criticalErrors = parsed.errors.filter(e => e.type === 'FieldMismatch' || e.type === 'Quotes');
+    if (criticalErrors.length) {
+      throw new Error(`CSV parsing error: ${criticalErrors[0].message} (row ${criticalErrors[0].row + 1})`);
+    }
+  }
+
+  const rows = parsed.data;
+  if (rows.length < 1) throw new Error('CSV file is empty.');
+
+  const headers = rows[0].map(h => String(h || '').trim());
+  if (!headers.filter(Boolean).length) throw new Error('CSV has no column headers in first row.');
+
+  const typeRow = rows[1]?.map(c => String(c || '').trim());
   let descRow = null;
   let valuesRow = null;
-  let nextLine = 2;
 
-  if (lines[2]) {
-    const candidate = lines[2].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+  if (rows[2]) {
+    const candidate = rows[2].map(c => String(c || '').trim());
     if (candidate.length === headers.length && !rowLooksLikeTypes(candidate)) {
       descRow = candidate;
-      nextLine = 3;
-      if (lines[3]) {
-        const valuesCandidate = lines[3].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      if (rows[3]) {
+        const valuesCandidate = rows[3].map(c => String(c || '').trim());
         if (valuesCandidate.length === headers.length && !rowLooksLikeTypes(valuesCandidate)) {
           valuesRow = valuesCandidate;
         }
       }
+    }
+  }
+
+  const skippedRows = [];
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].length !== headers.length) {
+      skippedRows.push({ rowIndex: i + 1, columnCount: rows[i].length, expected: headers.length });
     }
   }
 
@@ -41,10 +61,16 @@ export function parseCSVTemplate(text, tableName = 'Uploaded_Template') {
     values: valuesRow?.[i] || '',
   }));
 
-  return normalizeSchema({
+  const schema = normalizeSchema({
     system: 'CSV Upload',
     tables: [{ name: tableName, columns }],
   });
+
+  if (skippedRows.length) {
+    schema._warnings = [`${skippedRows.length} row(s) had mismatched column counts and were skipped: ${skippedRows.slice(0, 3).map(r => `row ${r.rowIndex} had ${r.columnCount} columns instead of ${r.expected}`).join('; ')}${skippedRows.length > 3 ? ` and ${skippedRows.length - 3} more` : ''}`];
+  }
+
+  return schema;
 }
 
 const TYPE_PATTERN = /^(int|integer|string|varchar|char|date|datetime|lookup|code|bool|boolean|decimal|numeric|float|double|text|number)/i;

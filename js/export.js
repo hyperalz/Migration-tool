@@ -99,7 +99,49 @@ function triggerDownload(blob, filename) {
 
 export function generateSQLStubs(mappings) {
   return mappings.map(m => {
-    const notes = [m.transformNotes, m.lookupRule].filter(Boolean).join('; ');
-    return `-- ${m.sourceTable}.${m.sourceColumn} -> ${m.targetTable}.${m.targetColumn}${notes ? `\n-- ${notes}` : ''}\nSELECT ${m.sourceColumn} AS ${m.targetColumn}\nFROM ${m.sourceTable};`;
+    const parts = [];
+    parts.push(`-- ${m.sourceTable}.${m.sourceColumn} -> ${m.targetTable}.${m.targetColumn}`);
+    
+    if (m.transformNotes) {
+      parts.push(`-- Transform: ${m.transformNotes}`);
+    }
+    if (m.lookupRule) {
+      parts.push(`-- Lookup rule: ${m.lookupRule}`);
+    }
+    if (m.defaultValue) {
+      parts.push(`-- Default value: ${m.defaultValue}`);
+    }
+    
+    let selectExpression = m.sourceColumn;
+    
+    if (m.lookupRule) {
+      const lookupLines = m.lookupRule.split(/[,;\n]/).map(l => l.trim()).filter(Boolean);
+      if (lookupLines.length > 0) {
+        parts.push('-- Value translation:');
+        const caseLines = lookupLines.map(line => {
+          const match = line.match(/^(.+?)\s*[-=]>\s*(.+)$/);
+          if (match) {
+            const [, from, to] = match;
+            return `    WHEN ${selectExpression} = '${from.trim()}' THEN '${to.trim()}'`;
+          }
+          return `    -- TODO: Parse lookup rule: ${line}`;
+        });
+        selectExpression = `CASE\n${caseLines.join('\n')}\n    ELSE ${selectExpression}\n  END`;
+      }
+    }
+    
+    if (m.defaultValue) {
+      selectExpression = `COALESCE(${selectExpression}, '${m.defaultValue}')`;
+    }
+    
+    if (m.transformNotes && !m.lookupRule) {
+      parts.push(`-- TODO: Implement transformation logic for: ${m.transformNotes}`);
+    }
+    
+    parts.push(`SELECT`);
+    parts.push(`  ${selectExpression} AS ${m.targetColumn}`);
+    parts.push(`FROM ${m.sourceTable};`);
+    
+    return parts.join('\n');
   }).join('\n\n');
 }
