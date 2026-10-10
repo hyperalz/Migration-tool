@@ -1,0 +1,15 @@
+# MapBridge Schema Connector - Minimal Dependencies
+#
+# Install with: pip install -r requirements.txt
+#
+# For SQL Server (choose one):
+pyodbc>=5.0.0        # Recommended: works with ODBC drivers
+# OR pymssql>=2.2.0  # Alternative: pure Python, no ODBC needed
+
+# For Oracle (choose one):
+oracledb>=2.0.0      # Recommended: modern pure Python driver
+# OR cx_Oracle>=8.3.0  # Alternative: older driver (requires Oracle Client)
+
+# Development/testing
+pytest>=7.4.0
+pytest-cov>=4.1.0

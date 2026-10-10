@@ -1,0 +1,72 @@
+{
+  "system": "Synergy_Production_Connector_Test",
+  "tables": [
+    {
+      "name": "dbo.mig_pupil",
+      "columns": [
+        {
+          "name": "pupil_id",
+          "type": "int",
+          "required": true,
+          "description": "Internal Synergy pupil identifier (from connector)",
+          "values": "Numeric ID"
+        },
+        {
+          "name": "forename",
+          "type": "varchar(50)",
+          "required": true,
+          "description": "Pupil given name",
+          "values": "Free text"
+        },
+        {
+          "name": "surname",
+          "type": "varchar(50)",
+          "required": true,
+          "description": "Pupil family name",
+          "values": "Free text"
+        },
+        {
+          "name": "fsm_flag",
+          "type": "char(1)",
+          "required": false,
+          "description": "Free school meals eligibility at extract date",
+          "values": "([fsm_flag]='1' OR [fsm_flag]='0')"
+        }
+      ]
+    },
+    {
+      "name": "dbo.mig_guardian",
+      "columns": [
+        {
+          "name": "guardian_id",
+          "type": "int",
+          "required": true,
+          "description": "Internal guardian/contact identifier",
+          "values": "Numeric ID"
+        },
+        {
+          "name": "pupil_id",
+          "type": "int",
+          "required": true,
+          "description": "Linked pupil",
+          "values": "Numeric pupil ID"
+        },
+        {
+          "name": "guardian_name",
+          "type": "varchar(100)",
+          "required": true,
+          "description": "Contact full name",
+          "values": "Free text"
+        },
+        {
+          "name": "relationship",
+          "type": "lookup",
+          "required": true,
+          "description": "Relationship to pupil",
+          "values": "Synergy lookup code"
+        }
+      ]
+    }
+  ],
+  "importedAt": "2026-10-10T14:30:00Z"
+}

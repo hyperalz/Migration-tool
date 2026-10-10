@@ -89,6 +89,43 @@ You can:
 
 Every accepted mapping is recorded in the audit trail with "AI-suggested (heuristic/llm, X% confidence)" noted.
 
+## Schema Connector (Run-Once Tool)
+
+For councils that don't want to manually copy/paste table definitions, MapBridge includes a **run-once, read-only connector** that extracts schema metadata from SQL Server or Oracle.
+
+### What It Does
+
+- ✅ Reads **metadata only**: table names, column names, data types, nullability, primary/foreign keys, check constraints, column descriptions
+- ✅ **Never reads row data**: Queries `information_schema` / system catalogs only
+- ❌ **No background service**: Runs once and exits
+- ❌ **No listening ports**: Writes a single JSON file
+
+### Quick Start
+
+```bash
+# SQL Server
+cd connector
+python mapbridge_connector.py --db-type sqlserver --host db-server \
+    --database Synergy_Production --username readonly_user --output synergy-schema.json
+
+# Oracle
+python mapbridge_connector.py --db-type oracle --host db-server \
+    --service ORCLPROD --username readonly_user --output oracle-schema.json
+```
+
+The output is a MapBridge-compatible JSON file that you import via **"Import from connector file"** on the setup page.
+
+### Council IT Workflow
+
+1. Council IT creates a read-only database user with metadata-only permissions (see `connector/README.md` for GRANT statements)
+2. Run the connector inside their network once
+3. Share the JSON file with the consultant
+4. After migration, delete the file and drop the database user
+
+**No row data is ever accessed.** See `connector/SECURITY.md` for a plain-English doc you can share with IT and Data Protection Officers.
+
+For full documentation, see [`connector/README.md`](connector/README.md).
+
 ## CSV Parsing
 
 MapBridge now uses **Papa Parse** for robust CSV parsing. Quoted fields like `"Y = eligible, N = not eligible"` are handled correctly. If rows have mismatched column counts, they are skipped and a warning is shown.
@@ -112,8 +149,10 @@ This gives you a head start on writing the actual migration SQL.
 
 ## Roadmap
 
+- [x] **Schema connector** (completed in PR #2): Run-once, read-only tool for SQL Server/Oracle that extracts metadata (no row data) and outputs MapBridge JSON. Council IT runs it inside their network, shares the file, then deletes it. See `connector/README.md`.
 - [ ] **Shared backend with auth**: Secure project workspaces, invite-based access, role-based permissions.
-- [ ] **Live connectors**: Read-only metadata extraction from Synergy, SIMS, Capita One, Impulse, iTrent, Cority.
+- [ ] **Automatic connector upload**: Connector posts directly to MapBridge backend (requires auth + project token).
+- [ ] **Live connectors** (browser-based): Read-only metadata extraction from Synergy, SIMS, Capita One, Impulse, iTrent, Cority via browser extension or Electron app.
 - [ ] **Data profiling**: Column value distributions, null rates, data quality checks—all run inside the client environment, not on a server.
 - [ ] **Reconciliation reports**: Count mismatches, orphaned records, value distribution deltas.
 - [ ] **Schema packs**: Pre-loaded definitions for common MIS platforms (SIMS pupil, Synergy attendance, iTrent payroll).
