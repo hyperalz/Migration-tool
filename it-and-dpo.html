@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>For IT and Data Protection Officers — Foam Works Digital</title>
+  <meta name="description" content="Security and data flow information for IT teams and DPOs. What data moves where, what MapBridge reads, and how the read-only connector works.">
+  
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔀</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="wrap nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-mark">FW</div>
+        Foam Works Digital
+      </a>
+      <div class="nav-links" id="nav-links">
+        <a href="how-we-work.html">How we work</a>
+        <a href="mapbridge.html">MapBridge</a>
+        <a href="case-studies.html">Case studies</a>
+        <a href="it-and-dpo.html">For IT & DPOs</a>
+        <a href="about.html">About</a>
+        <!-- TODO: Replace with real booking link -->
+        <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary" style="margin-left: 1rem;">Book a 30-min call</a>
+      </div>
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="wrap">
+      <h1>For IT and data protection officers</h1>
+      <p class="lead">We only ever see field names and types. Never people's records.</p>
+    </div>
+  </header>
+
+  <!-- Data Flow -->
+  <section class="section-blue-light">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What data moves where</h2>
+        <p>How the read-only connector and MapBridge work together.</p>
+      </div>
+      <div class="data-flow">
+        <div class="flow-box">
+          Your database<br>(inside your network)
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          Read-only connector<br>reads the list of fields
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          Field list file<br>(no names, no salaries)
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          MapBridge in your browser<br>(nothing on a server)
+        </div>
+      </div>
+      <div class="flow-checks">
+        <span>No personal data</span>
+        <span>Runs once, read-only</span>
+        <span>AI optional, your own key</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- What MapBridge reads -->
+  <section class="section-white">
+    <div class="wrap">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+        <div>
+          <h2>What MapBridge reads and stores</h2>
+          <h3 style="margin-top: 2rem; color: #059669;">✓ Reads</h3>
+          <p>Field names (like <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">employee_id</code> or <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">start_date</code>), field types (like <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">number</code> or <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">date</code>), allowed values (like <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">Y and N</code>), and field notes from your supplier.</p>
+          
+          <h3 style="margin-top: 2rem; color: #dc2626;">✗ Never reads</h3>
+          <p>Employee names, salaries, addresses, or any other personal data. The read-only tool for SQL Server and Oracle only queries the system catalog (the list of tables and fields), not the tables themselves.</p>
+          
+          <h3 style="margin-top: 2rem;">Where it is stored</h3>
+          <p>In the web browser on your computer. Not on a server. When you close the browser, it stays on your computer unless you clear your browser data.</p>
+        </div>
+        
+        <div>
+          <h2>What the AI suggestion mode sends</h2>
+          <h3 style="margin-top: 2rem;">If you use the built-in matcher</h3>
+          <p>Nothing is sent anywhere. It runs entirely in your web browser.</p>
+          
+          <h3 style="margin-top: 2rem;">If you use your own AI API key</h3>
+          <p>Only field names, types, and notes are sent to the AI service you choose (like OpenAI or Azure). No employee names, salaries, or any personal data.</p>
+          <p>Your API key is stored in your web browser only. It is never sent to us.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Read-only connector -->
+  <section class="section-grey">
+    <div class="wrap">
+      <h2>The read-only connector</h2>
+      <p class="lead">A Python script that your IT team runs inside your network for the duration of the migration, then deletes.</p>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 2.5rem;">
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem;">
+          <h3>What it does</h3>
+          <p>Queries <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">information_schema</code> or system catalogs to get table and column names, types, and constraints.</p>
+          <p style="margin-top: 1rem;">Writes a JSON file with the list of fields.</p>
+        </div>
+        
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem;">
+          <h3>What it needs</h3>
+          <p>SQL Server: A read-only database user with <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">VIEW DEFINITION</code> permission.</p>
+          <p style="margin-top: 1rem;">Oracle: A user with <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">SELECT</code> on <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">ALL_TABLES</code>, <code style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">ALL_TAB_COLUMNS</code>.</p>
+        </div>
+        
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem;">
+          <h3>What it never does</h3>
+          <p>Query user tables. Read employee names, salaries or other personal data. Send data anywhere. Listen on a port.</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 3rem; text-align: center;">
+        <a href="connector/README.md" class="btn btn-primary">Read the technical guide</a>
+        <a href="connector/SECURITY.md" class="btn btn-secondary" style="margin-left: 1rem;">Download security one-pager</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- DPIA questions -->
+  <section class="section-white">
+    <div class="wrap">
+      <h2>Data protection impact assessment</h2>
+      <p class="lead">Questions DPOs ask and our answers.</p>
+      
+      <div class="faq-list" style="margin-top: 2.5rem;">
+        <details>
+          <summary>What personal data does MapBridge process?</summary>
+          <p>None. MapBridge processes metadata: field names, field types, allowed values, and field descriptions. It does not process names, salaries, addresses, or any other personal data.</p>
+        </details>
+        
+        <details>
+          <summary>Where is the data stored?</summary>
+          <p>In the web browser on the user's computer, using browser localStorage. No data is sent to a server or stored in the cloud.</p>
+        </details>
+        
+        <details>
+          <summary>Who has access to the data?</summary>
+          <p>Only the person using that web browser. There is no server, no database, and no shared workspace in the current version.</p>
+        </details>
+        
+        <details>
+          <summary>What happens to the data after the migration?</summary>
+          <p>It stays in the browser unless the user clears their browser data. We recommend exporting the final signed-off report as a PDF or CSV, then clearing the browser data.</p>
+        </details>
+        
+        <details>
+          <summary>Does the AI mode send personal data?</summary>
+          <p>No. The AI mode only sends field names, types, and notes. It does not send employee names, salaries, or any other personal data. The AI mode is optional and requires the user's own API key.</p>
+        </details>
+        
+        <details>
+          <summary>What permissions does the read-only connector need?</summary>
+          <p>SQL Server: VIEW DEFINITION on the database. Oracle: SELECT on ALL_TABLES, ALL_TAB_COLUMNS, ALL_CONSTRAINTS. It queries the system catalog only, never user tables.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="wrap footer-inner">
+      <div>© 2026 Foam Works Digital</div>
+      <div class="footer-links">
+        <a href="how-we-work.html">How we work</a>
+        <a href="mapbridge.html">MapBridge</a>
+        <a href="case-studies.html">Case studies</a>
+        <a href="it-and-dpo.html">For IT & DPOs</a>
+        <a href="about.html">About</a>
+        <a href="app.html">Open the tool</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const navLinks = document.getElementById('nav-links');
+    
+    if (mobileMenuBtn && navLinks) {
+      mobileMenuBtn.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+      });
+      
+      navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          navLinks.classList.remove('active');
+        });
+      });
+    }
+  </script>
+</body>
+</html>

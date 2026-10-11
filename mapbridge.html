@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>MapBridge — Field matching and sign-off tracking</title>
+  <meta name="description" content="Our tool for matching every old field to the new system, with AI suggestions, code translations, and a signed-off record of who checked what.">
+  
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔀</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="wrap nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-mark">FW</div>
+        Foam Works Digital
+      </a>
+      <div class="nav-links" id="nav-links">
+        <a href="how-we-work.html">How we work</a>
+        <a href="mapbridge.html">MapBridge</a>
+        <a href="case-studies.html">Case studies</a>
+        <a href="it-and-dpo.html">For IT & DPOs</a>
+        <a href="about.html">About</a>
+        <!-- TODO: Replace with real booking link -->
+        <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary" style="margin-left: 1rem;">Book a 30-min call</a>
+      </div>
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="wrap">
+      <h1>MapBridge: how we make sure nothing is lost</h1>
+      <p class="lead">Our tool for matching every old field to the new system. AI suggests the matches, people decide, and every approval is recorded by name and date.</p>
+      <div class="hero-actions">
+        <a href="app.html" class="btn btn-primary">Open the tool</a>
+        <a href="#features" class="btn btn-secondary">See what it does ↓</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features -->
+  <section class="section-grey" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What MapBridge does</h2>
+        <p>Four steps to match every field and track who signed it off.</p>
+      </div>
+      
+      <div style="display: grid; gap: 2rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; align-items: center;">
+          <div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">1</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">AI suggests, people decide</h3>
+            <p>MapBridge reads field names, types and notes from both systems. It suggests which fields match, with a confidence score and a plain-English reason. You review and approve each one.</p>
+            <p>The approval is recorded by your name.</p>
+          </div>
+          <div class="mapbridge-screenshot">
+            <img src="assets/mapbridge-hero-screenshot.png" alt="MapBridge AI suggestions interface showing confidence scores and approval buttons">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: center;">
+          <div class="mapbridge-screenshot">
+            <img src="assets/mapbridge-hero-screenshot.png" alt="Code translation showing 1/0 to Y/N conversion">
+          </div>
+          <div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">2</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Code translations</h3>
+            <p>When the old system uses different codes to the new one (like 1 and 0 instead of Y and N), MapBridge spots this and suggests the translation.</p>
+            <p>You can add as many translations as you need for each field.</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; align-items: center;">
+          <div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">3</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Sign-off tracking</h3>
+            <p>For each matched field, you record who sent test data, who checked it, who pushed to live, and who signed it off.</p>
+            <p>Each step is recorded by name and date. If something fails, you can revert it and record why.</p>
+          </div>
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem;">
+            <div style="display: grid; gap: 1rem;">
+              <div style="border-left: 4px solid #F97316; padding-left: 1rem;">
+                <strong>SQL sent</strong> · J. Smith · 3 Mar 2026
+              </div>
+              <div style="border-left: 4px solid #F97316; padding-left: 1rem;">
+                <strong>Uploaded to test</strong> · S. Jones · 5 Mar 2026
+              </div>
+              <div style="border-left: 4px solid #F97316; padding-left: 1rem;">
+                <strong>Checked in test</strong> · Pass · J. Smith · 8 Mar 2026
+              </div>
+              <div style="border-left: 4px solid #059669; padding-left: 1rem;">
+                <strong>Signed off</strong> · J. Smith · 10 Mar 2026
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: center;">
+          <div style="background: #0f172a; color: white; border-radius: 12px; padding: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6;">
+            <div style="color: #94a3b8; margin-bottom: 1rem;">-- Generated by MapBridge</div>
+            <div><span style="color: #60a5fa;">SELECT</span></div>
+            <div>&nbsp;&nbsp;employee_id,</div>
+            <div>&nbsp;&nbsp;<span style="color: #F97316;">CASE</span> fsm_flag</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #F97316;">WHEN</span> <span style="color: #a3e635;">'1'</span> <span style="color: #F97316;">THEN</span> <span style="color: #a3e635;">'Y'</span></div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #F97316;">WHEN</span> <span style="color: #a3e635;">'0'</span> <span style="color: #F97316;">THEN</span> <span style="color: #a3e635;">'N'</span></div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #F97316;">ELSE</span> <span style="color: #a3e635;">NULL</span></div>
+            <div>&nbsp;&nbsp;<span style="color: #F97316;">END</span> <span style="color: #60a5fa;">AS</span> FSM_STATUS</div>
+            <div><span style="color: #60a5fa;">FROM</span> old_table;</div>
+          </div>
+          <div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">4</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Starter SQL for your supplier</h3>
+            <p>MapBridge writes starter SQL queries for your supplier, with the translation rules already in place.</p>
+            <p>This gives them a head start and makes sure the translations are right.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Works today / Coming next -->
+  <section class="section-white">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Works today, coming next</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+        <div>
+          <h3 style="color: #059669; margin-bottom: 1.5rem;">✓ Works today</h3>
+          <ul style="list-style: none; padding: 0;">
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">AI-suggested field matches</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Value and code translations</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Sign-off tracking field by field</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Starter SQL export</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Read-only tool for SQL Server and Oracle</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="color: #6B7280; margin-bottom: 1.5rem;">Coming next</h3>
+          <ul style="list-style: none; padding: 0; color: #6B7280;">
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Shared online workspace with invites and roles</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Data quality checks (null rates, value ranges)</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Reconciliation of counts and totals</li>
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Cutover plan generator</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top: 3rem; text-align: center;">
+        <a href="app.html" class="btn btn-primary">Open the tool</a>
+        <p style="margin-top: 1rem; color: #6B7280; font-size: 0.9rem;">Free to try. Runs in your web browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section-orange" style="padding: 3rem 0;">
+    <div class="wrap cta-band">
+      <div>
+        <h2>Want to use MapBridge on your project?</h2>
+        <p>We run the whole project with you, using MapBridge to track every field and sign-off.</p>
+      </div>
+      <!-- TODO: Replace with real booking link -->
+      <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-white">Book a 30-minute call</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="wrap footer-inner">
+      <div>© 2026 Foam Works Digital</div>
+      <div class="footer-links">
+        <a href="how-we-work.html">How we work</a>
+        <a href="mapbridge.html">MapBridge</a>
+        <a href="case-studies.html">Case studies</a>
+        <a href="it-and-dpo.html">For IT & DPOs</a>
+        <a href="about.html">About</a>
+        <a href="app.html">Open the tool</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const navLinks = document.getElementById('nav-links');
+    
+    if (mobileMenuBtn && navLinks) {
+      mobileMenuBtn.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+      });
+      
+      navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          navLinks.classList.remove('active');
+        });
+      });
+    }
+  </script>
+</body>
+</html>
