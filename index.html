@@ -5,650 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Foam Works Digital — End-to-end system change for councils</title>
-  <meta name="description" content="We run your system change end to end, from contract decision to go-live, standing between you and your supplier. Every service area signed up, every field accounted for.">
+  <meta name="description" content="We run your move to a new finance, HR, housing or case system end to end. Every field matched, tested and signed off with nothing lost.">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://hyperalz.github.io/Migration-tool/">
   <meta property="og:title" content="Foam Works Digital — End-to-end system change for councils">
-  <meta property="og:description" content="We run your system change from contract decision to go-live, standing between you and your supplier. Every service area signed up, every field accounted for.">
-  <meta property="og:image" content="https://hyperalz.github.io/Migration-tool/landing-desktop-new.png">
+  <meta property="og:description" content="We run your move to a new finance, HR, housing or case system end to end. Every field matched, tested and signed off.">
+  <meta property="og:image" content="https://hyperalz.github.io/Migration-tool/assets/mapbridge-hero-screenshot.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://hyperalz.github.io/Migration-tool/">
-  <meta property="twitter:title" content="Foam Works Digital — End-to-end system change for councils">
-  <meta property="twitter:description" content="End-to-end system change from contract decision to go-live. Every service area signed up, every field accounted for.">
-  <meta property="twitter:image" content="https://hyperalz.github.io/Migration-tool/landing-desktop-new.png">
+  <meta property="twitter:title" content="Foam Works Digital — End-to-end system change">
+  <meta property="twitter:description" content="End-to-end system change from contract decision to go-live. Every field matched, tested and signed off.">
+  <meta property="twitter:image" content="https://hyperalz.github.io/Migration-tool/assets/mapbridge-hero-screenshot.png">
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔀</text></svg>">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
-  <style>
-    :root {
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --ink: #0f172a;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --brand: #0d5c63;
-      --brand-light: #e6f3f4;
-      --orange: #f97316;
-      --orange-light: #fff7ed;
-      --blue: #2563eb;
-      --blue-light: #eff6ff;
-      --green: #059669;
-      --green-light: #ecfdf5;
-      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
-      --radius: 14px;
-    }
-    
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: "DM Sans", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.6;
-    }
-
-    a { color: inherit; text-decoration: none; }
-
-    .wrap {
-      width: min(1120px, calc(100% - 2rem));
-      margin: 0 auto;
-    }
-
-    /* Nav */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      backdrop-filter: blur(12px);
-      background: rgba(248, 250, 252, 0.9);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 0;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      font-weight: 700;
-      font-size: 1.1rem;
-      letter-spacing: -0.01em;
-    }
-
-    .logo-mark {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--brand), #1a8a94);
-      display: grid;
-      place-items: center;
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 1.75rem;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .nav-links a:hover { color: var(--ink); }
-    
-    .mobile-menu-btn {
-      display: none;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.5rem;
-      color: var(--ink);
-    }
-    
-    .mobile-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border-bottom: 1px solid var(--line);
-      padding: 1rem;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-    }
-    
-    .mobile-menu.open {
-      display: block;
-    }
-    
-    .mobile-menu a {
-      display: block;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--line);
-      color: var(--ink);
-    }
-    
-    .mobile-menu a:last-child {
-      border-bottom: none;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      padding: 0.7rem 1.2rem;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      border: none;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      text-decoration: none;
-    }
-
-    .btn:hover { transform: translateY(-1px); }
-
-    .btn-primary {
-      background: var(--brand);
-      color: white;
-      box-shadow: 0 8px 24px rgba(13, 92, 99, 0.25);
-    }
-
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--ink);
-      border: 1px solid var(--line);
-    }
-
-    /* Hero */
-    .hero {
-      padding: 4rem 0 3rem;
-    }
-
-    h1 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      margin-bottom: 1rem;
-      color: var(--ink);
-    }
-
-    .hero-problem {
-      font-size: 1.12rem;
-      color: #334155;
-      margin-bottom: 1rem;
-      line-height: 1.65;
-    }
-    
-    .hero-offer {
-      font-size: 1.08rem;
-      color: #475569;
-      margin-bottom: 1.75rem;
-      line-height: 1.65;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    /* Sections */
-    section { padding: 4rem 0; }
-
-    .section-head {
-      max-width: 720px;
-      margin-bottom: 2.5rem;
-    }
-
-    .section-head h2 {
-      font-size: clamp(1.6rem, 2.5vw, 2.1rem);
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
-      color: var(--ink);
-    }
-
-    .section-head p { 
-      color: #475569;
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-    
-    .problem-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-    }
-    
-    .problem-item {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-    }
-    
-    .problem-item p {
-      font-size: 0.95rem;
-      line-height: 1.65;
-      color: #334155;
-    }
-
-    .stages {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-    }
-    
-    @media (min-width: 1000px) {
-      .stages {
-        grid-template-columns: repeat(5, 1fr);
-      }
-    }
-
-    .stage-card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.5rem 1.25rem;
-      position: relative;
-    }
-    
-    .stage-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: var(--orange-light);
-      color: #c2410c;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .stage-num {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--brand-light);
-      color: var(--brand);
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-    }
-
-    .stage-card h3 {
-      font-size: 1.05rem;
-      margin-bottom: 0.5rem;
-      color: var(--ink);
-    }
-
-    .stage-card p {
-      font-size: 0.9rem;
-      color: #475569;
-      line-height: 1.6;
-    }
-
-    .case-study {
-      background: var(--blue-light);
-      border: 1px solid #bfdbfe;
-      border-radius: var(--radius);
-      padding: 2rem;
-    }
-    
-    .case-study h3 {
-      font-size: 1.2rem;
-      margin-bottom: 0.75rem;
-      color: var(--ink);
-    }
-    
-    .case-study-meta {
-      font-size: 0.9rem;
-      color: #1e40af;
-      margin-bottom: 1rem;
-      font-weight: 600;
-    }
-    
-    .case-study p {
-      font-size: 0.95rem;
-      color: #334155;
-      line-height: 1.7;
-      margin-bottom: 0.75rem;
-    }
-    
-    .case-study p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .case-study-lesson {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-top: 1rem;
-    }
-    
-    .case-study-lesson strong {
-      color: var(--orange);
-    }
-    
-    .issues-list {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 1.5rem 0;
-    }
-    
-    .issues-list li {
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 0.95rem;
-      color: #334155;
-      line-height: 1.6;
-    }
-    
-    .issues-list li:first-child {
-      padding-top: 0;
-    }
-    
-    .issues-list li:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-    
-    .stat-callout {
-      background: var(--orange-light);
-      border-left: 4px solid var(--orange);
-      padding: 1.25rem;
-      margin: 1.5rem 0;
-      border-radius: 4px;
-    }
-    
-    .stat-callout p {
-      font-size: 1rem;
-      color: #334155;
-      line-height: 1.65;
-      margin-bottom: 0.5rem;
-    }
-    
-    .stat-callout p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .stat-callout-source {
-      font-size: 0.85rem;
-      color: #78350f;
-      font-style: italic;
-    }
-    
-    .stat-callout-source a {
-      color: #c2410c;
-      text-decoration: underline;
-    }
-    
-    .savings-box {
-      background: var(--green-light);
-      border: 1px solid #a7f3d0;
-      border-radius: var(--radius);
-      padding: 2rem;
-      margin: 1.5rem 0;
-    }
-    
-    .savings-box h4 {
-      font-size: 1.1rem;
-      color: var(--ink);
-      margin-bottom: 1rem;
-    }
-    
-    .savings-box p {
-      font-size: 0.95rem;
-      color: #334155;
-      line-height: 1.7;
-      margin-bottom: 1rem;
-    }
-    
-    .savings-box p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .savings-box strong {
-      color: #065f46;
-    }
-
-    .features-compact {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-    }
-
-    .feature-compact {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-    }
-
-    .feature-compact h3 {
-      font-size: 1rem;
-      margin-bottom: 0.5rem;
-      color: var(--ink);
-    }
-
-    .feature-compact p {
-      font-size: 0.9rem;
-      color: #475569;
-      line-height: 1.6;
-    }
-
-    .table-comparison {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      overflow: hidden;
-      font-size: 0.9rem;
-    }
-
-    .table-comparison th,
-    .table-comparison td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .table-comparison th {
-      background: #fafbfc;
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: var(--ink);
-    }
-
-    .table-comparison td {
-      color: #334155;
-    }
-
-    .table-comparison tr:last-child td { border-bottom: none; }
-
-    .check { 
-      color: var(--green); 
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-
-    .data-flow {
-      background: var(--blue-light);
-      border: 1px solid #bfdbfe;
-      border-radius: var(--radius);
-      padding: 1.75rem;
-      margin: 1.5rem 0;
-    }
-    
-    .data-flow h4 {
-      font-size: 1rem;
-      margin-bottom: 1rem;
-      color: var(--ink);
-    }
-    
-    .data-flow p {
-      font-size: 0.9rem;
-      line-height: 1.7;
-      color: #334155;
-      margin-bottom: 0.75rem;
-    }
-    
-    .data-flow p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .data-flow code {
-      background: white;
-      padding: 0.15rem 0.4rem;
-      border-radius: 4px;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.85rem;
-      color: var(--blue);
-    }
-    
-    .about-card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 2rem;
-    }
-    
-    .about-card h3 {
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-      color: var(--ink);
-    }
-    
-    .about-card p {
-      font-size: 0.95rem;
-      color: #334155;
-      line-height: 1.7;
-      margin-bottom: 1rem;
-    }
-    
-    .about-card p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .about-card a {
-      color: var(--blue);
-      text-decoration: underline;
-    }
-    
-    .faq {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .faq-item {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    
-    .faq-item h3 {
-      font-size: 1rem;
-      margin-bottom: 0.75rem;
-      color: var(--ink);
-    }
-    
-    .faq-item p {
-      font-size: 0.9rem;
-      color: #475569;
-      line-height: 1.7;
-    }
-
-    .cta {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: calc(var(--radius) + 6px);
-      padding: 3rem 2rem;
-      text-align: center;
-      box-shadow: var(--shadow);
-    }
-
-    .cta h2 {
-      font-size: 1.75rem;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
-      color: var(--ink);
-    }
-
-    .cta p {
-      color: #475569;
-      max-width: 540px;
-      margin: 0 auto 1.75rem;
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-
-    footer {
-      padding: 2.5rem 0 3rem;
-      color: var(--muted);
-      font-size: 0.85rem;
-      border-top: 1px solid var(--line);
-    }
-
-    .footer-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    
-    .footer-inner a {
-      color: var(--blue);
-      text-decoration: underline;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      .nav-links { display: none; }
-      .mobile-menu-btn { display: block; }
-      .problem-grid { grid-template-columns: 1fr; }
-      .stages { grid-template-columns: 1fr; }
-      .features-compact { grid-template-columns: 1fr; }
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
+  <!-- Navigation -->
   <nav>
     <div class="wrap nav-inner">
-      <a href="#" class="logo">
-        <span class="logo-mark">FW</span>
+      <a href="index.html" class="logo">
+        <div class="logo-mark">FW</div>
         Foam Works Digital
       </a>
-      <div class="nav-links">
-        <a href="#problem">The problem</a>
-        <a href="#stages">How we work</a>
-        <a href="#mapbridge">MapBridge</a>
-        <a href="#about">About</a>
-        <a href="app.html">Open the tool</a>
+      <div class="nav-links" id="nav-links">
+        <a href="how-we-work.html">How we work</a>
+        <a href="mapbridge.html">MapBridge</a>
+        <a href="case-studies.html">Case studies</a>
+        <a href="it-and-dpo.html">For IT & DPOs</a>
+        <a href="about.html">About</a>
+        <!-- TODO: Replace with real booking link when available -->
+        <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary" style="margin-left: 1rem;">Book a 30-min call</a>
       </div>
       <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -658,340 +55,387 @@
         </svg>
       </button>
     </div>
-    <div class="mobile-menu" id="mobile-menu">
-      <a href="#problem">The problem</a>
-      <a href="#stages">How we work</a>
-      <a href="#mapbridge">MapBridge</a>
-      <a href="#about">About</a>
-      <a href="app.html">Open the tool</a>
-    </div>
   </nav>
 
+  <!-- Hero -->
   <header class="hero">
     <div class="wrap">
-      <h1>Every system change, from contract end to go-live, with nothing lost</h1>
-      <p class="hero-problem">
-        Every system change costs a year, two suppliers and a lot of risk. Nobody owns the whole journey.
-      </p>
-      <p class="hero-offer">
-        We run your system change end to end, from contract decision to go-live. We stand between you and your supplier, with every service area signed up and every field accounted for.
-      </p>
-      <div class="hero-actions">
-        <!-- TODO: Replace LinkedIn with booking link when available -->
-        <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a 30-minute call</a>
-        <a href="#stages" class="btn btn-secondary">See how we work</a>
+      <div class="hero-grid">
+        <div>
+          <h1>Every system change, from contract end to go-live, with nothing lost</h1>
+          <p class="lead">We run your move to a new finance, HR, housing or case system end to end. Every field matched, tested and signed off.</p>
+          <ul class="hero-checks">
+            <li>One team from contract decision to go-live</li>
+            <li>Your data never leaves your network</li>
+            <li>A signed-off record for auditors and members</li>
+          </ul>
+          <div class="hero-actions">
+            <!-- TODO: Replace with real booking link -->
+            <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a 30-minute call</a>
+            <a href="#stages" class="btn btn-secondary">See the 5 stages ↓</a>
+          </div>
+          <div class="experience-strip">
+            <span class="experience-label">Experience from</span>
+            <div class="experience-items">
+              <span>Ocado Technology</span>
+              <span>Investec</span>
+              <span>Caerphilly CBC</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-image">
+          <img src="assets/mapbridge-hero-screenshot.png" alt="MapBridge showing AI-suggested field matches with confidence scores and approval workflow">
+        </div>
       </div>
     </div>
   </header>
 
-  <section id="problem">
-    <div class="wrap">
-      <div class="section-head">
-        <h2>The problem with system changes</h2>
-        <p>Replacing a system is hard. The risks are real, and the cost of getting it wrong is high.</p>
-      </div>
-      <div class="problem-grid">
-        <div class="problem-item">
-          <p>Your contract is ending. You must decide: extend, re-procure, or move. The clock is ticking, and service areas are pulling different ways.</p>
-        </div>
-        <div class="problem-item">
-          <p>Two suppliers are involved: the old one and the new one. Neither one owns the whole move. Your team is stuck in the middle, trying to keep it on track.</p>
-        </div>
-        <div class="problem-item">
-          <p>Go-live is a risk. If the data is wrong, or fields are missing, you cannot prove it to auditors or members. The blame lands on you.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="stages">
-    <div class="wrap">
-      <div class="section-head">
-        <h2>Five stages we run</h2>
-        <p>We take the whole journey, from contract decision to signed-off proof.</p>
-      </div>
-      <div class="stages">
-        <div class="stage-card">
-          <span class="stage-badge">MapBridge</span>
-          <div class="stage-num">1</div>
-          <h3>Contract ending</h3>
-          <p>Decide to extend, re-procure or move. Start from what your current system actually holds. MapBridge connector gives a field list in days.</p>
-        </div>
-        <div class="stage-card">
-          <div class="stage-num">2</div>
-          <h3>Requirements</h3>
-          <p>Each service area's needs and priorities, agreed and signed off. No spreadsheets, no guessing.</p>
-        </div>
-        <div class="stage-card">
-          <div class="stage-num">3</div>
-          <h3>Procurement</h3>
-          <p>Test bidders against your real fields and requirements. Know what they can and cannot do before you sign.</p>
-        </div>
-        <div class="stage-card">
-          <span class="stage-badge">MapBridge</span>
-          <div class="stage-num">4</div>
-          <h3>Implementation</h3>
-          <p>We stand between you and the supplier. Match every field, run tests and retests. Go or no-go decision based on evidence.</p>
-        </div>
-        <div class="stage-card">
-          <span class="stage-badge">MapBridge</span>
-          <div class="stage-num">5</div>
-          <h3>Go-live and proof</h3>
-          <p>Checks that nothing was lost. A signed-off record for auditors and members. Then we hand over and close.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="section-head">
-        <h2>A recent project</h2>
-      </div>
-      <!-- TODO: Confirm council consent before publishing -->
-      <div class="case-study">
-        <h3>A UK council replacing its schools system</h3>
-        <p class="case-study-meta">2 people, 12 months</p>
-        <p>The council decided to move schools data to a new system. Procurement started late, so they had to go live after just 4 months. We ran testing and live use side by side for the rest of the year.</p>
-        <p>Fields were matched, tested and signed off while schools were already using the new system. By the end, every field was accounted for and the old system was switched off.</p>
-        <div class="case-study-lesson">
-          <p><strong>Lesson:</strong> Start the move before the contract ends. If you wait until procurement finishes, you have no time left to test properly.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section>
+  <!-- Why system changes go wrong -->
+  <section class="section-grey">
     <div class="wrap">
       <div class="section-head">
         <h2>Why system changes go wrong</h2>
-        <p>Most problems start with the data moved into the new system.</p>
+        <p>Most problems start with the data and with nobody owning the whole journey.</p>
       </div>
-      <ul class="issues-list">
-        <li>Old data is messier than anyone thought, and it is found late.</li>
-        <li>The work is bigger than planned, so time and money run out.</li>
-        <li>Fields and codes are matched wrongly, like 1 and 0 instead of Y and N.</li>
-        <li>The people who knew what the old data meant have moved on.</li>
-        <li>Nobody is sure who checked what, or who said yes.</li>
-        <li>Tests are too small, and there is no clear point to say "ready".</li>
-        <li>Nobody counts the records at the end to prove nothing is missing.</li>
-        <li>The switch to the new system has no way back if it goes wrong.</li>
-      </ul>
-      
-      <div class="stat-callout">
-        <p>In a survey of over 700 large companies, only 16% of data migration projects finished on time and on budget.</p>
-        <p class="stat-callout-source">Bloor Research (2007), commissioned by Informatica. Reported by <a href="https://www.ciol.com/informatica-research-reveals-keys-migration-success/" target="_blank" rel="noopener">CIOL</a>.</p>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-icon">⏱</div>
+          <h3>The contract clock</h3>
+          <p>The contract ends before anyone has decided what to do.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">⇄</div>
+          <h3>Two suppliers, no owner</h3>
+          <p>Old and new supplier each own half. Your team is stuck in the middle.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">?</div>
+          <h3>Missing or wrong data</h3>
+          <p>Codes and fields don't match, and it is found after go-live.</p>
+        </div>
+        <div class="problem-card stat-card">
+          <div class="big-number">16%</div>
+          <p>of data migration projects finished on time and on budget.</p>
+          <p class="stat-source">Bloor Research, 2007 — <a href="https://www.ciol.com/informatica-research-reveals-keys-migration-success/" target="_blank" rel="noopener">source</a></p>
+        </div>
       </div>
     </div>
   </section>
 
-  <section>
+  <!-- Five stages -->
+  <section class="section-white" id="stages">
     <div class="wrap">
       <div class="section-head">
-        <h2>What you could save</h2>
-        <p>We do not have enough projects with MapBridge to promise a number. So we built a simple model you can check and change.</p>
+        <h2>Five stages, one team</h2>
+        <p>From the day you know your contract is ending to signed-off proof after go-live.</p>
       </div>
-      
-      <div class="savings-box">
-        <h4>For a typical project with about 800 fields</h4>
-        <p>We estimate that MapBridge and our team could save around <strong>40 to 140 days</strong> of work. Most of this comes from matching fields, agreeing code changes and keeping track of sign-off.</p>
-        <p>At £500 a day, that is roughly <strong>£20,000 to £70,000</strong>, before our fees.</p>
-        <p>The bigger cost is delay. Each month a project runs late can cost tens of thousands of pounds. That is staff time, plus the cost of keeping the old system running. We work to cut that risk, but we cannot promise it.</p>
+      <div class="timeline">
+        <div class="timeline-step">
+          <div class="step-number">1</div>
+          <div class="step-title">Contract ending</div>
+          <p class="step-desc">Extend, re-procure or move?</p>
+          <span class="mapbridge-badge">MapBridge</span>
+        </div>
+        <div class="timeline-step">
+          <div class="step-number">2</div>
+          <div class="step-title">Requirements</div>
+          <p class="step-desc">Every service area signed up</p>
+        </div>
+        <div class="timeline-step">
+          <div class="step-number">3</div>
+          <div class="step-title">Procurement</div>
+          <p class="step-desc">Test bidders on your real fields</p>
+        </div>
+        <div class="timeline-step">
+          <div class="step-number">4</div>
+          <div class="step-title">Implementation</div>
+          <p class="step-desc">Match, test, retest every field</p>
+          <span class="mapbridge-badge">MapBridge</span>
+        </div>
+        <div class="timeline-step">
+          <div class="step-number">5</div>
+          <div class="step-title">Go-live & proof</div>
+          <p class="step-desc">Signed-off record, then hand over</p>
+          <span class="mapbridge-badge">MapBridge</span>
+        </div>
+      </div>
+      <div class="timeline-cta">
+        <a href="how-we-work.html">See what happens at each stage →</a>
       </div>
     </div>
   </section>
 
-  <section id="mapbridge">
+  <!-- Case study -->
+  <section class="section-navy">
+    <div class="wrap">
+      <div class="case-study-grid">
+        <div>
+          <p class="case-label">Case Study · UK Council</p>
+          <h2>Replacing a schools system against the clock</h2>
+          <div class="case-numbers">
+            <div class="case-number">
+              <div class="big-number">4</div>
+              <p>months from procurement to go-live</p>
+            </div>
+            <div class="case-number">
+              <div class="big-number">2</div>
+              <p>people, 12-month project</p>
+            </div>
+            <div class="case-number">
+              <div class="big-number">12</div>
+              <p>months live after 4 months</p>
+            </div>
+          </div>
+          <!-- TODO: Add named or anonymised quote with permission from council
+          <p class="case-quote">"Quote from the council's project sponsor." — Name, Role</p>
+          -->
+          <a href="case-studies.html" class="case-link">Read the case study →</a>
+        </div>
+        <div class="case-timeline">
+          <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+            <text x="10" y="30" fill="#93c5fd" font-size="14" font-weight="600">BEFORE</text>
+            <rect x="10" y="50" width="380" height="40" fill="#1e40af" rx="6"/>
+            <text x="20" y="75" fill="white" font-size="13">Procurement late → only 4 months left</text>
+            
+            <text x="10" y="120" fill="#93c5fd" font-size="14" font-weight="600">AFTER</text>
+            <rect x="10" y="140" width="120" height="40" fill="#F97316" rx="6"/>
+            <text x="20" y="165" fill="white" font-size="13">Go-live</text>
+            
+            <rect x="140" y="140" width="250" height="40" fill="#2563EB" rx="6"/>
+            <text x="150" y="165" fill="white" font-size="13">Parallel running + testing</text>
+            
+            <rect x="10" y="190" width="380" height="40" fill="#059669" rx="6"/>
+            <text x="20" y="215" fill="white" font-size="13">Every field signed off → old system switched off</text>
+            
+            <line x1="70" y1="90" x2="70" y2="140" stroke="#93c5fd" stroke-width="2" stroke-dasharray="4"/>
+            <text x="75" y="120" fill="#93c5fd" font-size="11">Start testing</text>
+          </svg>
+        </div>
+      </div>
+      <!-- TODO: Confirm council consent before publishing case study details -->
+    </div>
+  </section>
+
+  <!-- Mid-page CTA -->
+  <section class="section-orange" style="padding: 3rem 0;">
+    <div class="wrap cta-band">
+      <div>
+        <h2>Contract ending in the next 18 months?</h2>
+        <p>A 30-minute call. You leave with a rough plan and the questions to ask your supplier.</p>
+      </div>
+      <!-- TODO: Replace with real booking link -->
+      <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-white">Book a 30-minute call</a>
+    </div>
+  </section>
+
+  <!-- MapBridge -->
+  <section class="section-grey">
     <div class="wrap">
       <div class="section-head">
-        <h2>How MapBridge helps</h2>
-        <p>MapBridge is the tool that makes the work faster and leaves a signed-off record.</p>
+        <h2>MapBridge: how we make sure nothing is lost</h2>
+        <p>Our tool for matching every old field to the new system, with a record of who checked what.</p>
       </div>
-      <div class="features-compact">
-        <div class="feature-compact">
-          <h3>AI-suggested matches</h3>
-          <p>MapBridge reads field names, types and notes from both systems. It suggests which fields match. You review and approve each one. The approval is recorded by your name.</p>
+      <div class="mapbridge-grid">
+        <div class="mapbridge-screenshot">
+          <img src="assets/mapbridge-hero-screenshot.png" alt="MapBridge interface showing AI suggestions, confidence scores, and approval workflow">
         </div>
-        <div class="feature-compact">
-          <h3>Code translations</h3>
-          <p>When the old system uses different codes to the new one (like 1 and 0 instead of Y and N), MapBridge spots this and suggests the translation.</p>
+        <div class="feature-cards">
+          <div class="feature-card">
+            <h3>① AI suggests, people decide</h3>
+          </div>
+          <div class="feature-card">
+            <h3>② Code translations</h3>
+          </div>
+          <div class="feature-card">
+            <h3>③ Sign-off tracking</h3>
+          </div>
+          <div class="feature-card">
+            <h3>④ Starter SQL for your supplier</h3>
+          </div>
         </div>
-        <div class="feature-compact">
-          <h3>Sign-off tracking</h3>
-          <p>For each matched field, you record who sent test data, who checked it, who pushed to live, and who signed it off. Each step is recorded by name and date.</p>
-        </div>
-        <div class="feature-compact">
-          <h3>Starter SQL for your supplier</h3>
-          <p>MapBridge writes starter SQL queries for your supplier, with the translation rules already in place. This gives them a head start.</p>
-        </div>
-        <div class="feature-compact">
-          <h3>Read-only tool for SQL Server and Oracle</h3>
-          <p>Your IT team can run our read-only tool inside your network. It reads the list of fields (not the data) and gives MapBridge the field names and types. No access to personal records.</p>
-        </div>
-        <div class="feature-compact">
-          <h3>Built from real council migration work</h3>
-          <p>MapBridge is built from real migration projects. It runs in your web browser. We use it with you during your project.</p>
-        </div>
+      </div>
+      <div class="feature-status">
+        <p><strong>Works today</strong> · matching, translations, sign-off, starter SQL, read-only connector</p>
+        <p><span><strong>Coming next</strong> · shared workspace, data checks, reconciliation</span></p>
+      </div>
+      <div class="feature-links">
+        <a href="mapbridge.html">Explore MapBridge →</a>
+        <a href="app.html">Try the demo →</a>
       </div>
     </div>
   </section>
 
-  <section>
+  <!-- What you could save -->
+  <section class="section-white">
     <div class="wrap">
-      <div class="section-head">
-        <h2>Works today, coming next</h2>
+      <div class="savings-grid">
+        <div class="section-head">
+          <h2>What you could save</h2>
+          <p>For a typical project with about 800 fields, we estimate:</p>
+          <p class="savings-note">An estimate, not a promise. We do not have enough projects with MapBridge yet to promise a number. <a href="#" target="_blank">See how we worked it out →</a></p>
+        </div>
+        <div class="savings-chart">
+          <div class="bar-group">
+            <div class="bar-label">Days of work saved</div>
+            <div class="bar">
+              <div class="bar-fill" style="left: 15%; right: 35%;"></div>
+            </div>
+            <div class="bar-range">40 ————————— 140 days</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label">Money saved at £500/day</div>
+            <div class="bar">
+              <div class="bar-fill" style="left: 15%; right: 35%;"></div>
+            </div>
+            <div class="bar-range">£20k ————————— £70k, before our fees</div>
+          </div>
+        </div>
       </div>
-      <table class="table-comparison">
-        <thead>
-          <tr>
-            <th>Feature</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>AI-suggested field matches</td>
-            <td><span class="check">✓</span> Works today</td>
-          </tr>
-          <tr>
-            <td>Value and code translations</td>
-            <td><span class="check">✓</span> Works today</td>
-          </tr>
-          <tr>
-            <td>Sign-off tracking field by field</td>
-            <td><span class="check">✓</span> Works today</td>
-          </tr>
-          <tr>
-            <td>Starter SQL export</td>
-            <td><span class="check">✓</span> Works today</td>
-          </tr>
-          <tr>
-            <td>Read-only tool for SQL Server and Oracle</td>
-            <td><span class="check">✓</span> Works today</td>
-          </tr>
-          <tr>
-            <td>Shared online workspace with invites and roles</td>
-            <td>Coming next</td>
-          </tr>
-          <tr>
-            <td>Data quality checks (null rates, value ranges)</td>
-            <td>Coming next</td>
-          </tr>
-          <tr>
-            <td>Reconciliation of counts and totals</td>
-            <td>Coming next</td>
-          </tr>
-          <tr>
-            <td>Cutover plan generator</td>
-            <td>Coming next</td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   </section>
 
-  <section>
+  <!-- For IT & DPOs -->
+  <section class="section-blue-light">
     <div class="wrap">
       <div class="section-head">
         <h2>For IT and data protection officers</h2>
-        <p>What data moves where, and what the AI mode sends.</p>
+        <p>We only ever see field names and types. Never people's records.</p>
       </div>
-      
       <div class="data-flow">
-        <h4>What MapBridge reads and stores</h4>
-        <p><strong>Reads:</strong> Field names (like <code>employee_id</code> or <code>start_date</code>), field types (like <code>number</code> or <code>date</code>), allowed values (like <code>Y and N</code>), and field notes from your supplier.</p>
-        <p><strong>Never reads:</strong> Employee names, salaries, addresses, or any other personal data. The read-only tool for SQL Server and Oracle only queries the system catalog (the list of tables and fields), not the tables themselves.</p>
-        <p><strong>Where it is stored:</strong> In the web browser on your computer. Not on a server. When you close the browser, it stays on your computer unless you clear your browser data.</p>
+        <div class="flow-box">
+          Your database<br>(inside your network)
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          Read-only connector<br>reads the list of fields
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          Field list file<br>(no names, no salaries)
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          MapBridge in your browser<br>(nothing on a server)
+        </div>
       </div>
-      
-      <div class="data-flow">
-        <h4>What the AI suggestion mode sends</h4>
-        <p><strong>If you use the built-in matcher:</strong> Nothing is sent anywhere. It runs entirely in your web browser.</p>
-        <p><strong>If you use your own AI API key:</strong> Only field names, types, and notes are sent to the AI service you choose (like OpenAI or Azure). No employee names, salaries, or any personal data. Your API key is stored in your web browser only.</p>
+      <div class="flow-checks">
+        <span>No personal data</span>
+        <span>Runs once, read-only</span>
+        <span>AI optional, your own key</span>
       </div>
-      
-      <p style="margin-top: 1.5rem; font-size: 0.95rem; color: #334155; line-height: 1.7;">
-        For full technical details, see our <a href="https://github.com/hyperalz/Migration-tool/blob/main/connector/README.md" style="color: var(--blue); text-decoration: underline;">connector technical guide</a> and <a href="https://github.com/hyperalz/Migration-tool/blob/main/connector/SECURITY.md" style="color: var(--blue); text-decoration: underline;">security document for IT and DPOs</a>.
-      </p>
+      <div class="flow-link">
+        <a href="it-and-dpo.html">Download the one-page security note →</a>
+      </div>
     </div>
   </section>
 
-  <section id="about">
+  <!-- About -->
+  <section class="section-white">
     <div class="wrap">
-      <div class="section-head">
-        <h2>About</h2>
-      </div>
-      <div class="about-card">
-        <h3>Alex Osborne MSc · Foam Works Digital</h3>
-        <p>Foam Works Digital is run by Alex Osborne. Alex specialises in product-led transformation for councils and businesses replacing mission-critical systems.</p>
-        <p>Previously Acting Head of Product at Ocado Technology, and product transformation roles at Investec. Recent work includes council migrations at Caerphilly and other public bodies.</p>
-        <p>See <a href="https://hyperalz.github.io/casestudies/">case studies</a> and <a href="https://www.linkedin.com/in/alexosfwd/">connect on LinkedIn</a>.</p>
+      <div class="about-grid">
+        <!-- TODO: Replace with professional headshot when available -->
+        <div class="headshot">AO</div>
+        <div class="about-bio">
+          <h2>Hi, I'm Alex Osborne</h2>
+          <p>I run Foam Works Digital. I specialise in product-led transformation for councils and businesses replacing mission-critical systems.</p>
+          <p>Previously Acting Head of Product at Ocado Technology, and product transformation roles at Investec. Recent work includes council migrations at Caerphilly and other public bodies.</p>
+          <div class="credentials">
+            <div class="credential-box">MSc</div>
+            <a href="https://www.linkedin.com/in/alexosfwd/" class="credential-box">LinkedIn</a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section>
+  <!-- FAQ -->
+  <section class="section-grey">
     <div class="wrap">
       <div class="section-head">
         <h2>Common questions</h2>
       </div>
-      <div class="faq">
-        <div class="faq-item">
-          <h3>Do you move the data?</h3>
+      <div class="faq-list">
+        <details>
+          <summary>Do you move the data?</summary>
           <p>No. We help you and your supplier agree which fields match. Your supplier writes the queries that move the data.</p>
-        </div>
-        <div class="faq-item">
-          <h3>Do you need access to our personal data?</h3>
+        </details>
+        <details>
+          <summary>Do you need access to our personal data?</summary>
           <p>No. MapBridge only needs the list of field names and types. It does not need to see any employee names, salaries, or other personal data.</p>
-        </div>
-        <div class="faq-item">
-          <h3>Where is the data stored?</h3>
+        </details>
+        <details>
+          <summary>Where is the data stored?</summary>
           <p>In your web browser on your computer. Not on a server. When you close the browser, the data stays on your computer unless you clear your browser data.</p>
-        </div>
-        <div class="faq-item">
-          <h3>What systems do you work with?</h3>
+        </details>
+        <details>
+          <summary>What systems do you work with?</summary>
           <p>We work with finance, HR, housing, CRM, care and schools systems. The read-only connector supports SQL Server and Oracle. For other systems, we upload field lists as CSV or JSON.</p>
-        </div>
-        <div class="faq-item">
-          <h3>How long does a system change take?</h3>
+        </details>
+        <details>
+          <summary>How long does a system change take?</summary>
           <p>It depends on the size of your system and how much time you have before go-live. A typical project is 6 to 12 months. Start before your contract ends if you can.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="section-navy">
+    <div class="wrap final-cta">
+      <h2>Start your system change</h2>
+      <p>Book a 30-minute call. No sales pitch.</p>
+      <div class="next-steps">
+        <div class="next-step">
+          <div class="step-num">1</div>
+          <p>30-minute call about your system and dates</p>
+        </div>
+        <div class="next-step">
+          <div class="step-num">2</div>
+          <p>A short written plan within 5 working days</p>
+        </div>
+        <div class="next-step">
+          <div class="step-num">3</div>
+          <p>You decide. No obligation.</p>
         </div>
       </div>
+      <!-- TODO: Replace with real booking link and email address -->
+      <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a 30-minute call</a>
+      <p class="contact-options">or <a href="https://www.linkedin.com/in/alexosfwd/">contact via LinkedIn</a></p>
     </div>
   </section>
 
-  <section>
-    <div class="wrap">
-      <div class="cta">
-        <h2>Start your system change</h2>
-        <p>Book a 30-minute call to discuss your move to a new system.</p>
-        <!-- TODO: Replace LinkedIn with booking link when available -->
-        <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a call with Alex</a>
-      </div>
-    </div>
-  </section>
-
+  <!-- Footer -->
   <footer>
     <div class="wrap footer-inner">
-      <span>© 2026 Foam Works Digital</span>
-      <span><a href="https://www.linkedin.com/in/alexosfwd/">LinkedIn</a> · <a href="https://hyperalz.github.io/casestudies/">Case studies</a> · <a href="app.html">Open MapBridge</a></span>
+      <div>
+        © 2026 Foam Works Digital
+        <!-- TODO: Add company number and privacy link when available -->
+      </div>
+      <div class="footer-links">
+        <a href="how-we-work.html">How we work</a>
+        <a href="mapbridge.html">MapBridge</a>
+        <a href="case-studies.html">Case studies</a>
+        <a href="it-and-dpo.html">For IT & DPOs</a>
+        <a href="about.html">About</a>
+        <a href="app.html">Open the tool</a>
+      </div>
     </div>
   </footer>
 
   <script>
     // Mobile menu toggle
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
+    const navLinks = document.getElementById('nav-links');
     
-    if (mobileMenuBtn && mobileMenu) {
+    if (mobileMenuBtn && navLinks) {
       mobileMenuBtn.addEventListener('click', () => {
-        mobileMenu.classList.toggle('open');
+        navLinks.classList.toggle('active');
       });
       
       // Close mobile menu when clicking a link
-      mobileMenu.querySelectorAll('a').forEach(link => {
+      navLinks.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
-          mobileMenu.classList.remove('open');
+          navLinks.classList.remove('active');
         });
       });
     }
