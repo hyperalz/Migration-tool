@@ -729,6 +729,7 @@
       font-size: 4rem;
       font-weight: 700;
       color: var(--muted);
+      object-fit: cover;
     }
 
     .about-bio h2 {
