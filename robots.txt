@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hyperalz.github.io/Migration-tool/sitemap.xml

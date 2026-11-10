@@ -7,13 +7,15 @@
   <title>About — Foam Works Digital</title>
   <meta name="description" content="Alex Osborne runs Foam Works Digital. Product-led transformation for councils and businesses replacing mission-critical systems.">
   
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔀</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F97316'/><text x='50' y='67' font-family='Arial,sans-serif' font-size='46' font-weight='700' text-anchor='middle' fill='white'>FW</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="canonical" href="https://hyperalz.github.io/Migration-tool/about.html">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to main content</a>
 
   <!-- Navigation -->
   <nav>
@@ -31,7 +33,7 @@
         <!-- TODO: Replace with real booking link -->
         <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary" style="margin-left: 1rem;">Book a 30-min call</a>
       </div>
-      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -41,16 +43,18 @@
     </div>
   </nav>
 
+  <main id="main">
+
   <!-- Hero -->
   <section class="section-white" style="padding: 4rem 0;">
     <div class="wrap">
       <div class="about-grid">
-        <img src="assets/alex-osborne.jpg" alt="Alex Osborne" class="headshot" style="object-fit: cover;">
+        <img src="assets/alex-osborne.jpg" width="560" height="560" loading="lazy" alt="Alex Osborne" class="headshot" style="object-fit: cover;">
         <div class="about-bio">
           <h1>Hi, I'm Alex Osborne</h1>
           <p>I run Foam Works Digital. I work with councils and businesses replacing big systems.</p>
           <p>I was Acting Head of Product at Ocado Technology and worked in transformation at Investec. Recent work includes council moves at Caerphilly and other public bodies.</p>
-          <p>You work with me directly, not a junior team.</p>
+          <p>You work with me and my delivery partner directly, not a junior team.</p>
           <div class="credentials">
             <div class="credential-box">MSc</div>
             <a href="https://www.linkedin.com/in/alexosfwd/" class="credential-box" target="_blank" rel="noopener">LinkedIn</a>
@@ -140,6 +144,8 @@
     </div>
   </section>
 
+  </main>
+
   <!-- Footer -->
   <footer>
     <div class="wrap footer-inner">
@@ -161,12 +167,14 @@
     
     if (mobileMenuBtn && navLinks) {
       mobileMenuBtn.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
+        const open = navLinks.classList.toggle('active');
+        mobileMenuBtn.setAttribute('aria-expanded', open);
       });
       
       navLinks.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
           navLinks.classList.remove('active');
+          mobileMenuBtn.setAttribute('aria-expanded', 'false');
         });
       });
     }
