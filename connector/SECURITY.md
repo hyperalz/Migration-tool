@@ -1,6 +1,6 @@
 # MapBridge Schema Connector — For IT and Data Protection Officers
 
-**One-page plain-English overview**
+**Plain-English overview**
 
 ---
 
@@ -197,7 +197,7 @@ No background services to stop, no config files to hunt down. The tool is comple
 
 Before running the connector in production:
 
-- [ ] Inspect the Python source code (`mapbridge_connector.py`)—it's ~800 lines, human-readable
+- [ ] Inspect the Python source code (`mapbridge_connector.py`)—it's about 650 lines, human-readable
 - [ ] Confirm no `SELECT` queries against user tables (search for `FROM pupils`, `FROM staff`, etc.)—you won't find any
 - [ ] Test with a non-production database first
 - [ ] Create a read-only user with metadata-only permissions

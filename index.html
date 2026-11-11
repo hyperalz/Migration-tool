@@ -22,14 +22,81 @@
   <meta property="twitter:image" content="https://hyperalz.github.io/Migration-tool/assets/mapbridge-hero-screenshot.png">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔀</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F97316'/><text x='50' y='67' font-family='Arial,sans-serif' font-size='46' font-weight='700' text-anchor='middle' fill='white'>FW</text></svg>">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": "Foam Works Digital",
+    "legalName": "Foam Works Digital Limited",
+    "url": "https://hyperalz.github.io/Migration-tool/",
+    "image": "https://hyperalz.github.io/Migration-tool/assets/mapbridge-hero-screenshot.png",
+    "description": "End-to-end system change for councils: finance, HR, housing, care and schools systems, from contract decision to signed-off go-live.",
+    "areaServed": "GB",
+    "founder": {
+      "@type": "Person",
+      "name": "Alex Osborne",
+      "sameAs": "https://www.linkedin.com/in/alexosfwd/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do you move the data?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. We help you and your supplier agree which fields match. Your supplier writes the queries that move the data."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do you need access to our personal data?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. MapBridge only needs the list of field names and types. It does not need to see any employee names, salaries, or other personal data."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where is the data stored?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In your web browser on your computer. Not on a server. When you close the browser, the data stays on your computer unless you clear your browser data."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What systems do you work with?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We work with finance, HR, housing, CRM, care and schools systems. The read-only connector supports SQL Server and Oracle. For other systems, we upload field lists as CSV or JSON."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How long does a system change take?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It depends on the size of your system and how much time you have before go-live. A typical project is 6 to 12 months. Start before your contract ends if you can."
+        }
+      }
+    ]
+  }
+]
+  </script>
+  <link rel="canonical" href="https://hyperalz.github.io/Migration-tool/">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to main content</a>
 
   <!-- Navigation -->
   <nav>
@@ -47,7 +114,7 @@
         <!-- TODO: Replace with real booking link when available -->
         <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary" style="margin-left: 1rem;">Book a 30-min call</a>
       </div>
-      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -56,6 +123,8 @@
       </button>
     </div>
   </nav>
+
+  <main id="main">
 
   <!-- Hero -->
   <header class="hero">
@@ -66,7 +135,7 @@
           <p class="lead">We run your move to a new system end to end. Every field matched, tested and signed off.</p>
           <ul class="hero-checks">
             <li>One team from contract decision to go-live</li>
-            <li>Your data never leaves your network</li>
+            <li>No personal data ever leaves your network</li>
             <li>A signed-off record for auditors and members</li>
           </ul>
           <div class="hero-actions">
@@ -84,7 +153,7 @@
           </div>
         </div>
         <div class="hero-image">
-          <img src="assets/mapbridge-hero-screenshot.png" alt="MapBridge showing AI-suggested field matches with confidence scores and approval workflow">
+          <img src="assets/mapbridge-suggestions.webp" width="1184" height="653" alt="MapBridge showing AI-suggested field matches with confidence scores and approval workflow">
         </div>
       </div>
     </div>
@@ -171,21 +240,23 @@
       <div class="case-study-grid">
         <div>
           <p class="case-label">Case Study · UK Council</p>
-          <h2>Replacing a schools system against the clock</h2>
+          <h2>A 12-month schools system replacement, live in 4 months</h2>
+          <p class="case-summary">Procurement finished late and left a third of the time the project needed. Two people ran the migration. Every field was matched, tested and signed off before the old system was switched off.</p>
           <div class="case-numbers">
             <div class="case-number">
               <div class="big-number">4</div>
-              <p>months from procurement to go-live</p>
+              <p>months from procurement to go-live, on a 12-month plan</p>
             </div>
             <div class="case-number">
               <div class="big-number">2</div>
-              <p>people, 12-month project</p>
+              <p>people ran the whole migration</p>
             </div>
             <div class="case-number">
               <div class="big-number">8</div>
-              <p>months running test and live side by side</p>
+              <p>months of parallel running: the price of the late start</p>
             </div>
           </div>
+          <p class="case-lesson">The lesson: start the decision early and you do not pay for it in parallel running.</p>
           <!-- TODO: Add named or anonymised quote with permission from council
           <p class="case-quote">"Quote from the council's project sponsor." — Name, Role</p>
           -->
@@ -245,6 +316,16 @@
           <p style="font-size: 0.85rem; color: var(--muted);">Council tax and services</p>
         </div>
       </div>
+      <figure class="proof-card">
+        <div class="proof-stat">
+          <div class="big-number">85</div>
+          <p>schools moved to the cloud for Caerphilly Council, in batches of 5 to 6</p>
+        </div>
+        <blockquote>
+          <p>“It all just worked!”</p>
+          <figcaption>School staff feedback, Caerphilly schools migration</figcaption>
+        </blockquote>
+      </figure>
       <div style="text-align: center;">
         <a href="case-studies.html" style="color: var(--blue); font-weight: 600; text-decoration: none; font-size: 1rem;">See all 10 projects →</a>
       </div>
@@ -272,7 +353,7 @@
       </div>
       <div class="mapbridge-grid">
         <div class="mapbridge-screenshot">
-          <img src="assets/mapbridge-hero-screenshot.png" alt="MapBridge interface showing AI suggestions, confidence scores, and approval workflow">
+          <img loading="lazy" src="assets/mapbridge-suggestions.webp" width="1184" height="653" alt="MapBridge interface showing AI suggestions, confidence scores, and approval workflow">
         </div>
         <div class="feature-cards">
           <div class="feature-card">
@@ -307,7 +388,12 @@
         <div class="section-head">
           <h2>What you could save</h2>
           <p>For a project with 800 fields, we estimate:</p>
-          <p class="savings-note">An estimate, not a promise. We do not have enough projects with MapBridge yet to promise a number. <a href="#" target="_blank">See how we worked it out →</a></p>
+          <p class="savings-note">An estimate, not a promise. We do not have enough projects with MapBridge yet to promise a number. </p>
+          <details class="savings-working">
+            <summary>See how we worked it out</summary>
+            <p>40 to 140 days across 800 fields is roughly 25 to 80 minutes saved per field. That is the time spent finding the matching field, agreeing code translations, writing the first SQL and chasing sign-off by email and spreadsheet.</p>
+            <p>Money saved is those days at a £500 day rate: 40 × £500 = £20k, 140 × £500 = £70k. Your day rate and field count will change the answer.</p>
+          </details>
         </div>
         <div class="savings-chart">
           <div class="bar-group">
@@ -359,7 +445,8 @@
         <span>AI optional, your own key</span>
       </div>
       <div class="flow-link">
-        <a href="it-and-dpo.html">Download the one-page security note →</a>
+        <a href="assets/mapbridge-security-note.pdf">Download the security note (PDF) →</a>
+        <a href="it-and-dpo.html">More for IT and DPOs →</a>
       </div>
     </div>
   </section>
@@ -368,7 +455,7 @@
   <section class="section-white">
     <div class="wrap">
       <div class="about-grid">
-        <img src="assets/alex-osborne.jpg" alt="Alex Osborne" class="headshot" style="object-fit: cover;">
+        <img src="assets/alex-osborne.jpg" width="560" height="560" loading="lazy" alt="Alex Osborne" class="headshot" style="object-fit: cover;">
         <div class="about-bio">
           <h2>Hi, I'm Alex Osborne</h2>
           <p>I run Foam Works Digital. I specialise in product-led transformation for councils and businesses replacing mission-critical systems.</p>
@@ -438,6 +525,8 @@
     </div>
   </section>
 
+  </main>
+
   <!-- Footer -->
   <footer>
     <div class="wrap footer-inner">
@@ -462,13 +551,15 @@
     
     if (mobileMenuBtn && navLinks) {
       mobileMenuBtn.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
+        const open = navLinks.classList.toggle('active');
+        mobileMenuBtn.setAttribute('aria-expanded', open);
       });
       
       // Close mobile menu when clicking a link
       navLinks.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
           navLinks.classList.remove('active');
+          mobileMenuBtn.setAttribute('aria-expanded', 'false');
         });
       });
     }
