@@ -27,7 +27,7 @@ import {
 import {
   getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions,
 } from './ai-suggestions.js';
-import { renderReconcile, renderReport, createFinanceDemoProject } from './reconcile-view.js';
+import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject } from './reconcile-view.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -42,6 +42,7 @@ const routes = {
   '/projects/:id/map': renderMap,
   '/projects/:id/verify': renderVerify,
   '/projects/:id/reconcile': params => renderReconcile(params, reconcileUI()),
+  '/projects/:id/reconcile/overview': params => renderOverview(params, reconcileUI()),
   '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
   '/invite/:token': renderAcceptInvite,
