@@ -1,0 +1,60 @@
+SUPPLIER_REF,SUPPLIER_NAME,STATUS,TERMS_DAYS,TAX_CODE,BANK_SORT_CODE,CONTACT,LAST_PAID,OPEN_BALANCE
+10001,Castle Catering Ltd,Active,14,STD,89-95-78,Morgan Specimen,23/03/2026,20000.49
+10008,Meadow Cleaning Services Ltd,Active,30,STD,60-46-90,Avery Example,26/06/2026,22023.43
+10015,Harbour Office Furniture LLP,Active,14,ZERO,70-61-60,Avery Testcase,06/01/2026,22948.24
+10022,Elmwood Grounds Care Ltd,Inactive,60,STD,45-50-69,Reese Demo,11/05/2026,2650.89
+10029,Northgate Vehicle Hire Ltd,Inactive,30,STD,67-31-79,Quinn Testcase,14/04/2026,16158.52
+10036,Ashgrove Cleaning Services Group Ltd,Active,30,EXEMPT,14-96-77,Quinn Specimen,25/08/2026,14179.78
+10036,Ashgrove Cleaning Services Group Ltd,Active,30,EXEMPT,14-96-77,Quinn Specimen,25/08/2026,14179.78
+10043,Brookvale Grounds Care Ltd,Active,30,STD,17-80-49,Robin Demo,,672.83
+10050,Meadow Plumbing and Heating Ltd,Active,30,STD,38-70-62,Rowan Placeholder,24/05/2026,16091.94
+10057,STONEBRIDGE CATERING LTD,Active,30,ZERO,80-33-08,Reese Sample,13/08/2026,14068.85
+10064,Stonebridge and District Community Trans,Active,60,STD,28-44-17,Rowan Example,28/02/2026,9849.62
+10071,Hillcrest Grounds Care Ltd,Active,60,STD,43-02-56,Reese Example,23/01/2026,6905.3
+10078,Harbour Electrical Ltd,Active,7,STD,47-46-91,Avery Sample,17/08/2026,4213.65
+10092,Castle Training Ltd,Inactive,7,STD,34-27-41,Quinn Sample,17/02/2026,15069.08
+10099,Elmwood Catering & Sons,Active,30,STD,62-38-76,Morgan Sample,06/03/2026,13455.16
+10106,Castle Catering Ltd,Active,14,STD,67-50-33,Morgan Sample,01/04/2026,4188.16
+10113,Ashgrove Cleaning Services & Sons,Active,30,EXEMPT,44-00-93,Morgan Demo,16/07/2026,15688.44
+10120,Oakfield Catering Ltd,Active,14,STD,83-85-86,Rowan Specimen,09/05/2026,5748.05
+10127,Riverside Vehicle Hire LLP,Active,30,STD,15-28-86,Robin Demo,04/07/2026,326.88
+10134,Kingsway Building Supplies Ltd,Active,30,STD,47-05-08,Taylor Testcase,,17742.21
+10141,Ashgrove Cleaning Services Ltd,Active,30,ZERO,55-71-01,Reese Placeholder,04/08/2026,16552.27
+10148,Harbour Building Supplies Ltd,Active,7,STD,61-56-25,Morgan Demo,04/09/2026,23446.68
+10155,Meadow Vehicle Hire Group Ltd,Inactive,30,STD,55-04-20,Avery Specimen,15/10/2026,4618.92
+10162,Riverside Cleaning Services Ltd,Inactive,30,STD,50-42-97,Taylor Sample,09/08/2026,8372.77
+10169,Kingsway Vehicle Hire Ltd,Active,60,STD,32-56-65,Taylor Demo,04/03/2026,6841.4
+10176,Harbour Vehicle Hire Ltd,Active,30,STD,45-20-37,Morgan Example,21/06/2026,1184.17
+10183,Meadow Building Supplies & Sons,Active,60,ZERO,36-19-79,Avery Example,25/09/2026,12769.96
+10190,Northgate Specialist Educational Equipme,Active,30,EXEMPT,36-79-22,Robin Placeholder,12/08/2026,16640.48
+10197,Stonebridge Training LLP,Active,60,STD,50-73-61,Jordan Testcase,17/07/2026,13244.17
+10204,Elmwood Cleaning Services LLP,Active,30,STD,20-60-49,Harper Example,27/01/2026,23440.01
+10211,Stonebridge Plumbing and Heating Ltd,Active,30,STD,82-94-87,Morgan Demo,14/05/2026,6348.73
+10218,Meadow Vehicle Hire Ltd,Inactive,30,STD,89-19-57,Harper Sample,05/04/2026,11704.2
+10225,Oakfield Cleaning Services Ltd,Active,30,ZERO,64-70-71,Avery Placeholder,,766.32
+10232,Meadow Office Furniture LLP,Active,7,STD,,Harper Sample,25/06/2026,21157.17
+10239,Elmwood Grounds Care Ltd,Active,30,STD,71-87-07,Quinn Example,06/02/2026,10779.29
+10246,Riverside Grounds Care Ltd,Active,30,STD,31-71-36,Rowan Specimen,13/09/2026,19047.45
+10253,Harbour Print and Design LLP,Active,30,STD,73-82-44,Jordan Placeholder,16/07/2026,19607.87
+10260,Ashgrove Electrical Ltd,Active,14,STD,36-15-00,Robin Placeholder,23/07/2026,969.84
+10267,Riverside Catering Ltd,Active,7,STD,49-82-34,Quinn Placeholder,15/06/2026,7879.17
+10274,Hillcrest Office Furniture LLP,Active,14,STD,36-39-52,Reese Testcase,13/06/2026,3690.21
+10281,Harbour Catering Group Ltd,Inactive,7,STD,32-48-32,Avery Specimen,07/06/2026,21855.07
+10288,Riverside Environmental and Grounds Main,Active,7,STD,31-38-45,Morgan Demo,09/06/2026,8240.84
+10295,Northgate Catering LLP,Active,30,STD,38-02-70,Morgan Testcase,25/08/2026,18299.03
+10302,Harbour Building Supplies Ltd,Inactive,30,STD,14-49-64,Harper Specimen,03/10/2026,19635.42
+10309,Northgate Print and Design Ltd,Active,30,ZERO,61-39-71,Quinn Demo,04/08/2026,12138.17
+10316,Brookvale Grounds Care Ltd,Active,30,STD,45-25-77,Morgan Placeholder,,5984.68
+10323,Brookvale Building Supplies Ltd,Active,14,STD,79-29-35,Quinn Testcase,01/08/2026,7243.76
+10337,Northgate Plumbing and Heating & Sons,Active,7,STD,19-31-12,Rowan Placeholder,15/07/2026,3852.38
+10344,Castle Plumbing and Heating Ltd,Inactive,14,EXEMPT,82-24-12,Rowan Placeholder,26/06/2026,1193.85
+10351,Riverside Plumbing and Heating LLP,Active,30,ZERO,31-26-80,Jordan Specimen,15/09/2026,4833.16
+10358,Castle Cleaning Services Group Ltd,Active,30,STD,73-70-85,Rowan Specimen,17/02/2026,707.04
+10365,Kingsway Plumbing and Heating Group Ltd,Active,30,STD,23-46-11,Avery Sample,01/06/2026,18437.16
+10372,Castle Training Ltd,Active,30,STD,45-93-11,Casey Placeholder,04/08/2026,10763.02
+10379,Riverside Plumbing and Heating & Sons,Active,30,STD,22-01-69,Robin Sample,27/09/2026,11362.86
+10386,Kingsway Cleaning Services Ltd,Active,60,STD,44-34-76,Taylor Placeholder,15/02/2026,12716.44
+10393,Castle Grounds Care Group Ltd,Active,14,ZERO,31-20-57,Jordan Sample,20/04/2026,15802.95
+10400,Riverside Office Furniture Group Ltd,Active,30,STD,88-52-36,Morgan Placeholder,04/03/2026,21624.34
+10407,Brookvale Print and Design Ltd,Inactive,7,STD,86-14-75,Reese Specimen,,14542.27
+10414,Meadow Plumbing and Heating Ltd,Active,30,STD,81-65-35,Quinn Sample,22/04/2026,8585.37

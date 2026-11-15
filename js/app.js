@@ -27,6 +27,7 @@ import {
 import {
   getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions,
 } from './ai-suggestions.js';
+import { renderReconcile, renderReport, createFinanceDemoProject } from './reconcile-view.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -40,6 +41,8 @@ const routes = {
   '/projects/:id/invite': renderInvite,
   '/projects/:id/map': renderMap,
   '/projects/:id/verify': renderVerify,
+  '/projects/:id/reconcile': params => renderReconcile(params, reconcileUI()),
+  '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
   '/invite/:token': renderAcceptInvite,
 };
@@ -84,6 +87,11 @@ function matchRoute(pattern, path) {
   return params;
 }
 
+// Shared page furniture handed to the reconciliation screens.
+function reconcileUI() {
+  return { nav, projectSteps, mount, attachLogout, toast, esc, renderNotFound };
+}
+
 function mount(html) {
   document.getElementById('app-main').innerHTML = html;
 }
@@ -106,6 +114,7 @@ function projectSteps(project, active) {
     { key: 'invite', label: 'Invite party', path: 'invite' },
     { key: 'map', label: 'Map columns', path: 'map' },
     { key: 'verify', label: 'Test & live', path: 'verify' },
+    { key: 'reconcile', label: 'Reconcile', path: 'reconcile' },
     { key: 'export', label: 'Export & close', path: 'export' },
   ];
   return `<div class="steps-bar">${steps.map(s => `
@@ -204,7 +213,10 @@ function renderDashboard() {
   mount(`
     <div class="page-head">
       <div><h1>Your migration projects</h1><p>Project-scoped workspaces. Export and delete when complete.</p></div>
-      <a href="#/projects/new" class="btn btn-primary">+ New project</a>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="finance-demo-btn">Try the finance demo</button>
+        <a href="#/projects/new" class="btn btn-primary">+ New project</a>
+      </div>
     </div>
     ${projects.length ? `<div class="project-grid">${projects.map(p => `
       <a href="#/projects/${p.id}/setup" class="project-card">
@@ -219,6 +231,11 @@ function renderDashboard() {
       </div>`}
   `);
   attachLogout();
+  document.getElementById('finance-demo-btn').addEventListener('click', () => {
+    const demo = createFinanceDemoProject(user);
+    toast('Finance demo project created');
+    location.hash = `#/projects/${demo.id}/reconcile`;
+  });
 }
 
 function renderNewProject() {
