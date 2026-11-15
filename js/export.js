@@ -25,10 +25,29 @@ export function buildExportPackage(project, user) {
       verificationStatus: m.verification?.status || 'mapped',
       verificationHistory: m.verification?.history || [],
     })),
+    // Every checked load with its results, the chosen final load and the
+    // area sign-offs. Row data is never part of a run, so none is exported.
+    reconciliation: {
+      runs: project.reconRuns || [],
+      finalRunId: project.reconFinalRunId || null,
+      areaSignoffs: project.reconAreaSignoffs || [],
+    },
     summary: {
       totalMappings: project.mappings.length,
+      checkedLoads: (project.reconRuns || []).length,
+      areaSignoffs: (project.reconAreaSignoffs || []).length,
     },
   };
+}
+
+// A short digest of an evidence pack's contents, ignoring who exported it and
+// when. Used to tell whether the project has changed since the last download.
+export function evidenceDigest(pkg) {
+  const { exportedAt, exportedBy, ...content } = pkg;
+  const text = JSON.stringify(content);
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
+  return `${text.length}-${h.toString(16)}`;
 }
 
 export function downloadJSON(data, filename) {

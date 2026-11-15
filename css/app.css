@@ -1928,3 +1928,31 @@ a { color: inherit; text-decoration: none; }
 .recon-review-form label input, .recon-review-form label select { margin-top: 0.3rem; font-weight: 400; }
 @media (max-width: 900px) { .recon-tiles-4 { grid-template-columns: repeat(2, 1fr); } }
 @media print { .recon-tiles-4 { grid-template-columns: repeat(4, 1fr); } .recon-area { break-inside: avoid; } }
+
+/* ---------- Step bar states and project home ---------- */
+.step-chip.step-home { background: transparent; border-style: dashed; }
+.step-chip.step-done { background: #ecfdf5; border-color: #a7f3d0; color: var(--target); }
+.step-chip.step-blocked { color: #94a3b8; background: #f8fafc; }
+.step-chip.active, .step-chip.step-done.active { background: var(--brand); border-color: var(--brand); color: white; }
+.steps-sub { display: flex; gap: 1rem; margin: -0.6rem 0 1.1rem 0.25rem; font-size: 0.82rem; }
+.steps-sub a { color: var(--muted); font-weight: 600; padding-bottom: 0.15rem; border-bottom: 2px solid transparent; }
+.steps-sub a.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+.project-next { font-size: 0.8rem; color: var(--ink-soft); margin-top: 0.6rem; }
+
+.home-next { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; border-color: rgba(13,92,99,0.35); }
+.home-next-text { font-size: 1.15rem; font-weight: 700; line-height: 1.3; margin-top: 0.15rem; }
+.home-status { margin-bottom: 1rem; }
+.home-status .recon-status-headline { font-size: 1.05rem; }
+.home-steps { list-style: none; margin: 0; padding: 0; }
+.home-step { display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.9rem 0; border-top: 1px solid var(--line); }
+.home-step:first-child { border-top: none; padding-top: 0.2rem; }
+.home-step:last-child { padding-bottom: 0.2rem; }
+.home-step-num { flex: none; width: 1.9rem; height: 1.9rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
+.home-step-done .home-step-num { background: #d1fae5; border-color: #a7f3d0; color: #065f46; }
+.home-step-progress .home-step-num { background: #fef3c7; border-color: #fde68a; color: #92400e; }
+.home-step-blocked .home-step-title, .home-step-blocked .home-step-num { color: #94a3b8; }
+.home-step-body { flex: 1; min-width: 0; }
+.home-step-title { font-weight: 700; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.home-step-links { display: flex; gap: 1rem; margin-top: 0.35rem; font-size: 0.82rem; }
+.home-step-links a { color: var(--brand); font-weight: 600; }

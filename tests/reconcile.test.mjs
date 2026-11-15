@@ -404,3 +404,108 @@ test('mapping stamp is stable and order independent', () => {
   assert.equal(mappingStamp(pairs[0]), mappingStamp(reversed));
   assert.notEqual(mappingStamp(pairs[0]), mappingStamp(pairs[1]));
 });
+
+// ---------- project progress ----------
+import { projectProgress, stepForScreen } from '../js/progress.js';
+import { buildExportPackage, evidenceDigest } from '../js/export.js';
+
+function emptyProject() {
+  return { name: 'P', sourceSystem: 'Old', targetSystem: 'New', sourceSchema: null, targetSchema: null, mappings: [] };
+}
+function schemaProjectFull(extra = {}) {
+  return { ...demoProject(), sourceSchema: legacyFinanceSchema, targetSchema: newFinanceSchema, ...extra };
+}
+const states = p => Object.fromEntries(projectProgress(p).steps.map(s => [s.key, s.state]));
+
+test('progress: a new project starts at set up and later steps are blocked', () => {
+  const pr = projectProgress(emptyProject());
+  assert.deepEqual(states(emptyProject()), { setup: 'todo', map: 'blocked', check: 'blocked', signoff: 'blocked', handover: 'blocked' });
+  assert.equal(pr.next.step, 'setup');
+  assert.equal(pr.next.text, 'Add the field lists for both systems');
+});
+
+test('progress: field lists loaded, nothing mapped', () => {
+  const p = { ...emptyProject(), sourceSchema: legacyFinanceSchema, targetSchema: newFinanceSchema };
+  assert.deepEqual(states(p), { setup: 'done', map: 'todo', check: 'blocked', signoff: 'blocked', handover: 'blocked' });
+  assert.equal(projectProgress(p).next.text, 'Start mapping fields');
+});
+
+test('progress: required new-system fields without a source keep mapping in progress', () => {
+  const p = schemaProjectFull();
+  p.mappings = p.mappings.filter(m => m.targetColumn !== 'STATUS');
+  const pr = projectProgress(p);
+  assert.equal(pr.steps[1].state, 'progress');
+  assert.match(pr.steps[1].summary, /1 required field in the new system still has no source\.$/);
+  assert.equal(pr.next.step, 'map');
+});
+
+test('progress: mapped but nothing checked points at the first load', () => {
+  const p = schemaProjectFull();
+  assert.deepEqual(states(p), { setup: 'done', map: 'done', check: 'todo', signoff: 'blocked', handover: 'todo' });
+  assert.equal(projectProgress(p).next.text, 'Check the first trial load');
+});
+
+test('progress: issues open keeps checking in progress; sign-off opens up', () => {
+  const p = schemaProjectFull({ reconRuns: [runDemo(1)] });
+  const pr = projectProgress(p);
+  assert.equal(pr.steps[2].state, 'progress');
+  assert.equal(pr.steps[3].state, 'todo');
+  assert.equal(pr.next.step, 'check');
+  assert.equal(pr.next.text, 'Fix the open issues, then check the next load');
+});
+
+test('progress: one module checked points at the tables still waiting', () => {
+  const p = schemaProjectFull({ reconRuns: [runDemoPartial(1, [LEDGER], 'g', 'Ledger 1')] });
+  assert.equal(projectProgress(p).next.text, 'Check a load for the 1 table still waiting');
+});
+
+test('progress: sign-off is done only with every area signed, a final load, and nothing open', () => {
+  const gl = runDemoPartial(1, [LEDGER], 'g', 'Ledger final');
+  // a project with only the ledger mapped, so one clean load covers everything
+  const p = schemaProjectFull({ reconRuns: [gl] });
+  p.mappings = p.mappings.filter(m => m.sourceTable === 'gl_balance');
+  p.sourceSchema = { ...legacyFinanceSchema, tables: legacyFinanceSchema.tables.filter(t => t.name === 'gl_balance') };
+  p.targetSchema = { ...newFinanceSchema, tables: newFinanceSchema.tables.filter(t => t.name === 'GL_Opening_Balance') };
+  assert.equal(projectProgress(p).steps[2].state, 'done');
+  assert.equal(projectProgress(p).steps[3].state, 'todo');
+  const area = projectProgress(p).overview.areas[0];
+  p.reconAreaSignoffs = [buildAreaSignoff(area, { name: 'Lead', role: 'Signed off', note: '' })];
+  assert.equal(projectProgress(p).steps[3].state, 'progress');
+  assert.equal(projectProgress(p).next.text, 'Choose the final load once it has been run and checked');
+  p.reconFinalRunId = 'g';
+  const done = projectProgress(p);
+  assert.equal(done.steps[3].state, 'done');
+  assert.equal(done.next.step, 'handover');
+});
+
+test('progress: screens map to steps', () => {
+  assert.equal(stepForScreen('verify').key, 'check');
+  assert.equal(stepForScreen('reconcile').key, 'check');
+  assert.equal(stepForScreen('invite').key, 'setup');
+  assert.equal(stepForScreen('overview').key, 'signoff');
+  assert.equal(stepForScreen('home'), null);
+});
+
+test('evidence pack includes checked loads and sign-offs, and its digest tracks changes', () => {
+  const p = schemaProjectFull({ id: 'x', status: 'mapping', reconRuns: [runDemo(1)], reconFinalRunId: 'run1', reconAreaSignoffs: [{ area: 'A' }] });
+  const pkg = buildExportPackage(p, { email: 'a@b' });
+  assert.equal(pkg.reconciliation.runs.length, 1);
+  assert.equal(pkg.reconciliation.finalRunId, 'run1');
+  assert.equal(pkg.summary.checkedLoads, 1);
+  const d1 = evidenceDigest(pkg);
+  assert.equal(evidenceDigest(buildExportPackage(p, { email: 'someone@else' })), d1);
+  p.reconRuns.push(runDemo(2));
+  assert.notEqual(evidenceDigest(buildExportPackage(p, { email: 'a@b' })), d1);
+});
+
+test('progress: hand-over is done only while the downloaded pack matches the project', () => {
+  const p = schemaProjectFull({ id: 'x', status: 'mapping', reconRuns: [runDemo(1)] });
+  assert.equal(projectProgress(p).steps[4].state, 'todo');
+  p.lastEvidenceExportAt = '2026-11-15T12:00:00.000Z';
+  p.lastEvidenceDigest = evidenceDigest(buildExportPackage(p, null));
+  assert.equal(projectProgress(p).steps[4].state, 'done');
+  p.reconRuns.push(runDemo(2));
+  const after = projectProgress(p).steps[4];
+  assert.equal(after.state, 'progress');
+  assert.match(after.summary, /^The project has changed since the evidence pack was downloaded/);
+});
