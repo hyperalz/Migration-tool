@@ -96,6 +96,10 @@
           
           <h3 style="margin-top: 2rem; color: #dc2626;">✗ Never reads</h3>
           <p>Employee names, salaries, addresses, or any other personal data. The read-only tool for SQL Server and Oracle only queries the system catalog (the list of tables and fields), not the tables themselves.</p>
+
+          <h3 style="margin-top: 2rem;">The one exception: trial load reconciliation</h3>
+          <p>Reconciliation is an optional step that compares an extract from the old system with one from the new system. Those extract files contain real records. They are opened in the web browser of the person running the check, on their own computer. The rows are not saved and are not sent to us or to any server. No AI is involved in this step.</p>
+          <p>What is kept afterwards is the result: counts, totals, record keys and a few example values for each difference found. Fields marked as personal show dots in place of the value. Because record keys are kept, the result should be handled as personal data.</p>
           
           <h3 style="margin-top: 2rem;">Where it is stored</h3>
           <p>In the web browser on your computer. Not on a server. When you close the browser, it stays on your computer unless you clear your browser data.</p>
@@ -155,7 +159,8 @@
       <div class="faq-list" style="margin-top: 2.5rem;">
         <details>
           <summary>What personal data does MapBridge process?</summary>
-          <p>None. MapBridge processes metadata: field names, field types, allowed values, and field descriptions. It does not process names, salaries, addresses, or any other personal data.</p>
+          <p>For field matching and sign-off: none. MapBridge works from field names, field types, allowed values, and field descriptions.</p>
+          <p>The optional trial load reconciliation step is different. It opens extract files that contain real records, in the browser of the person running the check. Rows are not saved or sent anywhere. The stored result holds counts, totals, record keys and a few example values, with fields marked as personal masked. Treat that result as personal data, and decide who in your organisation runs this step.</p>
         </details>
         
         <details>

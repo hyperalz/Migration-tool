@@ -19,6 +19,7 @@ A production version with secure backend, real authentication, invite-based acce
   - **LLM mode** (optional): Paste your own OpenAI-compatible API key (stored in browser only) to get smarter suggestions. Only schema metadata is sent—never row data.
 - **Transform & lookup rules**: Capture value translations, defaults, and join conditions on each mapping line.
 - **Test & live traceability**: Record who sent SQL, who checked test data, who pushed to live, and who signed off—per column, with full audit history.
+- **Trial load reconciliation** (new): Compare an extract from the old system with one from the new system. Counts, control totals and every mapped field are checked against the agreed mappings, and the result is a printable report with exceptions grouped by cause.
 - **Export**: Download mappings + traceability log as JSON, CSV, or Excel. Export starter SQL stubs with CASE expressions for value translations and COALESCE for defaults.
 - **Browser-only storage**: Everything lives in `localStorage`. No credentials, no DPA concerns in this version—because there's no server to worry about.
 
@@ -29,7 +30,8 @@ A production version with secure backend, real authentication, invite-based acce
 3. **AI-suggest mappings**: Click "AI-suggest mappings" → choose heuristic or LLM → review suggestions → accept/reject individually or in bulk. Each accepted mapping is recorded in the audit trail.
 4. **Map manually**: Drag source ● → target ●. Add transform notes, lookup rules (e.g. `1 -> Y, 0 -> N`), and defaults. Flag value mismatches.
 5. **Test & live**: Record delivery and checks per column. Click **+** to advance; click a completed tick to revert and re-do. Every step logs who and when.
-6. **Export & close**: Download mapping spec + traceability log, then delete the project (or just clear browser data).
+6. **Reconcile**: After each trial load, compare old and new extracts and produce the reconciliation report.
+7. **Export & close**: Download mapping spec + traceability log, then delete the project (or just clear browser data).
 
 ## Running Locally
 
@@ -126,6 +128,53 @@ The output is a MapBridge-compatible JSON file that you import via **"Import fro
 
 For full documentation, see [`connector/README.md`](connector/README.md).
 
+## Trial Load Reconciliation
+
+After each trial load, the **Reconcile** step checks that what landed in the new system matches the old system, using the agreed mappings as the rule book.
+
+### What it checks
+
+- **Records**: counts on each side, records missing from the new system, records only in the new system, duplicates.
+- **Fields**: every mapped field on every paired record. Translation rules (`1 -> Y, 0 -> N`) and default values are applied first, then the result is compared with the new system.
+- **Control totals**: amount fields added up on each side, to the penny.
+- **Format-only differences** count as matched: spacing, `100` vs `100.00`, date layout (`2026-04-03` vs `03/04/2026`, day first), blank vs `NULL`.
+
+Differences are grouped by cause in plain English, for example *Old value "H" should become "On hold" but the new system holds "Inactive" (3 records)*, with a severity and up to five example records.
+
+### How to use it
+
+1. Open a project and choose **Reconcile**.
+2. For each table, upload a CSV extract from the old system and one from the new system. Row 1 must be the column names, matching the names used in the mappings.
+3. Under **Fields and settings**, confirm which fields identify a record (tick several for a combined key), which to add up as totals, and which to mask in the report.
+4. **Run checks**, then open the report. **Print or save as PDF** gives a clean copy.
+
+To try it without your own data, choose **Try the finance demo** on the projects page and run demo trial loads 1 and 2. The same extracts are in `samples/finance-demo/` if you want to try uploading. All of it is invented.
+
+### The report
+
+Summary, exceptions (worst first), change since the previous load (fixed, still open, new), results by table, scope and method (including what was **not** covered), and a review and acceptance record.
+
+Each run carries a SHA-256 fingerprint of its results. The report recalculates it on opening and says whether the results are unchanged since the run.
+
+### Privacy
+
+- Extract files are read in the browser. Rows are never written to `localStorage` or sent anywhere.
+- Only counts, totals, record keys and a few example values per exception are kept.
+- Fields marked **Mask values in report** show dots and a length, never the value. Fields that look personal are pre-ticked; check the ticks before running.
+- Record keys are shown so exceptions can be traced. A key such as a payroll number still identifies a person, so treat the report as personal data.
+
+### Limits
+
+- It compares two extract files. It does not look at screens, reports, calculated fields or interfaces in the new system.
+- Match and mismatch are decided by fixed rules. No AI is used in the checks or the report.
+- Large extracts are held in browser memory while the check runs.
+
+### Tests
+
+```bash
+node --test tests/reconcile.test.mjs
+```
+
 ## CSV Parsing
 
 MapBridge now uses **Papa Parse** for robust CSV parsing. Quoted fields like `"Y = eligible, N = not eligible"` are handled correctly. If rows have mismatched column counts, they are skipped and a warning is shown.
@@ -154,7 +203,8 @@ This gives you a head start on writing the actual migration SQL.
 - [ ] **Automatic connector upload**: Connector posts directly to MapBridge backend (requires auth + project token).
 - [ ] **Live connectors** (browser-based): Read-only metadata extraction from Synergy, SIMS, Capita One, Impulse, iTrent, Cority via browser extension or Electron app.
 - [ ] **Data profiling**: Column value distributions, null rates, data quality checks—all run inside the client environment, not on a server.
-- [ ] **Reconciliation reports**: Count mismatches, orphaned records, value distribution deltas.
+- [x] **Trial load reconciliation**: Record counts, missing and duplicated records, control totals, field-by-field comparison using the agreed mappings, and a printable report. See "Trial Load Reconciliation" above.
+- [ ] **Value distribution checks**: Compare how often each value appears before and after.
 - [ ] **Schema packs**: Pre-loaded definitions for common MIS platforms (SIMS pupil, Synergy attendance, iTrent payroll).
 - [ ] **Cutover runbook generation**: Export a step-by-step guide for the final go-live.
 - [ ] **Delete-on-completion lifecycle**: Export mapping package → trigger permanent deletion of all project data.

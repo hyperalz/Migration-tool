@@ -1,0 +1,61 @@
+supplier_id,supplier_name,status,payment_terms,vat_code,sort_code,contact_name,last_payment_date,balance_outstanding
+10001,Castle Catering Ltd,A,14,S,89-95-78,Morgan Specimen,2026-03-23,20000.49
+10008,Meadow Cleaning Services Ltd,A,30,S,60-46-90,Avery Example,2026-06-26,22023.43
+10015,Harbour Office Furniture LLP,A,14,Z,70-61-60,Avery Testcase,2026-01-06,22948.24
+10022,Elmwood Grounds Care Ltd,H,60,S,45-50-69,Reese Demo,2026-05-11,2650.89
+10029,Northgate Vehicle Hire Ltd,I,30,S,67-31-79,Quinn Testcase,2026-04-14,16158.52
+10036,Ashgrove Cleaning Services Group Ltd,A,30,E,14-96-77,Quinn Specimen,2026-08-25,14179.78
+10043,Brookvale Grounds Care Ltd,A,30,S,17-80-49,Robin Demo,,672.83
+10050,Meadow Plumbing and Heating Ltd,A,30,S,38-70-62,Rowan Placeholder,2026-05-24,16091.94
+10057,Stonebridge Catering Ltd,A,30,Z,80-33-08,Reese Sample,2026-08-13,14068.85
+10064,Stonebridge and District Community Transport Partnership Ltd,A,60,S,28-44-17,Rowan Example,2026-02-28,9849.62
+10071,Hillcrest Grounds Care Ltd,A,60,S,43-02-56,Reese Example,2026-01-23,6905.30
+10078,Harbour Electrical Ltd,A,7,S,47-46-91,Avery Sample,2026-08-17,4213.65
+10085,Harbour Plumbing and Heating Ltd,A,14,S,55-65-90,Rowan Demo,2026-08-06,21773.10
+10092,Castle Training Ltd,I,7,S,34-27-41,Quinn Sample,2026-02-17,15069.08
+10099,Elmwood Catering & Sons,A,30,R,62-38-76,Morgan Sample,2026-03-06,13455.16
+10106,Castle Catering Ltd,A,14,S,67-50-33,Morgan Sample,2026-04-01,4188.16
+10113,Ashgrove Cleaning Services & Sons,A,30,E,44-00-93,Morgan Demo,2026-07-16,15688.44
+10120,Oakfield Catering Ltd,A,14,S,83-85-86,Rowan Specimen,2026-05-09,5748.05
+10127,Riverside Vehicle Hire LLP,A,30,S,15-28-86,Robin Demo,2026-07-04,326.88
+10134,Kingsway Building Supplies Ltd,A,30,S,47-05-08,Taylor Testcase,,17742.21
+10141,Ashgrove Cleaning Services Ltd,A,30,Z,55-71-01,Reese Placeholder,2026-08-04,16452.27
+10148,Harbour Building Supplies Ltd,A,7,S,61-56-25,Morgan Demo,2026-09-04,23446.68
+10155,Meadow Vehicle Hire Group Ltd,I,30,R,55-04-20,Avery Specimen,2026-10-15,4618.92
+10162,Riverside Cleaning Services Ltd,H,30,S,50-42-97,Taylor Sample,2026-08-09,8372.77
+10169,Kingsway Vehicle Hire Ltd,A,60,S,32-56-65,Taylor Demo,2026-03-04,6841.40
+10176,Harbour Vehicle Hire Ltd,A,30,S,45-20-37,Morgan Example,2026-06-21,1184.17
+10183,Meadow Building Supplies & Sons,A,60,Z,36-19-79,Avery Example,2026-09-25,12769.96
+10190,Northgate Specialist Educational Equipment Suppliers Ltd,A,30,E,36-79-22,Robin Placeholder,2026-08-12,16640.48
+10197,Stonebridge Training LLP,A,60,S,50-73-61,Jordan Testcase,2026-07-17,13244.17
+10204,Elmwood Cleaning Services LLP,A,30,S,20-60-49,Harper Example,2026-01-27,23440.01
+10211,Stonebridge Plumbing and Heating Ltd,A,30,S,82-94-87,Morgan Demo,2026-05-14,6348.73
+10218,Meadow Vehicle Hire Ltd,I,30,S,89-19-57,Harper Sample,2026-04-05,11704.20
+10225,Oakfield Cleaning Services Ltd,A,30,Z,64-70-71,Avery Placeholder,,766.32
+10232,Meadow Office Furniture LLP,A,7,S,39-12-48,Harper Sample,2026-06-25,21157.17
+10239,Elmwood Grounds Care Ltd,A,30,S,71-87-07,Quinn Example,2026-02-06,10779.29
+10246,Riverside Grounds Care Ltd,A,30,S,31-71-36,Rowan Specimen,2026-09-13,19047.45
+10253,Harbour Print and Design LLP,A,30,S,73-82-44,Jordan Placeholder,2026-07-16,19607.87
+10260,Ashgrove Electrical Ltd,A,14,S,36-15-00,Robin Placeholder,2026-07-23,969.84
+10267,Riverside Catering Ltd,A,7,R,49-82-34,Quinn Placeholder,2026-06-15,7879.17
+10274,Hillcrest Office Furniture LLP,A,14,S,36-39-52,Reese Testcase,2026-06-13,3690.21
+10281,Harbour Catering Group Ltd,I,7,S,32-48-32,Avery Specimen,2026-06-07,21855.07
+10288,Riverside Environmental and Grounds Maintenance Services LLP,A,7,S,31-38-45,Morgan Demo,2026-06-09,8240.84
+10295,Northgate Catering LLP,A,30,S,38-02-70,Morgan Testcase,2026-08-25,18299.03
+10302,Harbour Building Supplies Ltd,H,30,S,14-49-64,Harper Specimen,2026-10-03,19635.42
+10309,Northgate Print and Design Ltd,A,30,Z,61-39-71,Quinn Demo,2026-08-04,12138.17
+10316,Brookvale Grounds Care Ltd,A,30,S,45-25-77,Morgan Placeholder,,5984.68
+10323,Brookvale Building Supplies Ltd,A,14,S,79-29-35,Quinn Testcase,2026-08-01,7243.76
+10330,Stonebridge Print and Design & Sons,A,30,S,27-19-95,Taylor Example,2026-10-06,12384.70
+10337,Northgate Plumbing and Heating & Sons,A,7,S,19-31-12,Rowan Placeholder,2026-07-15,3852.38
+10344,Castle Plumbing and Heating Ltd,I,14,E,82-24-12,Rowan Placeholder,2026-06-26,1193.85
+10351,Riverside Plumbing and Heating LLP,A,30,Z,31-26-80,Jordan Specimen,2026-09-15,4833.16
+10358,Castle Cleaning Services Group Ltd,A,30,R,73-70-85,Rowan Specimen,2026-02-17,707.04
+10365,Kingsway Plumbing and Heating Group Ltd,A,30,S,23-46-11,Avery Sample,2026-06-01,18437.16
+10372,Castle Training Ltd,A,30,S,45-93-11,Casey Placeholder,2026-08-04,10763.02
+10379,Riverside Plumbing and Heating & Sons,A,30,S,22-01-69,Robin Sample,2026-09-27,11362.86
+10386,Kingsway Cleaning Services Ltd,A,60,S,44-34-76,Taylor Placeholder,2026-02-15,12716.44
+10393,Castle Grounds Care Group Ltd,A,14,Z,31-20-57,Jordan Sample,2026-04-20,15802.95
+10400,Riverside Office Furniture Group Ltd,A,30,S,88-52-36,Morgan Placeholder,2026-03-04,21624.34
+10407,Brookvale Print and Design Ltd,I,7,S,86-14-75,Reese Specimen,,14542.27
+10414,Meadow Plumbing and Heating Ltd,A,30,S,81-65-35,Quinn Sample,2026-04-22,8585.37
