@@ -152,7 +152,9 @@ To try it without your own data, choose **Try the finance demo** on the projects
 
 ### The report
 
-Summary, exceptions (worst first), change since the previous load (fixed, still open, new), results by table, scope and method (including what was **not** covered), and a review and acceptance record.
+The report opens on a **Summary** written for someone who is not a data specialist, such as a finance lead or project sponsor: an overall status, whether everything arrived, whether the totals agree, what needs fixing in everyday words (field descriptions are used in place of column names), progress since the last load, and what the check does not cover. **Full detail** switches to the technical report. Print or save as PDF prints whichever view is showing.
+
+Full detail contains: summary, exceptions (worst first), change since the previous load (fixed, still open, new), results by table, scope and method (including what was **not** covered), and a review and acceptance record.
 
 Each run carries a SHA-256 fingerprint of its results. The report recalculates it on opening and says whether the results are unchanged since the run.
 

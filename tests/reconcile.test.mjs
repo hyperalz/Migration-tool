@@ -190,3 +190,59 @@ test('default values and blank handling', () => {
   assert.equal(f.mismatched, 1);
   assert.equal(res.groups[0].kind, 'blank_in_target');
 });
+
+// ---------- plain-English summary ----------
+import { plainSummary, tableNoun, fieldLabel } from '../js/reconcile-plain.js';
+
+const schemaProject = { sourceSchema: legacyFinanceSchema, targetSchema: newFinanceSchema };
+
+test('everyday names for tables and fields', () => {
+  assert.equal(tableNoun('gl_balance'), 'GL balance');
+  assert.equal(tableNoun('Supplier_Load'), 'supplier load');
+  assert.equal(fieldLabel(schemaProject, 'supplier', 'status', 'Supplier_Load', 'STATUS'), 'Supplier status');
+  assert.equal(fieldLabel(null, 'a', 'cost_centre', 'b', 'COST_CENTRE'), 'Cost centre');
+});
+
+test('plain summary of trial load 1 says what a finance lead needs', () => {
+  const run = runDemo(1);
+  const p = plainSummary(run, [run], schemaProject);
+  assert.equal(p.status.level, 'attention');
+  assert.equal(p.status.headline, '5 serious issues to fix before this data can be relied on.');
+  assert.deepEqual(p.arrival.map(a => a.ok), [false, true]);
+  assert.equal(p.arrival[0].text, 'Of 60 supplier records: 2 did not arrive, 1 was loaded more than once.');
+  assert.equal(p.arrival[1].text, 'All 48 GL balance records arrived.');
+  assert.deepEqual(p.money.map(m => m.ok), [false, true]);
+  assert.match(p.money[0].text, /^The new system is [\d,]+\.\d\d lower than the old one\.$/);
+  assert.equal(p.money[1].text, 'The two systems agree to the penny.');
+  assert.equal(p.issues.length, 9);
+  const texts = p.issues.map(i => i.text);
+  assert.ok(texts.includes('On 3 supplier records, supplier status was “H” and should now read “On hold”, but the new system shows “Inactive”.'));
+  assert.ok(texts.includes('2 supplier records did not arrive in the new system.'));
+  assert.ok(texts.includes('Supplier trading name has been cut short on 3 supplier records.'));
+  // no column or table names leak into the plain text
+  for (const t of [...texts, ...p.inShort, ...p.arrival.map(a => a.text)]) {
+    assert.doesNotMatch(t, /supplier_|SUPPLIER_|Supplier_Load|vat_code|TAX_CODE|→/);
+  }
+  assert.equal(p.progress, null);
+  assert.equal(p.inShort[1], '98.1% of those details matched. 13 did not.');
+});
+
+test('plain summary of trial load 2 reports progress', () => {
+  const run1 = runDemo(1);
+  const run2 = runDemo(2);
+  const p = plainSummary(run2, [run1, run2], schemaProject);
+  assert.equal(p.progress.text, '7 of the 9 issues found last time have been fixed. 2 remain. 1 new issue has appeared since then.');
+  assert.deepEqual(p.trend.map(t => [t.serious, t.other]), [[5, 4], [2, 1]]);
+  assert.equal(p.inShort[2], 'Both totals we added up agree between the two systems.');
+  assert.equal(p.status.headline, '2 serious issues to fix before this data can be relied on.');
+});
+
+test('plain summary when everything matches', () => {
+  const pair = { id: 'a→b', sourceTable: 'a', targetTable: 'b', mappings: [{ id: 'k', sourceColumn: 'id', targetColumn: 'ID' }] };
+  const res = reconcilePair({ pair, keyMappingIds: ['k'], sourceRows: [{ id: '1' }], targetRows: [{ ID: '1' }] });
+  const run = buildRun({ project: { name: 'P', sourceSystem: 'A', targetSystem: 'B', mappings: pair.mappings }, label: 'L', by: 't', pairResults: [res], id: 'r' });
+  const p = plainSummary(run, [run], null);
+  assert.equal(p.status.level, 'clear');
+  assert.equal(p.inShort[1], 'Every detail matched.');
+  assert.equal(p.issues.length, 0);
+});

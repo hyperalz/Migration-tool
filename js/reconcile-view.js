@@ -10,6 +10,7 @@ import {
   reconcilePair, buildRun, fingerprintRun, compareRuns, allGroups, exceptionRows,
   formatAmount, SEVERITY_LABEL,
 } from './reconcile.js';
+import { plainSummary } from './reconcile-plain.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
 } from './demoFinance.js';
@@ -511,11 +512,16 @@ export async function renderReport({ id, runId }, ui) {
   if (!location.hash.endsWith(`/reconcile/${runId}`)) return;
 
   const user = getCurrentUser();
+  const plain = plainSummary(run, all.slice(0, index + 1), project);
 
   document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
   ui.mount(`
     <div class="recon-toolbar no-print">
       <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All trial loads</a>
+      <div class="recon-switch" role="tablist" aria-label="Report view">
+        <button role="tab" id="recon-tab-summary" aria-selected="true" aria-controls="recon-view-summary">Summary</button>
+        <button role="tab" id="recon-tab-detail" aria-selected="false" aria-controls="recon-view-detail">Full detail</button>
+      </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" id="recon-print">Print or save as PDF</button>
         <button class="btn btn-secondary btn-sm" id="recon-csv">Download exceptions (CSV)</button>
@@ -523,7 +529,9 @@ export async function renderReport({ id, runId }, ui) {
       </div>
     </div>
 
-    <article class="recon-report">
+    ${summaryArticle(run, plain, verified)}
+
+    <article class="recon-report" id="recon-view-detail" role="tabpanel" aria-labelledby="recon-tab-detail" hidden>
       <header class="recon-report-head">
         <div class="recon-eyebrow">Trial load reconciliation report</div>
         <h1>${esc(run.label)}</h1>
@@ -592,7 +600,7 @@ export async function renderReport({ id, runId }, ui) {
 
       <section>
         <h2>${change ? 5 : 4}. Review and acceptance</h2>
-        <div id="recon-reviews">${reviewsHtml(run)}</div>
+        <div class="recon-reviews-slot">${reviewsHtml(run)}</div>
         <form id="recon-review-form" class="recon-review-form no-print">
           <div class="field"><label for="rv-name">Name</label><input id="rv-name" value="${esc(user?.name || '')}" required></div>
           <div class="field"><label for="rv-role">Recording</label>
@@ -609,6 +617,19 @@ export async function renderReport({ id, runId }, ui) {
     </article>
   `);
   ui.attachLogout();
+
+  const views = { summary: document.getElementById('recon-view-summary'), detail: document.getElementById('recon-view-detail') };
+  const tabs = { summary: document.getElementById('recon-tab-summary'), detail: document.getElementById('recon-tab-detail') };
+  const showView = name => {
+    for (const key of Object.keys(views)) {
+      views[key].hidden = key !== name;
+      tabs[key].setAttribute('aria-selected', String(key === name));
+    }
+    window.scrollTo(0, 0);
+  };
+  tabs.summary.onclick = () => showView('summary');
+  tabs.detail.onclick = () => showView('detail');
+  document.querySelector('[data-show-detail]')?.addEventListener('click', e => { e.preventDefault(); showView('detail'); });
 
   document.getElementById('recon-print').onclick = () => window.print();
   document.getElementById('recon-csv').onclick = () => {
@@ -632,7 +653,7 @@ export async function renderReport({ id, runId }, ui) {
       at: new Date().toISOString(),
     }];
     saveProject(p);
-    document.getElementById('recon-reviews').innerHTML = reviewsHtml(r);
+    document.querySelectorAll('.recon-reviews-slot').forEach(el => { el.innerHTML = reviewsHtml(r); });
     document.getElementById('rv-note').value = '';
     ui.toast('Recorded');
   });
@@ -646,4 +667,100 @@ function reviewsHtml(run) {
     <thead><tr><th>Name</th><th>Recorded</th><th>Date</th><th>Note</th></tr></thead>
     <tbody>${run.reviews.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.role)}</td><td>${esc(fmtDate(r.at))}</td><td>${esc(r.note || '')}</td></tr>`).join('')}</tbody>
   </table>`;
+}
+
+// ---------- plain-English summary ----------
+
+const tick = ok => (ok
+  ? '<span class="recon-mark recon-mark-ok" role="img" aria-label="Fine">✓</span>'
+  : '<span class="recon-mark recon-mark-bad" role="img" aria-label="Problem">!</span>');
+
+function trendHtml(trend) {
+  if (trend.length < 2) return '';
+  const max = Math.max(1, ...trend.map(t => t.total));
+  return `
+    <div class="recon-trend" role="img" aria-label="Issues found at each check: ${esc(trend.map(t => `${t.label} ${t.total}`).join(', '))}">
+      ${trend.map(t => `
+        <div class="recon-trend-row ${t.current ? 'recon-trend-current' : ''}">
+          <span class="recon-trend-label">${esc(t.label)}</span>
+          <span class="recon-trend-bar">
+            <i class="recon-trend-serious" style="width:${(t.serious / max) * 100}%"></i><i class="recon-trend-other" style="width:${(t.other / max) * 100}%"></i>
+          </span>
+          <span class="recon-trend-count">${t.total ? `${t.serious} serious, ${t.other} smaller` : 'none'}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function summaryArticle(run, plain, verified) {
+  const order = { high: 0, medium: 1, low: 2 };
+  const issues = [...plain.issues].sort((a, b) => order[a.severity] - order[b.severity]);
+  return `
+    <article class="recon-report recon-plain" id="recon-view-summary" role="tabpanel" aria-labelledby="recon-tab-summary">
+      <header class="recon-report-head">
+        <div class="recon-eyebrow">Data check summary</div>
+        <h1>${esc(run.label)}</h1>
+        <p class="recon-meta">${esc(run.project.name)} · moving from ${esc(run.project.sourceSystem)} to ${esc(run.project.targetSystem)}</p>
+        <p class="recon-meta">Checked ${esc(fmtDate(run.at))} by ${esc(run.by)}</p>
+      </header>
+
+      <section class="recon-status recon-status-${plain.status.level}">
+        <div class="recon-status-label">${esc(plain.status.label)}</div>
+        <div class="recon-status-headline">${esc(plain.status.headline)}</div>
+      </section>
+
+      <section>
+        <h2>In short</h2>
+        ${plain.inShort.map(t => `<p class="recon-lead">${esc(t)}</p>`).join('')}
+      </section>
+
+      <section class="recon-two">
+        <div>
+          <h2>Did everything arrive?</h2>
+          <ul class="recon-checks">${plain.arrival.map(a => `<li>${tick(a.ok)}<span>${esc(a.text)}</span></li>`).join('')}</ul>
+        </div>
+        <div>
+          <h2>Do the totals agree?</h2>
+          ${plain.money.length ? `<ul class="recon-checks">${plain.money.map(m => `
+            <li>${tick(m.ok)}<span><strong>${esc(m.label)}</strong><br>${esc(m.text)}
+              <small>Old system ${esc(m.oldTotal)} · New system ${esc(m.newTotal)}</small></span></li>`).join('')}</ul>`
+            : '<p class="recon-sub">No totals were added up in this check.</p>'}
+        </div>
+      </section>
+
+      <section>
+        <h2>What needs fixing</h2>
+        ${issues.length ? `<ol class="recon-issues">${issues.map(i => `
+          <li class="recon-issue recon-issue-${i.severity}">
+            <span class="recon-chip recon-${i.severity}">${esc(i.level)}</span>
+            <div>
+              <p>${esc(i.text)}</p>
+              <p class="recon-sub">${esc(i.why)}${i.area ? ` Owner: ${esc(i.area)}.` : ''}</p>
+            </div>
+          </li>`).join('')}</ol>` : '<p class="recon-lead">Nothing. No differences were found.</p>'}
+      </section>
+
+      ${plain.progress ? `
+        <section>
+          <h2>Progress since ${esc(plain.progress.previousLabel)}</h2>
+          <p class="recon-lead">${esc(plain.progress.text)}</p>
+          ${trendHtml(plain.trend)}
+        </section>` : ''}
+
+      <section>
+        <h2>What this check does not tell you</h2>
+        <ul class="recon-method">${plain.limits.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+      </section>
+
+      <section>
+        <h2>Who has reviewed this</h2>
+        <div class="recon-reviews-slot">${reviewsHtml(run)}</div>
+      </section>
+
+      <footer class="recon-foot">
+        <div>Every statement here comes from the full report, which lists each difference with example records.
+          <a href="#" data-show-detail class="no-print">See the full detail</a></div>
+        <div>Reference ${esc(run.fingerprint.slice(0, 12))}${verified ? ' · results unchanged since the check was run' : ' · warning: results have changed since the check was run'}.
+          Matches are decided by fixed rules, not by AI.</div>
+      </footer>
+    </article>`;
 }
