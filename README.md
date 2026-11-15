@@ -136,7 +136,7 @@ After each trial load, the **Reconcile** step checks that what landed in the new
 
 - **Records**: counts on each side, records missing from the new system, records only in the new system, duplicates.
 - **Fields**: every mapped field on every paired record. Translation rules (`1 -> Y, 0 -> N`) and default values are applied first, then the result is compared with the new system.
-- **Control totals**: amount fields added up on each side, to the penny.
+- **Control totals**: numeric fields added up on each side and compared exactly (to the penny for money). Money, hours, headcounts and similar fields are suggested; tick any numeric field.
 - **Format-only differences** count as matched: spacing, `100` vs `100.00`, date layout (`2026-04-03` vs `03/04/2026`, day first), blank vs `NULL`.
 
 Differences are grouped by cause in plain English, for example *Old value "H" should become "On hold" but the new system holds "Inactive" (3 records)*, with a severity and up to five example records.
@@ -154,7 +154,7 @@ To try it without your own data, choose **Try the finance demo** on the projects
 
 The report opens on a **Summary** written for someone who is not a data specialist, such as a finance lead or project sponsor: an overall status, whether everything arrived, whether the totals agree, what needs fixing in everyday words (field descriptions are used in place of column names), progress since the last load, and what the check does not cover. **Full detail** switches to the technical report. Print or save as PDF prints whichever view is showing.
 
-Full detail contains: summary, exceptions (worst first), change since the previous load (fixed, still open, new), results by table, scope and method (including what was **not** covered), and a review and acceptance record.
+Full detail contains: summary, exceptions (worst first), change since each table was last checked (fixed, still open, new), so a load that covers one module is only compared with earlier checks of that module, results by table, scope and method (including what was **not** covered), and a review and acceptance record.
 
 Each run carries a SHA-256 fingerprint of its results. The report recalculates it on opening and says whether the results are unchanged since the run.
 

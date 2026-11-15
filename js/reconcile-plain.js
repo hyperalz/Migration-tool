@@ -4,7 +4,7 @@
 //
 // Nothing here re-decides anything. It only rewords what reconcile.js found.
 
-import { allGroups, compareRuns, formatAmount, getColumn } from './reconcile.js';
+import { allGroups, compareWithHistory, trendFor, formatAmount, getColumn } from './reconcile.js';
 
 const num = n => Number(n).toLocaleString('en-GB');
 const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
@@ -188,7 +188,7 @@ export function plainSummary(run, history = [run], project = null) {
         oldTotal: formatAmount(f.total.source),
         newTotal: formatAmount(f.total.target),
         text: ok
-          ? 'The two systems agree to the penny.'
+          ? 'The two systems agree exactly.'
           : `The new system is ${formatAmount(Math.abs(f.total.diff))} ${f.total.diff > 0 ? 'higher' : 'lower'} than the old one.`,
       });
     }
@@ -205,33 +205,29 @@ export function plainSummary(run, history = [run], project = null) {
         : `${money.filter(m => !m.ok).length} of ${money.length} ${plural(money.length, 'total')} we added up ${plural(money.filter(m => !m.ok).length, 'does', 'do')} not agree.`,
   ].filter(Boolean);
 
-  // Progress since the previous check.
-  const index = history.findIndex(r => r.id === run.id);
-  const previous = index > 0 ? history[index - 1] : null;
+  // Progress since each area was last checked (like for like).
+  const c = compareWithHistory(history, run);
   let progress = null;
-  if (previous) {
-    const c = compareRuns(previous, run);
-    const before = previous.summary.exceptions;
+  if (c.hasBaseline) {
+    const before = c.previousTotal;
     const parts = [];
     if (before === 0) parts.push('The previous check found no issues.');
     else if (c.fixed.length === before) parts.push(`All ${num(before)} ${plural(before, 'issue')} found last time ${plural(before, 'has', 'have')} been fixed.`);
     else parts.push(`${num(c.fixed.length)} of the ${num(before)} ${plural(before, 'issue')} found last time ${plural(c.fixed.length, 'has', 'have')} been fixed. ${num(c.stillOpen.length)} ${plural(c.stillOpen.length, 'remains', 'remain')}.`);
     if (c.added.length) parts.push(`${num(c.added.length)} new ${plural(c.added.length, 'issue has', 'issues have')} appeared since then.`);
+    if (c.firstTime.length) {
+      const names = c.firstTime.map(t => tableNoun(t.split(' → ')[0]));
+      parts.push(`This is the first check of the ${names.join(' and ')} records, so there is nothing to compare ${plural(names.length, 'it', 'them')} with yet.`);
+    }
     progress = {
-      previousLabel: previous.label,
+      previousLabel: c.singleLabel || 'the last check of the same records',
       fixed: c.fixed.length, stillOpen: c.stillOpen.length, added: c.added.length,
       text: parts.join(' '),
       newIssues: c.added.map(g => plainIssue(g, project).text),
     };
   }
 
-  const trend = history.slice(0, index + 1).map(r => ({
-    label: r.label,
-    serious: r.summary.bySeverity.high,
-    other: r.summary.bySeverity.medium + r.summary.bySeverity.low,
-    total: r.summary.exceptions,
-    current: r.id === run.id,
-  }));
+  const trend = trendFor(history, run);
 
   const limits = [
     'This compares a file taken from the old system with a file taken from the new one. It does not look at screens, reports, letters or links to other systems.',
