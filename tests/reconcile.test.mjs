@@ -310,3 +310,97 @@ test('quantities other than money are suggested for totals', () => {
   assert.equal(isLikelyAmount({ sourceColumn: 'pupil_id', targetColumn: 'PupilID' }, { type: 'int' }, { type: 'integer' }), false);
   assert.equal(isLikelyAmount({ sourceColumn: 'year_group', targetColumn: 'NCYear' }, { type: 'int' }, { type: 'integer' }), false);
 });
+
+// ---------- project overview ----------
+import { projectOverview, buildAreaSignoff, NO_AREA } from '../js/reconcile-overview.js';
+import { mappingStamp } from '../js/reconcile.js';
+
+test('overview: nothing checked is incomplete, never clear', () => {
+  const o = projectOverview(demoProject(), []);
+  assert.equal(o.summary.status.level, 'incomplete');
+  assert.equal(o.summary.status.headline, '2 tables have not been checked yet.');
+  assert.deepEqual(o.tables.map(t => t.state), ['not_checked', 'not_checked']);
+  assert.deepEqual(o.areas.map(a => [a.name, a.status]), [['Accounts payable', 'incomplete'], ['General ledger', 'incomplete']]);
+});
+
+test('overview: a clean table does not hide an unchecked one', () => {
+  const gl = runDemoPartial(1, [LEDGER], 'g', 'Ledger load 1');
+  const o = projectOverview(demoProject(), [gl]);
+  assert.equal(o.tables.find(t => t.id === LEDGER).status, 'clear');
+  assert.equal(o.summary.status.level, 'incomplete');
+  assert.equal(o.summary.checked, 1);
+  assert.equal(o.summary.areasClear, 1);
+});
+
+test('overview: worst status wins and each table uses its own latest check', () => {
+  const sup1 = runDemoPartial(1, [SUP], 'a', 'Suppliers load 1');
+  const gl1 = runDemoPartial(1, [LEDGER], 'b', 'Ledger load 1');
+  const sup2 = runDemoPartial(2, [SUP], 'c', 'Suppliers load 2');
+  const o = projectOverview(demoProject(), [sup1, gl1, sup2]);
+  const sup = o.tables.find(t => t.id === SUP);
+  assert.equal(sup.run.label, 'Suppliers load 2');
+  assert.deepEqual(sup.trend, [9, 3]);
+  assert.deepEqual(sup.issues, { high: 2, medium: 1, low: 0, total: 3 });
+  assert.equal(o.tables.find(t => t.id === LEDGER).run.label, 'Ledger load 1');
+  assert.equal(o.summary.status.level, 'attention');
+  assert.equal(o.summary.status.headline, '2 serious issues open across 1 area.');
+  assert.deepEqual(o.areas.map(a => a.status), ['attention', 'clear']);
+});
+
+test('overview: a final load judges every table on that load alone', () => {
+  const sup1 = runDemoPartial(1, [SUP], 'a', 'Suppliers load 1');
+  const gl1 = runDemoPartial(1, [LEDGER], 'b', 'Ledger load 1');
+  const o = projectOverview(demoProject(), [sup1, gl1], { finalRunId: 'b' });
+  const sup = o.tables.find(t => t.id === SUP);
+  assert.equal(sup.state, 'not_checked');
+  assert.deepEqual(sup.notes, ['Not included in the final load']);
+  assert.equal(o.summary.status.level, 'incomplete');
+  assert.equal(o.summary.status.headline, '1 table was not in the final load.');
+  assert.equal(o.summary.finalRun.label, 'Ledger load 1');
+});
+
+test('overview: changing a mapping after a check flags the table for re-checking', () => {
+  const project = demoProject();
+  const gl1 = runDemoPartial(1, [LEDGER], 'b', 'Ledger load 1');
+  const sup = runDemoPartial(2, [SUP], 'c', 'Suppliers load 2');
+  assert.equal(projectOverview(project, [gl1, sup]).tables.find(t => t.id === LEDGER).mappingsChanged, false);
+  project.mappings.find(m => m.sourceColumn === 'cost_centre').lookupRule = 'E1010 -> ED1010';
+  const o = projectOverview(project, [gl1, sup]);
+  const gl = o.tables.find(t => t.id === LEDGER);
+  assert.equal(gl.mappingsChanged, true);
+  assert.equal(gl.status, 'incomplete');
+  assert.equal(o.summary.recheck, 1);
+});
+
+test('overview: a sign-off only counts for the checks it was made against', () => {
+  const project = demoProject();
+  const gl1 = runDemoPartial(1, [LEDGER], 'b', 'Ledger load 1');
+  const before = projectOverview(project, [gl1]);
+  const area = before.areas.find(a => a.name === 'General ledger');
+  const signoff = buildAreaSignoff(area, { name: 'Finance lead', role: 'Signed off', note: '' });
+  const signed = projectOverview(project, [gl1], { signoffs: [signoff] });
+  assert.equal(signed.areas.find(a => a.name === 'General ledger').signoffCurrent, true);
+  assert.equal(signed.summary.areasSigned, 1);
+  // recording "Not signed off" does not count as signed
+  const refused = buildAreaSignoff(area, { name: 'Finance lead', role: 'Not signed off', note: '' });
+  assert.equal(projectOverview(project, [gl1], { signoffs: [signoff, refused] }).summary.areasSigned, 0);
+  // a later check of the same table supersedes the sign-off
+  const gl2 = runDemoPartial(2, [LEDGER], 'd', 'Ledger load 2');
+  const later = projectOverview(project, [gl1, gl2], { signoffs: [signoff] });
+  assert.equal(later.areas.find(a => a.name === 'General ledger').signoffCurrent, false);
+  assert.equal(later.summary.areasSigned, 0);
+});
+
+test('overview: tables with no service area are grouped, not dropped', () => {
+  const project = demoProject();
+  for (const m of project.mappings) if (m.sourceTable === 'gl_balance') m.serviceArea = '';
+  const o = projectOverview(project, []);
+  assert.deepEqual(o.areas.map(a => a.name), ['Accounts payable', NO_AREA]);
+});
+
+test('mapping stamp is stable and order independent', () => {
+  const pairs = tablePairs(demoProject().mappings);
+  const reversed = { ...pairs[0], mappings: [...pairs[0].mappings].reverse() };
+  assert.equal(mappingStamp(pairs[0]), mappingStamp(reversed));
+  assert.notEqual(mappingStamp(pairs[0]), mappingStamp(pairs[1]));
+});

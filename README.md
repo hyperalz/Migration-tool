@@ -158,6 +158,20 @@ Full detail contains: summary, exceptions (worst first), change since each table
 
 Each run carries a SHA-256 fingerprint of its results. The report recalculates it on opening and says whether the results are unchanged since the run.
 
+### Project overview
+
+**Project overview** (on the Reconcile screen) rolls the table-by-table checks up to service areas and to the whole project. It shows, for every mapped table, its latest check, records, match rate, totals, open issues and how the issue count has moved.
+
+The roll-up follows fixed rules so it cannot look better than the detail:
+
+- An area's status is that of its worst table.
+- A mapped table that has not been checked keeps its area and the project from showing as all clear.
+- A table whose mappings changed after its last check is flagged for re-checking.
+- Once a **final load** is chosen, every table is judged on that load alone.
+- An area sign-off counts only for the exact checks it was made against. A later check of any table in the area means it needs signing again.
+
+It does not check links between tables or figures that should match across tables.
+
 ### Privacy
 
 - Extract files are read in the browser. Rows are never written to `localStorage` or sent anywhere.

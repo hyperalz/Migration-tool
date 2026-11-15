@@ -11,6 +11,7 @@ import {
   formatAmount, SEVERITY_LABEL,
 } from './reconcile.js';
 import { plainSummary } from './reconcile-plain.js';
+import { projectOverview, buildAreaSignoff } from './reconcile-overview.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
 } from './demoFinance.js';
@@ -241,7 +242,8 @@ export function renderReconcile({ id }, ui) {
   ui.mount(`
     ${ui.projectSteps(project, 'reconcile')}
     <div class="page-head"><div><h1>Reconcile a trial load</h1>
-      <p>Check that what landed in the new system matches the old system, using the agreed mappings as the rule book.</p></div></div>
+      <p>Check that what landed in the new system matches the old system, using the agreed mappings as the rule book.</p></div>
+      <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Project overview</a></div>
 
     ${project.demo === FINANCE_DEMO ? `
       <div class="card recon-demo">
@@ -766,4 +768,165 @@ function summaryArticle(run, plain, verified) {
           Matches are decided by fixed rules, not by AI.</div>
       </footer>
     </article>`;
+}
+
+// ---------- project overview ----------
+
+const STATUS_CHIP = { attention: 'recon-high', incomplete: 'recon-low', nearly: 'recon-medium', clear: 'recon-ok' };
+const STATUS_WORD = { attention: 'Needs attention', incomplete: 'Incomplete', nearly: 'Nearly there', clear: 'All clear' };
+
+function capitalise(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function overviewTableRow(projectId, t) {
+  const issues = t.state === 'not_checked' ? '—'
+    : t.issues.total ? [
+      t.issues.high ? `<span class="recon-chip recon-high">${t.issues.high} serious</span>` : '',
+      (t.issues.medium + t.issues.low) ? `<span class="recon-chip recon-medium">${t.issues.medium + t.issues.low} smaller</span>` : '',
+    ].join(' ') : '<span class="recon-chip recon-ok">None</span>';
+  const totals = !t.totals ? '—' : !t.totals.checked ? 'None taken'
+    : t.totals.agreed === t.totals.checked ? `<span class="recon-good">${t.totals.checked === 1 ? 'Agrees' : `All ${t.totals.checked} agree`}</span>`
+      : `<span class="recon-bad">${t.totals.checked - t.totals.agreed} of ${t.totals.checked} differ</span>`;
+  return `
+    <tr>
+      <td><strong>${esc(capitalise(t.noun))}</strong>
+        <div class="recon-mono recon-sub">${esc(t.sourceTable)} → ${esc(t.targetTable)}</div>
+        ${t.notes.map(n => `<div class="recon-sub recon-warn">${esc(n)}</div>`).join('')}</td>
+      <td>${t.run ? `${esc(t.run.label)}<div class="recon-sub">${esc(fmtDate(t.run.at))}</div>` : '<span class="recon-warn">Not checked</span>'}</td>
+      <td class="recon-r">${t.records ? `${num(t.records.old)} → ${num(t.records.new)}` : '—'}</td>
+      <td class="recon-r">${t.matchRate === null ? '—' : pct(t.matchRate)}</td>
+      <td>${totals}</td>
+      <td>${issues}</td>
+      <td class="recon-r">${t.trend.length > 1 ? esc(t.trend.join(' → ')) : '—'}</td>
+      <td class="no-print">${t.run ? `<a class="btn btn-ghost btn-sm" href="#/projects/${projectId}/reconcile/${t.run.id}">Report</a>` : ''}</td>
+    </tr>`;
+}
+
+function areaSection(projectId, area, index, userName) {
+  const so = area.signoff;
+  const signoffLine = !so ? '<span class="recon-sub">Not signed off.</span>'
+    : `<span class="recon-sub"><strong>${esc(so.role)}</strong> by ${esc(so.name)} on ${esc(fmtDate(so.at))}${so.note ? `. ${esc(so.note)}` : ''}
+        ${area.signoffCurrent ? '' : '<span class="recon-warn"> This was recorded before the latest check, so it no longer counts.</span>'}</span>`;
+  return `
+    <section class="recon-area">
+      <h2>${esc(area.name)} <span class="recon-chip ${STATUS_CHIP[area.status]}">${STATUS_WORD[area.status]}</span>
+        ${area.signedOff ? '<span class="recon-chip recon-ok">Signed off</span>' : ''}</h2>
+      <table class="recon-table">
+        <thead><tr><th>Table</th><th>Last checked</th><th class="recon-r">Records, old → new</th><th class="recon-r">Details matched</th><th>Totals</th><th>Open issues</th><th class="recon-r">Issues over time</th><th class="no-print"></th></tr></thead>
+        <tbody>${area.tables.map(t => overviewTableRow(projectId, t)).join('')}</tbody>
+      </table>
+      <div class="recon-signoff">${signoffLine}</div>
+      <details class="recon-fields no-print">
+        <summary>Record a sign-off for ${esc(area.name)}</summary>
+        <form class="recon-review-form" data-signoff-area="${index}">
+          <div class="field"><label>Name<input name="name" value="${esc(userName)}" required></label></div>
+          <div class="field"><label>Recording<select name="role"><option>Signed off</option><option>Not signed off</option></select></label></div>
+          <div class="field" style="flex:2"><label>Note (optional)<input name="note" placeholder="e.g. accepted with two known issues"></label></div>
+          <button class="btn btn-secondary" type="submit">Record</button>
+        </form>
+      </details>
+    </section>`;
+}
+
+export function renderOverview({ id }, ui) {
+  esc = ui.esc;
+  const project = getProject(id);
+  if (!project) return ui.renderNotFound();
+  const user = getCurrentUser();
+  const all = runs(project);
+  const o = projectOverview(project, all, { finalRunId: project.reconFinalRunId || null, signoffs: project.reconAreaSignoffs || [] });
+  const s = o.summary;
+  const olderChecks = o.tables.some(t => t.run && !all.find(r => r.id === t.run.id)?.pairs.find(p => p.id === t.id)?.mappingStamp);
+
+  document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
+  ui.mount(`
+    <div class="recon-toolbar no-print">
+      <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All trial loads</a>
+      <button class="btn btn-primary btn-sm" id="recon-print">Print or save as PDF</button>
+    </div>
+
+    <article class="recon-report">
+      <header class="recon-report-head">
+        <div class="recon-eyebrow">Project data check overview</div>
+        <h1>${esc(project.name)}</h1>
+        <p class="recon-meta">Moving from ${esc(project.sourceSystem)} to ${esc(project.targetSystem)} · as at ${esc(fmtDate(new Date().toISOString()))}</p>
+        <p class="recon-meta">${s.finalRun
+          ? `Judged on the final load: <strong>${esc(s.finalRun.label)}</strong> (${esc(fmtDate(s.finalRun.at))}). Earlier checks are not counted.`
+          : 'Each table is judged on its own most recent check. No final load has been chosen.'}</p>
+      </header>
+
+      <section class="recon-status recon-status-${s.status.level}">
+        <div class="recon-status-label">${esc(s.status.label)}</div>
+        <div class="recon-status-headline">${esc(s.status.headline)}</div>
+      </section>
+
+      <section>
+        <div class="recon-tiles recon-tiles-4">
+          <div class="recon-tile"><b>${s.checked} of ${s.tables}</b><span>tables checked${s.recheck ? `, ${s.recheck} need re-checking` : ''}</span></div>
+          <div class="recon-tile"><b>${s.areasClear} of ${s.areas}</b><span>areas all clear</span></div>
+          <div class="recon-tile"><b>${num(s.high + s.other)}</b><span>open issues: ${s.high} serious, ${s.other} smaller</span></div>
+          <div class="recon-tile"><b>${s.areasSigned} of ${s.areas}</b><span>areas signed off</span></div>
+        </div>
+      </section>
+
+      ${o.areas.map((a, i) => areaSection(id, a, i, user?.name || '')).join('')}
+
+      <section>
+        <h2>Final load</h2>
+        <p class="recon-sub">During trial loads each table is judged on its latest check. Once the final load has been run and checked, choose it here.
+          Every table is then judged on that load alone, and any table missing from it shows as not checked.</p>
+        ${all.length ? `
+          <form id="recon-final-form" class="recon-review-form no-print">
+            <div class="field"><label>Final load<select name="run">
+              <option value="">None chosen</option>
+              ${all.slice().reverse().map(r => `<option value="${r.id}" ${project.reconFinalRunId === r.id ? 'selected' : ''}>${esc(r.label)} · ${esc(fmtDate(r.at))}</option>`).join('')}
+            </select></label></div>
+            <button class="btn btn-secondary" type="submit">Save</button>
+          </form>` : '<p class="recon-sub">No loads have been checked yet.</p>'}
+      </section>
+
+      <section>
+        <h2>What this overview does not tell you</h2>
+        <ul class="recon-method">
+          <li>It covers tables that have mapped fields. A table nobody has mapped does not appear here at all.</li>
+          <li>Each table is checked on its own. Links between tables, and figures that should match across tables, are not checked.</li>
+          <li>An area’s status is that of its worst table. A table that has not been checked keeps its area and the project from showing as all clear.</li>
+          ${olderChecks ? '<li>Some checks were run before mapping changes were tracked, so a later change to those mappings cannot be detected.</li>' : ''}
+          <li>This is evidence for a go-live decision. The decision itself belongs to the people who sign.</li>
+        </ul>
+      </section>
+
+      <footer class="recon-foot">
+        <div>Produced by MapBridge from ${num(all.length)} checked ${all.length === 1 ? 'load' : 'loads'}. Matches are decided by fixed rules, not by AI.</div>
+      </footer>
+    </article>
+  `);
+  ui.attachLogout();
+
+  document.getElementById('recon-print').onclick = () => window.print();
+
+  document.querySelectorAll('form[data-signoff-area]').forEach(form => {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const area = o.areas[Number(form.dataset.signoffArea)];
+      const fd = new FormData(form);
+      const name = String(fd.get('name') || '').trim();
+      if (!name) return;
+      const p = getProject(id);
+      p.reconAreaSignoffs = [...(p.reconAreaSignoffs || []), buildAreaSignoff(area, { name, role: fd.get('role'), note: String(fd.get('note') || '').trim() })];
+      saveProject(p);
+      ui.toast('Sign-off recorded');
+      renderOverview({ id }, ui);
+    });
+  });
+
+  document.getElementById('recon-final-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const p = getProject(id);
+    p.reconFinalRunId = new FormData(e.target).get('run') || null;
+    saveProject(p);
+    ui.toast(p.reconFinalRunId ? 'Final load set' : 'Final load cleared');
+    renderOverview({ id }, ui);
+  });
 }

@@ -149,6 +149,18 @@ export function guessKeyMappingIds(pair) {
   return byScore.length && byScore[0].score > 0 ? [byScore[0].m.id] : [];
 }
 
+// A short stamp of a table pair's mapping rules. Stored with each check so a
+// later change to the mappings can be detected.
+export function mappingStamp(pair) {
+  const rules = pair.mappings
+    .map(m => [m.sourceColumn, m.targetColumn, str(m.lookupRule).trim(), str(m.defaultValue).trim()].join('\u241f'))
+    .sort()
+    .join('\u241e');
+  let h = 5381;
+  for (let i = 0; i < rules.length; i++) h = ((h << 5) + h + rules.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
+
 // ---------- value comparison ----------
 
 // Returns 'exact' | 'format' | 'case' | 'diff'
@@ -475,6 +487,7 @@ export function reconcilePair({
     sourceTable: pair.sourceTable,
     targetTable: pair.targetTable,
     sourceFile, targetFile,
+    mappingStamp: mappingStamp(pair),
     key: { source: keyMappings.map(m => m.sourceColumn), target: keyMappings.map(m => m.targetColumn) },
     counts: {
       source: sourceRows.length, target: targetRows.length, matched: matchedKeys.length,
