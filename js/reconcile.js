@@ -73,10 +73,10 @@ function looksLikeIdentifier(name) {
 
 const PERSONAL_RE = /(fore|sur|first|last|given|family|full|contact|guardian|person|employee|pupil|staff)[ _]?name|(^|_)name($|_)|contact|dob|birth|address|addr|postcode|post_code|email|phone|mobile|tel(?:ephone)?|(^|_)ni(no|_number)?($|_)|national[ _]insurance|bank|sort[ _]?code|account[ _]?(no|num|number)|iban|upn|nhs|salary|gender|ethnic|disab|medical|health/i;
 
-const AMOUNT_NAME_RE = /amount|balance|total|value|price|cost|net|gross|vat|tax|debit|credit|paid|due|budget|spend|salary|pay$/i;
+const AMOUNT_NAME_RE = /amount|balance|total|value|price|cost|net|gross|vat|tax|debit|credit|paid|due|budget|spend|salary|pay$|hours|qty|quantity|units|fte|headcount|volume|weight|sessions|attendances|absences/i;
 
-// A first guess at whether a field is a money amount worth adding up as a
-// control total. A person confirms or overrides this before each run.
+// A first guess at whether a field is a quantity worth adding up as a control
+// total: money, but also hours, headcounts, quantities and the like. A person confirms or overrides this before each run.
 export function isLikelyAmount(mapping, sCol, tCol) {
   if (!isBlank(mapping.lookupRule)) return false;
   if (looksLikeIdentifier(mapping.sourceColumn) || looksLikeIdentifier(mapping.targetColumn)) return false;
@@ -580,7 +580,73 @@ export function allGroups(run) {
   );
 }
 
-// What changed between two trial loads.
+// What changed since each table was last checked.
+//
+// A run may cover only some tables (one module at a time), so each table in
+// the current run is compared with the most recent earlier run that also
+// checked that table. Tables never checked before have no baseline and are
+// listed under firstTime.
+//
+// @param {object[]} history every run, oldest first, including `current`
+export function compareWithHistory(history, current) {
+  const index = history.findIndex(r => r.id === current.id);
+  const earlier = (index < 0 ? history : history.slice(0, index)).slice().reverse();
+  const fixed = [];
+  const stillOpen = [];
+  const added = [];
+  const baselines = [];
+  const firstTime = [];
+  let previousTotal = 0;
+
+  for (const pair of current.pairs) {
+    const table = `${pair.sourceTable} → ${pair.targetTable}`;
+    const baseRun = earlier.find(r => r.pairs.some(p => p.id === pair.id));
+    if (!baseRun) { firstTime.push(table); continue; }
+    const basePair = baseRun.pairs.find(p => p.id === pair.id);
+    baselines.push({ table, runId: baseRun.id, label: baseRun.label, at: baseRun.at });
+    previousTotal += basePair.groups.length;
+    const prev = new Map(basePair.groups.map(g => [g.signature, g]));
+    const curr = new Map(pair.groups.map(g => [g.signature, g]));
+    for (const [sig, g] of prev) if (!curr.has(sig)) fixed.push({ ...g, table });
+    for (const [sig, g] of curr) {
+      if (prev.has(sig)) stillOpen.push({ ...g, table, previousCount: prev.get(sig).count });
+      else added.push({ ...g, table });
+    }
+  }
+
+  const bySeverity = (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.count - a.count;
+  const labels = [...new Set(baselines.map(b => b.label))];
+  return {
+    hasBaseline: baselines.length > 0,
+    fixed: fixed.sort(bySeverity), stillOpen: stillOpen.sort(bySeverity), added: added.sort(bySeverity),
+    baselines, firstTime, previousTotal,
+    // One label if every table was last checked in the same run, otherwise null.
+    singleLabel: labels.length === 1 ? labels[0] : null,
+  };
+}
+
+// Issue counts over time for the tables in `current` only, so the trend is
+// like for like even when earlier runs covered other tables.
+export function trendFor(history, current) {
+  const ids = new Set(current.pairs.map(p => p.id));
+  const index = history.findIndex(r => r.id === current.id);
+  const upTo = index < 0 ? [...history, current] : history.slice(0, index + 1);
+  const out = [];
+  for (const r of upTo) {
+    const pairs = r.pairs.filter(p => ids.has(p.id));
+    if (!pairs.length) continue;
+    let serious = 0;
+    let other = 0;
+    for (const p of pairs) for (const g of p.groups) (g.severity === 'high' ? serious++ : other++);
+    out.push({
+      label: r.label, serious, other, total: serious + other, current: r.id === current.id,
+      partial: pairs.length < ids.size,
+    });
+  }
+  return out;
+}
+
+// What changed between two specific runs, whatever they covered.
 export function compareRuns(previous, current) {
   const prev = new Map(allGroups(previous).map(g => [g.signature, g]));
   const curr = new Map(allGroups(current).map(g => [g.signature, g]));

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseLookupRule, parseNumber, parseDate, compareValues, tablePairs, guessKeyMappingIds,
-  reconcilePair, buildRun, fingerprintRun, compareRuns, isLikelyPersonal, isLikelyAmount, maskValue,
+  reconcilePair, buildRun, fingerprintRun, compareRuns, compareWithHistory, trendFor, isLikelyPersonal, isLikelyAmount, maskValue,
 } from '../js/reconcile.js';
 import {
   legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
@@ -213,7 +213,7 @@ test('plain summary of trial load 1 says what a finance lead needs', () => {
   assert.equal(p.arrival[1].text, 'All 48 GL balance records arrived.');
   assert.deepEqual(p.money.map(m => m.ok), [false, true]);
   assert.match(p.money[0].text, /^The new system is [\d,]+\.\d\d lower than the old one\.$/);
-  assert.equal(p.money[1].text, 'The two systems agree to the penny.');
+  assert.equal(p.money[1].text, 'The two systems agree exactly.');
   assert.equal(p.issues.length, 9);
   const texts = p.issues.map(i => i.text);
   assert.ok(texts.includes('On 3 supplier records, supplier status was “H” and should now read “On hold”, but the new system shows “Inactive”.'));
@@ -245,4 +245,68 @@ test('plain summary when everything matches', () => {
   assert.equal(p.status.level, 'clear');
   assert.equal(p.inShort[1], 'Every detail matched.');
   assert.equal(p.issues.length, 0);
+});
+
+// ---------- loads that cover different modules ----------
+
+function runDemoPartial(load, pairIds, id, label) {
+  const full = runDemo(load);
+  return buildRun({
+    project: demoProject(), label, by: 'tester', at: '2026-11-15T10:00:00.000Z', id,
+    pairResults: full.pairs.filter(p => pairIds.includes(p.id)),
+  });
+}
+
+const SUP = 'supplier→Supplier_Load';
+const LEDGER = 'gl_balance→GL_Opening_Balance';
+
+test('a load is only compared with earlier checks of the same tables', () => {
+  const sup1 = runDemoPartial(1, [SUP], 'a', 'Suppliers load 1');
+  const gl1 = runDemoPartial(1, [LEDGER], 'b', 'Ledger load 1');
+  const sup2 = runDemoPartial(2, [SUP], 'c', 'Suppliers load 2');
+  const history = [sup1, gl1, sup2];
+
+  // Ledger checked after suppliers: supplier issues must NOT show as fixed.
+  const glChange = compareWithHistory(history, gl1);
+  assert.equal(glChange.hasBaseline, false);
+  assert.deepEqual(glChange.firstTime, ['gl_balance → GL_Opening_Balance']);
+  assert.equal(glChange.fixed.length, 0);
+  assert.equal(plainSummary(gl1, history, schemaProject).progress, null);
+
+  // Suppliers load 2 is compared with suppliers load 1, skipping the ledger run in between.
+  const supChange = compareWithHistory(history, sup2);
+  assert.equal(supChange.singleLabel, 'Suppliers load 1');
+  assert.deepEqual([supChange.fixed.length, supChange.stillOpen.length, supChange.added.length], [7, 2, 1]);
+  assert.equal(supChange.previousTotal, 9);
+  assert.deepEqual(trendFor(history, sup2).map(t => t.label), ['Suppliers load 1', 'Suppliers load 2']);
+  assert.equal(plainSummary(sup2, history, schemaProject).progress.previousLabel, 'Suppliers load 1');
+});
+
+test('a full load after separate module loads uses each module\u2019s own baseline', () => {
+  const sup1 = runDemoPartial(1, [SUP], 'a', 'Suppliers load 1');
+  const gl1 = runDemoPartial(1, [LEDGER], 'b', 'Ledger load 1');
+  const full = runDemoPartial(2, [SUP, LEDGER], 'c', 'Full load');
+  const history = [sup1, gl1, full];
+  const change = compareWithHistory(history, full);
+  assert.equal(change.singleLabel, null);
+  assert.deepEqual(change.baselines.map(b => b.label), ['Suppliers load 1', 'Ledger load 1']);
+  assert.deepEqual([change.fixed.length, change.stillOpen.length, change.added.length], [7, 2, 1]);
+  const p = plainSummary(full, history, schemaProject);
+  assert.equal(p.progress.previousLabel, 'the last check of the same records');
+  const trend = trendFor(history, full);
+  assert.deepEqual(trend.map(t => [t.label, t.partial]), [['Suppliers load 1', true], ['Ledger load 1', true], ['Full load', false]]);
+});
+
+test('a new module added to a later load is flagged as a first check', () => {
+  const sup1 = runDemoPartial(1, [SUP], 'a', 'Load 1');
+  const both = runDemoPartial(2, [SUP, LEDGER], 'b', 'Load 2');
+  const p = plainSummary(both, [sup1, both], schemaProject);
+  assert.match(p.progress.text, /This is the first check of the GL balance records, so there is nothing to compare it with yet\.$/);
+});
+
+test('quantities other than money are suggested for totals', () => {
+  assert.equal(isLikelyAmount({ sourceColumn: 'contracted_hours', targetColumn: 'HOURS' }, { type: 'int' }, { type: 'integer' }), true);
+  assert.equal(isLikelyAmount({ sourceColumn: 'fte', targetColumn: 'FTE' }, { type: 'decimal(4,2)' }, null), true);
+  assert.equal(isLikelyAmount({ sourceColumn: 'pupil_id', targetColumn: 'PupilID' }, { type: 'int' }, { type: 'integer' }), false);
+  assert.equal(isLikelyAmount({ sourceColumn: 'year_group', targetColumn: 'NCYear' }, { type: 'int' }, { type: 'integer' }), false);
 });

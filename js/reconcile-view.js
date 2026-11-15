@@ -7,7 +7,7 @@ import { defaultVerification } from './verification.js';
 import { downloadCSV, downloadJSON } from './export.js';
 import {
   tablePairs, guessKeyMappingIds, getColumn, isLikelyPersonal, isLikelyAmount,
-  reconcilePair, buildRun, fingerprintRun, compareRuns, allGroups, exceptionRows,
+  reconcilePair, buildRun, fingerprintRun, compareWithHistory, allGroups, exceptionRows,
   formatAmount, SEVERITY_LABEL,
 } from './reconcile.js';
 import { plainSummary } from './reconcile-plain.js';
@@ -500,11 +500,12 @@ export async function renderReport({ id, runId }, ui) {
   const index = all.findIndex(r => r.id === runId);
   if (index < 0) return ui.renderNotFound();
   const run = all[index];
-  const previous = index > 0 ? all[index - 1] : null;
   const s = run.summary;
   const groups = allGroups(run);
   const banner = headline(s);
-  const change = previous ? compareRuns(previous, run) : null;
+  const history = all.slice(0, index + 1);
+  const compared = compareWithHistory(history, run);
+  const change = compared.hasBaseline ? compared : null;
 
   let verified = false;
   try { verified = (await fingerprintRun(run)) === run.fingerprint; } catch { verified = false; }
@@ -512,7 +513,7 @@ export async function renderReport({ id, runId }, ui) {
   if (!location.hash.endsWith(`/reconcile/${runId}`)) return;
 
   const user = getCurrentUser();
-  const plain = plainSummary(run, all.slice(0, index + 1), project);
+  const plain = plainSummary(run, history, project);
 
   document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
   ui.mount(`
@@ -564,11 +565,13 @@ export async function renderReport({ id, runId }, ui) {
 
       ${change ? `
         <section>
-          <h2>2. Change since ${esc(previous.label)}</h2>
-          <p class="recon-sub">${change.fixed.length} fixed · ${change.stillOpen.length} still open · ${change.added.length} new</p>
+          <h2>2. Change since ${esc(change.singleLabel || 'each table was last checked')}</h2>
+          <p class="recon-sub">${change.fixed.length} fixed · ${change.stillOpen.length} still open · ${change.added.length} new.
+            Each table is compared with the last load in which that table was checked${change.singleLabel ? '' : `: ${esc(change.baselines.map(b => `${b.table} with ${b.label}`).join('; '))}`}.
+            ${change.firstTime.length ? `First check, so nothing to compare: ${esc(change.firstTime.join('; '))}.` : ''}</p>
           ${changeList('New in this load', change.added, 'recon-change-new')}
           ${changeList('Still open', change.stillOpen, 'recon-change-open')}
-          ${changeList('Fixed since the previous load', change.fixed, 'recon-change-fixed')}
+          ${changeList('Fixed since the last check', change.fixed, 'recon-change-fixed')}
         </section>` : ''}
 
       <section>
@@ -686,7 +689,7 @@ function trendHtml(trend) {
           <span class="recon-trend-bar">
             <i class="recon-trend-serious" style="width:${(t.serious / max) * 100}%"></i><i class="recon-trend-other" style="width:${(t.other / max) * 100}%"></i>
           </span>
-          <span class="recon-trend-count">${t.total ? `${t.serious} serious, ${t.other} smaller` : 'none'}</span>
+          <span class="recon-trend-count">${t.total ? `${t.serious} serious, ${t.other} smaller` : 'none'}${t.partial ? ' (part checked)' : ''}</span>
         </div>`).join('')}
     </div>`;
 }
