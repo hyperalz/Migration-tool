@@ -1,7 +1,7 @@
 import { getCurrentUser, login, signup, logout, seedDemoUser } from './auth.js';
 import {
   getProjects, getProject, saveProject, createProject, deleteProject,
-  saveInvite, getInviteByToken, removeInvite, addMember, uid, getUsers,
+  saveInvite, getInviteByToken, removeInvite, addMember, uid, getUsers, getInvites,
 } from './store.js';
 import { synergySample, impulseSample, suggestedMappings, cloneSample } from './sampleData.js';
 import {
@@ -9,7 +9,7 @@ import {
   getSchemaColumn, valuesFormatMismatch,
 } from './schema.js';
 import {
-  buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs, mappingsToRows,
+  buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs, mappingsToRows, evidenceDigest,
 } from './export.js';
 import { MappingCanvas } from './mapping.js';
 import {
@@ -28,6 +28,8 @@ import {
   getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions,
 } from './ai-suggestions.js';
 import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject } from './reconcile-view.js';
+import { renderHome } from './home-view.js';
+import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -37,6 +39,7 @@ const routes = {
   '/signup': renderSignup,
   '/dashboard': renderDashboard,
   '/projects/new': renderNewProject,
+  '/projects/:id': params => renderHome(params, reconcileUI()),
   '/projects/:id/setup': renderSetup,
   '/projects/:id/invite': renderInvite,
   '/projects/:id/map': renderMap,
@@ -109,18 +112,23 @@ function nav(title = '') {
     </nav>`;
 }
 
+// The step bar. `active` is the key of the screen being shown ('home',
+// 'setup', 'invite', 'map', 'verify', 'reconcile', 'overview', 'export').
+// Each step shows its state, worked out from the project's data.
 function projectSteps(project, active) {
-  const steps = [
-    { key: 'setup', label: 'Connect schemas', path: 'setup' },
-    { key: 'invite', label: 'Invite party', path: 'invite' },
-    { key: 'map', label: 'Map columns', path: 'map' },
-    { key: 'verify', label: 'Test & live', path: 'verify' },
-    { key: 'reconcile', label: 'Reconcile', path: 'reconcile' },
-    { key: 'export', label: 'Export & close', path: 'export' },
-  ];
-  return `<div class="steps-bar">${steps.map(s => `
-    <a href="#/projects/${project.id}/${s.path}" class="step-chip ${s.path === active ? 'active' : ''}">${s.label}</a>
-  `).join('')}</div>`;
+  const { steps } = projectProgress(project);
+  const current = stepForScreen(active);
+  const chips = steps.map(s => {
+    const isActive = current?.key === s.key;
+    const cls = ['step-chip', isActive ? 'active' : '', `step-${s.state}`].filter(Boolean).join(' ');
+    const mark = s.state === 'done' ? '✓ ' : '';
+    return `<a href="#/projects/${project.id}/${s.path}" class="${cls}" title="${esc(`${STATE_LABEL[s.state]}. ${s.summary}`)}"${isActive ? ' aria-current="step"' : ''}>${mark}${s.number}. ${esc(s.label)}</a>`;
+  }).join('');
+  const sub = current && current.screens.length > 1
+    ? `<div class="steps-sub">${current.screens.map(sc =>
+      `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
+    : '';
+  return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}</div>${sub}`;
 }
 
 function attachLogout() {
@@ -220,10 +228,10 @@ function renderDashboard() {
       </div>
     </div>
     ${projects.length ? `<div class="project-grid">${projects.map(p => `
-      <a href="#/projects/${p.id}/setup" class="project-card">
+      <a href="#/projects/${p.id}" class="project-card">
         <h3>${esc(p.name)}</h3>
         <div class="project-meta">${esc(p.sourceSystem)} → ${esc(p.targetSystem)}</div>
-        <span class="status-pill status-${p.status === 'closed' ? 'closed' : p.status === 'mapping' ? 'mapping' : 'active'}">${p.status}</span>
+        <div class="project-next">${(next => (next ? `Next: ${esc(next.text)}` : 'All steps complete'))(projectProgress(p).next)}</div>
       </a>
     `).join('')}</div>` : `
       <div class="empty-state card">
@@ -1328,6 +1336,19 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
   };
 }
 
+// Records that the evidence pack was downloaded, with a digest of what it
+// contained, so a later change to the project can be detected.
+function markEvidenceExported(id, user) {
+  const p = getProject(id);
+  if (!p) return;
+  // Make sure every mapping carries its tracker record before taking the
+  // digest, so the digest is the same next time the project is read.
+  p.mappings.forEach(ensureVerification);
+  p.lastEvidenceExportAt = new Date().toISOString();
+  p.lastEvidenceDigest = evidenceDigest(buildExportPackage(p, user));
+  saveProject(p);
+}
+
 function renderExport({ id }) {
   const project = getProject(id);
   if (!project) return renderNotFound();
@@ -1336,19 +1357,25 @@ function renderExport({ id }) {
 
   project.mappings.forEach(ensureVerification);
   const vCounts = verificationSummary(project.mappings);
+  const reconRuns = project.reconRuns || [];
+  const areaSignoffs = project.reconAreaSignoffs || [];
+  const evidenceChanged = Boolean(project.lastEvidenceExportAt)
+    && project.lastEvidenceDigest !== evidenceDigest(buildExportPackage(project, user));
+  const needsExport = !project.lastEvidenceExportAt || evidenceChanged;
 
   document.getElementById('app-shell').innerHTML = nav(project.name) + '<main class="app-main" id="app-main"></main>';
   mount(`
     ${projectSteps(project, 'export')}
-    <div class="page-head"><div><h1>Export & close project</h1><p>Export mapping spec and column-level verification log, then permanently delete project data.</p></div></div>
+    <div class="page-head"><div><h1>Hand over and close</h1><p>Download the evidence pack: the agreed mappings, the field-by-field log, every checked load and every sign-off. Then close the project.</p></div></div>
     <div class="card" style="margin-bottom:1rem">
-      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">${stats.mappedCount} mappings · ${stats.percent}% target columns mapped · ${vCounts.signed_off || 0} columns signed off</p>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">${stats.mappedCount} mappings · ${stats.percent}% of new-system fields mapped · ${vCounts.signed_off || 0} fields signed off in the tracker · ${reconRuns.length} checked ${reconRuns.length === 1 ? 'load' : 'loads'} · ${areaSignoffs.length} area ${areaSignoffs.length === 1 ? 'sign-off' : 'sign-offs'}</p>
+      ${project.lastEvidenceExportAt ? `<p style="font-size:0.85rem;color:var(--muted)">Evidence pack last downloaded ${esc(new Date(project.lastEvidenceExportAt).toLocaleString('en-GB'))}.${evidenceChanged ? ' <strong style="color:var(--warn)">The project has changed since then.</strong>' : ''}</p>` : ''}
     </div>
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Export</h3>
         <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
-          <button class="btn btn-primary btn-sm" id="export-json">Download JSON package</button>
+          <button class="btn btn-primary btn-sm" id="export-json">Download evidence pack (JSON)</button>
           <button class="btn btn-secondary btn-sm" id="export-csv">Download CSV</button>
           <button class="btn btn-secondary btn-sm" id="export-xlsx">Download Excel (mappings + log)</button>
           <button class="btn btn-ghost btn-sm" id="export-sql">Download SQL stubs</button>
@@ -1356,7 +1383,8 @@ function renderExport({ id }) {
       </div>
       <div class="card">
         <h3 style="margin-bottom:0.75rem;color:var(--danger)">Close & delete project</h3>
-        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">All schemas, mappings, credentials and comments are permanently deleted. You keep only what you exported.</p>
+        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">All field lists, mappings, checked loads, reports, sign-offs and comments are permanently deleted. You keep only what you exported.</p>
+        ${needsExport ? `<p class="recon-error" style="margin-bottom:1rem">${project.lastEvidenceExportAt ? 'The project has changed since the evidence pack was last downloaded.' : 'The evidence pack has not been downloaded.'} ${reconRuns.length ? `Closing now would lose ${reconRuns.length} checked ${reconRuns.length === 1 ? 'load' : 'loads'} and ${areaSignoffs.length} area ${areaSignoffs.length === 1 ? 'sign-off' : 'sign-offs'}.` : 'Closing now would lose the mappings and the field log.'}</p>` : ''}
         <button class="btn btn-danger" id="close-project">Close project & wipe data</button>
       </div>
     </div>
@@ -1364,8 +1392,10 @@ function renderExport({ id }) {
   attachLogout();
 
   document.getElementById('export-json').onclick = () => {
-    downloadJSON(buildExportPackage(project, user), `${slug(project.name)}-mapping.json`);
-    toast('JSON exported');
+    downloadJSON(buildExportPackage(project, user), `${slug(project.name)}-evidence-pack.json`);
+    markEvidenceExported(id, user);
+    toast('Evidence pack downloaded');
+    renderExport({ id });
   };
   document.getElementById('export-csv').onclick = () => {
     downloadCSV(mappingsToRows(project.mappings), `${slug(project.name)}-mapping.csv`);
@@ -1383,8 +1413,13 @@ function renderExport({ id }) {
     a.click();
     toast('SQL stubs exported');
   };
-  document.getElementById('close-project').onclick = () => {
-    if (!confirm('Permanently delete all project data? This cannot be undone.')) return;
+  document.getElementById('close-project').onclick = e => {
+    const btn = e.currentTarget;
+    if (btn.dataset.armed !== 'yes') {
+      btn.dataset.armed = 'yes';
+      btn.textContent = needsExport ? 'Delete without a current evidence pack' : 'Confirm: delete everything';
+      return;
+    }
     deleteProject(id);
     toast('Project deleted');
     location.hash = '#/dashboard';

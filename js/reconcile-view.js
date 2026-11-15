@@ -243,7 +243,7 @@ export function renderReconcile({ id }, ui) {
     ${ui.projectSteps(project, 'reconcile')}
     <div class="page-head"><div><h1>Reconcile a trial load</h1>
       <p>Check that what landed in the new system matches the old system, using the agreed mappings as the rule book.</p></div>
-      <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Project overview</a></div>
+      <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Overview and sign-off</a></div>
 
     ${project.demo === FINANCE_DEMO ? `
       <div class="card recon-demo">
@@ -841,6 +841,7 @@ export function renderOverview({ id }, ui) {
 
   document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
   ui.mount(`
+    ${ui.projectSteps(project, 'overview')}
     <div class="recon-toolbar no-print">
       <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All trial loads</a>
       <button class="btn btn-primary btn-sm" id="recon-print">Print or save as PDF</button>

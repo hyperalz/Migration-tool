@@ -23,7 +23,21 @@ A production version with secure backend, real authentication, invite-based acce
 - **Export**: Download mappings + traceability log as JSON, CSV, or Excel. Export starter SQL stubs with CASE expressions for value translations and COALESCE for defaults.
 - **Browser-only storage**: Everything lives in `localStorage`. No credentials, no DPA concerns in this version—because there's no server to worry about.
 
-## Workflow
+## How the app is organised
+
+Opening a project lands on its **home page**, which shows where the project stands and the single most useful thing to do next. A step bar across every project screen shows five steps and the state of each (done, in progress, not started, not yet possible), worked out from the project's data.
+
+| Step | Screens | Done when |
+|---|---|---|
+| 1. Set up | Field lists, Team | Both systems' field lists are loaded |
+| 2. Map and agree | Mapping | Every required field in the new system has a source |
+| 3. Load and check | Check a load, Field tracker | Every mapped table passes its latest check |
+| 4. Sign off | Overview | Every area is signed off, a final load is chosen, and nothing is open |
+| 5. Hand over | Export and close | The evidence pack has been downloaded and the project has not changed since |
+
+The **evidence pack** (JSON) contains the field lists, mappings, the field-by-field log, every checked load with its results, the chosen final load and the area sign-offs. The close screen warns if the pack has not been downloaded, or if the project has changed since it was.
+
+## Workflow in detail
 
 1. **Create a project**: Name it (e.g. "Birmingham LA — Synergy to Impulse"), pick source and target systems.
 2. **Upload schemas**: JSON or CSV. Row 1 = column names, row 2 = types, row 3 = definitions, row 4 = value formats. Sample files are included in `samples/`.
