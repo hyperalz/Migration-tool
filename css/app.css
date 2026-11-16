@@ -2024,3 +2024,10 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
   details.home-step[open] .home-step-sum { display: block; flex-basis: 100%; }
   details.home-step > summary { flex-wrap: wrap; }
 }
+
+/* ---------- Mapping template import ---------- */
+.template-import { margin-bottom: 1rem; }
+.template-import summary { cursor: pointer; }
+.template-found { margin-top: 0.9rem; padding: 0.9rem 1rem; background: var(--bg); border-radius: 10px; font-size: 0.93rem; }
+.template-found ul { margin: 0.4rem 0 0.5rem 1.2rem; }
+.template-found li { margin-bottom: 0.2rem; }

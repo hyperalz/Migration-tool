@@ -42,6 +42,24 @@ function requiredUnmapped(project) {
   return n;
 }
 
+function anyRequiredKnown(project) {
+  return (project.targetSchema?.tables || []).some(t => (t.columns || []).some(c => c.required === true));
+}
+
+// New-system fields with no match that nobody has marked as not used.
+function openFields(project) {
+  const mapped = new Set((project.mappings || []).map(m => `${m.targetTable}\u241f${m.targetColumn}`));
+  const ruledOut = new Set((project.templateImport?.notUsed || []).map(x => `${x.table}\u241f${x.column}`));
+  let n = 0;
+  for (const t of project.targetSchema?.tables || []) {
+    for (const c of t.columns || []) {
+      const key = `${t.name}\u241f${c.name}`;
+      if (!mapped.has(key) && !ruledOut.has(key)) n++;
+    }
+  }
+  return n;
+}
+
 export function projectProgress(project) {
   const src = schemaCounts(project.sourceSchema);
   const tgt = schemaCounts(project.targetSchema);
@@ -73,6 +91,16 @@ export function projectProgress(project) {
     out.map = { state: 'blocked', summary: 'Needs both field lists first.' };
   } else if (!mappings.length) {
     out.map = { state: 'todo', summary: 'No fields mapped yet.', next: 'Start mapping fields', nextPath: 'map' };
+  } else if (!missing && !anyRequiredKnown(project) && openFields(project) > 0) {
+    // The field list does not say which fields are required, so "done" cannot
+    // be judged from that. Go by fields that are neither matched nor ruled out.
+    const open = openFields(project);
+    out.map = {
+      state: 'progress',
+      summary: `${num(mappings.length)} ${plural(mappings.length, 'field')} mapped. ${num(open)} ${plural(open, 'field')} in the new system ${plural(open, 'has', 'have')} no match and ${plural(open, 'has', 'have')} not been ruled out.`,
+      next: `Match or rule out the ${num(open)} ${plural(open, 'field')} with no match yet`,
+      nextPath: 'map',
+    };
   } else {
     out.map = {
       state: missing ? 'progress' : 'done',
