@@ -92,6 +92,11 @@ export const SCREEN_GUIDE = {
     'The Latest load check part of each row shows if the field matched in the last check.',
     'A red row means it was marked as passed but the last check found a problem.',
   ],
+  settings: [
+    'This page holds the things you set once and may change later.',
+    'Give each area a service area manager. They sign off the area.',
+    'Add the names of the people who record steps.',
+  ],
   area: [
     'This page is for one area of the move.',
     'The boxes at the top show how far each step has got.',

@@ -38,6 +38,7 @@ import { traceCard, bindTrace } from './trace-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
 import { bindHelp } from './help-view.js';
 import { renderArea } from './area-view.js';
+import { renderSettings } from './settings-view.js';
 import { ROUTE_TEXT, routeQuestionsHtml, routeFromForm, fieldListsPlan, routeSummary, firstBox } from './route.js';
 
 let canvasInstance = null;
@@ -56,6 +57,7 @@ const routes = {
   '/projects/:id/reconcile': params => renderReconcile(params, reconcileUI()),
   '/projects/:id/reconcile/overview': params => renderOverview(params, reconcileUI()),
   '/projects/:id/areas/:area': params => renderArea(params, reconcileUI()),
+  '/projects/:id/settings': params => renderSettings(params, { ...reconcileUI(), openAISettings: openAISettingsModal }),
   '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
   '/invite/:token': renderAcceptInvite,
@@ -70,7 +72,7 @@ export function initApp() {
 }
 
 function route() {
-  const hash = location.hash.slice(1) || '/login';
+  const [hash, anchor] = (location.hash.slice(1) || '/login').split('#');
   const user = getCurrentUser();
 
   if (!user && !['/login', '/signup', '/invite'].some(p => hash.startsWith(p))) {
@@ -84,6 +86,7 @@ function route() {
       closeDrawer();
       canvasInstance = null;
       handler(params);
+      if (anchor) document.getElementById(anchor)?.scrollIntoView();
       return;
     }
   }
@@ -141,7 +144,8 @@ function projectSteps(project, active) {
     ? `<div class="steps-sub">${shownScreens.map(sc =>
       `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
     : '';
-  return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}</div>${sub}${screenHelp(active)}`;
+  return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}
+    <a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${screenHelp(active)}`;
 }
 
 // "What do I do here?" for the screen being shown. Open until the reader
@@ -378,7 +382,6 @@ function renderSetup({ id }) {
         <a href="#/projects/${id}/map" class="btn btn-primary">Start matching →</a>` : ''}
     </div>
   `);
-  bindRouteCard(id);
   // Open the box the answers point to first, so the next step is in view.
   const first = { template: 'template-import', screenshots: 'shot-dict' }[firstBox(project)];
   if (first && document.getElementById(first)) document.getElementById(first).open = true;
@@ -412,30 +415,16 @@ function renderSetup({ id }) {
 }
 
 // "What you have": the start answers in plain words, with a way to change them.
+// "What you have": the start answers in plain words. They are changed in
+// Project settings, so they live in one place.
 function routeCard(project, plan) {
   const said = routeSummary(project);
   return `
-    <details class="card route-card" id="route-card" ${plan.answered ? '' : 'open'}>
-      <summary><strong>${esc(ROUTE_TEXT.summary)}</strong>
-        <span class="recon-sub" style="display:inline"> ${plan.answered ? esc(said.join(' ')) : esc(ROUTE_TEXT.unanswered)}</span></summary>
-      <form id="route-form" style="margin-top:0.75rem">
-        <p class="recon-sub" style="margin:0 0 0.5rem">${esc(ROUTE_TEXT.lead)}</p>
-        ${routeQuestionsHtml(project.route, esc, 'fl')}
-        <button class="btn btn-primary btn-sm" type="submit">Save answers</button>
-      </form>
-    </details>`;
-}
-
-function bindRouteCard(projectId) {
-  document.getElementById('route-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const p = getProject(projectId);
-    p.route = routeFromForm(k => fd.get(k));
-    saveProject(p);
-    toast('Answers saved');
-    renderSetup({ id: projectId });
-  });
+    <section class="card route-card" id="route-card">
+      <strong>${esc(ROUTE_TEXT.summary)}</strong>
+      <span class="recon-sub"> ${plan.answered ? esc(said.join(' ')) : esc(ROUTE_TEXT.unanswered)}</span>
+      <a class="btn btn-ghost btn-sm" style="margin-left:0.5rem" href="#/projects/${project.id}/settings#settings-route-card">${plan.answered ? 'Change your answers' : 'Answer the questions'}</a>
+    </section>`;
 }
 
 function setupUpload(side, projectId) {
@@ -808,91 +797,6 @@ function renderServiceAreaOptions(areas, selected = '') {
   ).join('')}`;
 }
 
-function renderProjectSetupCard(project, open = false) {
-  ensureProjectTeam(project);
-  ensureProjectServiceAreas(project);
-  const teamNames = getProjectTeamNames(project, getUsers());
-  const areas = getProjectServiceAreaNames(project);
-  const summary = [
-    teamNames.length ? `${teamNames.length} team` : null,
-    areas.length ? `${areas.length} areas` : null,
-  ].filter(Boolean).join(' · ') || 'Add team names and service areas';
-  return `
-    <details class="project-setup-card card" id="project-setup-panel"${open ? ' open' : ''}>
-      <summary class="setup-summary">
-        <span class="setup-summary-title">Project setup</span>
-        <span class="setup-summary-meta">${summary}</span>
-      </summary>
-      <div class="project-setup-grid">
-        <section>
-          <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Migration team</h3>
-          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Everyone whose name may be recorded against a step.</p>
-          <div class="team-chips">${teamNames.length
-            ? teamNames.map(n => `<span class="team-chip">${esc(n)}<button type="button" class="team-chip-remove" data-list="team" data-name="${esc(n)}" aria-label="Remove">×</button></span>`).join('')
-            : '<span style="font-size:0.82rem;color:var(--muted)">No names yet.</span>'}</div>
-          <form id="team-form" class="team-add-form">
-            <input name="name" placeholder="Full name" required>
-            <button type="submit" class="btn btn-secondary btn-sm">Add</button>
-          </form>
-        </section>
-        <section>
-          <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Service areas</h3>
-          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Group fields into areas, for example Pupil, Attendance, Staff.</p>
-          <div class="team-chips">${areas.length
-            ? areas.map(a => `<span class="team-chip area-chip">${esc(a)}<button type="button" class="team-chip-remove" data-list="area" data-name="${esc(a)}" aria-label="Remove">×</button></span>`).join('')
-            : '<span style="font-size:0.82rem;color:var(--muted)">No areas yet.</span>'}</div>
-          <form id="area-form" class="team-add-form">
-            <input name="name" placeholder="Area name" required>
-            <button type="submit" class="btn btn-secondary btn-sm">Add</button>
-          </form>
-        </section>
-      </div>
-    </details>`;
-}
-
-function bindProjectSetupForms(projectId, onUpdate) {
-  document.getElementById('team-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = new FormData(e.target).get('name')?.trim();
-    if (!name) return;
-    const p = getProject(projectId);
-    ensureProjectTeam(p);
-    if (!p.team.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-      p.team.push({ name });
-      saveProject(p);
-      toast(`${name} added to team`);
-    }
-    onUpdate?.();
-  });
-  document.getElementById('area-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = new FormData(e.target).get('name')?.trim();
-    if (!name) return;
-    const p = getProject(projectId);
-    ensureProjectServiceAreas(p);
-    if (!p.serviceAreas.some(a => a.name.toLowerCase() === name.toLowerCase())) {
-      p.serviceAreas.push({ name });
-      saveProject(p);
-      toast(`${name} added`);
-    }
-    onUpdate?.();
-  });
-  document.querySelectorAll('.team-chip-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = getProject(projectId);
-      if (btn.dataset.list === 'area') {
-        ensureProjectServiceAreas(p);
-        p.serviceAreas = p.serviceAreas.filter(a => a.name !== btn.dataset.name);
-      } else {
-        ensureProjectTeam(p);
-        p.team = p.team.filter(t => t.name !== btn.dataset.name);
-      }
-      saveProject(p);
-      onUpdate?.();
-    });
-  });
-}
-
 function bindServiceAreaSelects(projectId, rerender) {
   document.querySelectorAll('.service-area-select').forEach(sel => {
     sel.addEventListener('click', e => e.stopPropagation());
@@ -992,7 +896,7 @@ function renderVerify({ id }) {
           <button class="btn btn-secondary btn-sm" id="show-conflicts">Show ${conflicts.length === 1 ? 'it' : 'them'}</button>
         </div>` : ''}
       ${renderTraceDashboardHTML(dashData, dashboardOpen)}
-      ${renderProjectSetupCard(project, setupOpen)}
+      <p class="recon-sub" style="margin:0 0 1rem">The people who record steps, and the areas with their managers, are in <a href="#/projects/${id}/settings">Project settings</a>.</p>
       <div class="verify-workspace card">
         <div class="verify-toolbar">
           <div class="verify-toolbar-block">
@@ -1107,7 +1011,6 @@ function renderVerify({ id }) {
       filterServiceArea = null;
       render();
     });
-    bindProjectSetupForms(id, () => render());
     bindServiceAreaSelects(id, render);
     bindTraceClicks(id, render);
     document.querySelectorAll('.verification-table tr[data-mapping-id] .col-mapping, .verification-table tr[data-mapping-id] .col-status').forEach(cell => {
