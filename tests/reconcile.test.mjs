@@ -1114,8 +1114,8 @@ test('board: each area shows its own stage, and the spreadsheet\'s areas are kep
   assert.deepEqual(p.targetSchema.tables.map(t => t.section), ['Customer', 'Order']);
   const board = areaBoard(p);
   assert.deepEqual(board.map(r => r.name), ['Customer', 'Order', 'Payroll']);
-  assert.deepEqual(cells(board[0]), { list: '5 fields', match: '1 to match', check: '1 table to check', agree: '—' });
-  assert.deepEqual(cells(board[2]), { list: 'Not in yet', match: '—', check: '—', agree: '—' });
+  assert.deepEqual(cells(board[0]), { list: '5 fields', match: '1 to match', send: '3 to send', test: '—', live: '—', agree: '—' });
+  assert.deepEqual(cells(board[2]), { list: 'Not in yet', match: '—', send: '—', test: '—', live: '—', agree: '—' });
   assert.equal(board[0].now, 'match');
   assert.equal(board[2].now, 'list');
   // every open field lands in exactly one area
@@ -1124,7 +1124,7 @@ test('board: each area shows its own stage, and the spreadsheet\'s areas are kep
 
 test('to-do: one list across steps and areas, with the jobs that hold work up first', () => {
   const list = todoList(templateProject());
-  assert.deepEqual(list.map(t => t.id), ['list-Payroll', 'match-Customer', 'match-Order', 'unchecked-Customer', 'unchecked-Order', 'questions']);
+  assert.deepEqual(list.map(t => t.id), ['list-Payroll', 'match-Customer', 'match-Order', 'send-Customer', 'send-Order', 'questions']);
   assert.equal(list[0].area, 'Payroll');
   assert.equal(list[1].text, '1 field in the new system has no match yet. Match it or mark it as not used.');
   assert.ok(list.every(t => t.path && t.step));
@@ -1141,8 +1141,9 @@ test('to-do: serious problems and changed tables come before matching; checked a
   assert.ok(firstSerious >= 0);
   assert.ok(firstMatch === -1 || firstSerious < firstMatch);
   const board = areaBoard(p);
-  assert.ok(board.some(r => /serious problem/.test(r.cells.check.text)));
-  assert.ok(board.every(r => r.cells.agree.text !== 'Ready to sign' || r.cells.check.state === 'done'));
+  // problems found by a file check count as failed fields
+  assert.ok(board.some(r => /failed$/.test(r.cells.test.text)));
+  assert.ok(board.every(r => r.cells.agree.text !== 'Ready to sign' || r.cells.test.state === 'done'));
 });
 
 test('to-do: sign-off, final load and evidence pack appear in turn', () => {
@@ -1152,6 +1153,10 @@ test('to-do: sign-off, final load and evidence pack appear in turn', () => {
   p.sourceSchema = { ...legacyFinanceSchema, tables: legacyFinanceSchema.tables.filter(t => t.name === 'gl_balance') };
   p.targetSchema = { ...newFinanceSchema, tables: newFinanceSchema.tables.filter(t => t.name === 'GL_Opening_Balance') };
   const ids = () => todoList(p).map(t => t.id.replace(/-.*/, ''));
+  // a clean file check is UAT in test passing; sign-off waits for UAT in live
+  assert.ok(!ids().includes('sign'));
+  assert.ok(ids().includes('to'), 'load into live');
+  p.mappings = p.mappings.map(m => ({ ...m, verification: { status: 'live_passed', history: [] } }));
   assert.ok(ids().includes('sign'));
   const area = projectProgress(p).overview.areas[0];
   p.reconAreaSignoffs = [buildAreaSignoff(area, { name: 'Lead', role: 'Signed off', note: '' })];
@@ -1310,4 +1315,97 @@ test('route: the box the answers point to opens first', () => {
   assert.equal(firstBox({ route: { supplierSheet: true, oldSystemOpen: false }, templateImport: {} }), 'screenshots');
   assert.equal(firstBox({ route: { oldSystemOpen: false }, sourceSchema: { tables: [{ name: 'Screen: A', origin: 'screenshot', columns: [] }] } }), null);
   assert.equal(firstBox({}), null);
+});
+
+// ---------- one progress system ----------
+import { fieldStage, fieldStages, stageCounts, signOffAreaFields } from '../js/field-progress.js';
+import { nextTraceStepKey, NEXT_ACTIONS } from '../js/verification.js';
+
+const withStatus = (m, status) => ({ ...m, verification: { status, history: [{ status, at: 'T', by: 'x', note: '' }] } });
+
+test('fields: one stage each, from the tracker and file checks together', () => {
+  const m = { id: 'a' };
+  assert.equal(fieldStage(m), 'matched');
+  for (const [status, stage] of [['sql_sent', 'sent'], ['test_uploaded', 'inTest'], ['test_failed', 'testFailed'], ['test_passed', 'testPassed'],
+    ['live_uploaded', 'inLive'], ['live_failed', 'liveFailed'], ['live_passed', 'livePassed'], ['signed_off', 'signed']]) assert.equal(fieldStage(withStatus(m, status)), stage, status);
+  // a file check that finds a problem fails the field where it now is
+  assert.equal(fieldStage(withStatus(m, 'test_passed'), { state: 'fail' }), 'testFailed');
+  assert.equal(fieldStage(withStatus(m, 'live_passed'), { state: 'fail' }), 'liveFailed');
+  // a file check that passes counts as passing test, never as passing live
+  assert.equal(fieldStage(withStatus(m, 'sql_sent'), { state: 'pass' }), 'testPassed');
+  assert.equal(fieldStage(withStatus(m, 'live_uploaded'), { state: 'pass' }), 'inLive');
+  assert.equal(fieldStage(withStatus(m, 'test_failed'), { state: 'pass' }), 'testFailed');
+  // matches changed since a pass: it needs UAT again, in the same place
+  assert.equal(fieldStage(withStatus(m, 'test_passed'), { state: 'recheck' }), 'inTest');
+  assert.equal(fieldStage(withStatus(m, 'live_passed'), { state: 'recheck' }), 'inLive');
+});
+
+function trackedProject(statusFor) {
+  const p = schemaProjectFull();
+  p.mappings = p.mappings.map(m => withStatus(m, statusFor(m)));
+  return p;
+}
+
+test('fields: the board and to-do list follow the real steps, with no file checks at all', () => {
+  // ledger fields passed in the new system's screens; supplier fields: some failed, some in test, some not sent
+  const p = trackedProject(m => (m.sourceTable === 'gl_balance' ? 'live_passed'
+    : ['supplier_id', 'supplier_name'].includes(m.sourceColumn) ? 'test_failed'
+      : ['status', 'payment_terms'].includes(m.sourceColumn) ? 'test_uploaded' : 'mapped'));
+  const board = Object.fromEntries(areaBoard(p).map(r => [r.name, cells(r)]));
+  assert.deepEqual(board['General ledger'], { list: '4 fields', match: 'All matched', send: 'All sent', test: 'All passed', live: 'All passed', agree: 'Ready to sign' });
+  assert.equal(board['Accounts payable'].test, '2 failed');
+  assert.equal(board['Accounts payable'].live, '—');
+  assert.match(board['Accounts payable'].send, /^\d+ to send$/);
+  const ids = todoList(p).map(t => t.id);
+  assert.ok(ids.indexOf('failed-Accounts payable') < ids.indexOf('testing-Accounts payable'));
+  assert.ok(ids.indexOf('testing-Accounts payable') < ids.indexOf('send-Accounts payable'));
+  assert.ok(ids.includes('sign-General ledger'));
+  assert.ok(!ids.some(i => i.startsWith('unchecked-')), 'no file checks used, so none are asked for');
+  // the step bar moves on without file checks
+  const pr = projectProgress(p);
+  assert.equal(pr.steps[2].state, 'progress');
+  assert.match(pr.steps[2].summary, /^4 of 13 fields passed UAT in live\. 4 passed UAT in test\. 2 failed\. 2 waiting for UAT\.$/);
+  assert.equal(pr.steps[3].state, 'todo');
+});
+
+test('fields: one area sign-off marks every field in it signed off, and the step is done without file checks', () => {
+  const p = trackedProject(() => 'test_passed');
+  const ov = projectProgress(p).overview;
+  for (const area of ov.areas) {
+    const changed = signOffAreaFields(p, area, { by: 'Sam Manager', at: 'T1' });
+    assert.equal(changed, area.tables.reduce((n, t) => n + t.mappedFields, 0));
+    p.reconAreaSignoffs = [...(p.reconAreaSignoffs || []), buildAreaSignoff(area, { name: 'Sam Manager', role: 'Signed off', note: '' })];
+  }
+  assert.ok(p.mappings.every(m => m.verification.status === 'signed_off'));
+  const last = p.mappings[0].verification.history.at(-1);
+  assert.deepEqual([last.by, last.at, last.note], ['Sam Manager', 'T1', 'Signed off with the Accounts payable area']);
+  assert.equal(stageCounts(p.mappings, fieldStages(p)).signed, 13);
+  assert.equal(projectProgress(p).steps[3].state, 'done');
+  assert.ok(todoList(p).some(t => t.id === 'evidence'));
+  // signing again changes nothing
+  assert.equal(signOffAreaFields(p, ov.areas[0], { by: 'Sam Manager' }), 0);
+});
+
+test('fields: a single field can no longer be signed off on its own', () => {
+  assert.deepEqual(NEXT_ACTIONS.live_passed, []);
+  assert.equal(nextTraceStepKey(withStatus({ id: 'a' }, 'live_passed')), null);
+});
+
+test('fields: in live is not done — only passing UAT in live is, and only then can the area sign off', () => {
+  const at = status => trackedProject(m => (m.sourceTable === 'gl_balance' ? status : 'mapped'));
+  const ledger = p => cells(areaBoard(p).find(r => r.name === 'General ledger'));
+  // passed UAT in test: next is loading into live
+  let p = at('test_passed');
+  assert.deepEqual([ledger(p).test, ledger(p).live, ledger(p).agree], ['All passed', '4 to load', '—']);
+  assert.ok(todoList(p).some(t => t.id === 'to-live-General ledger' && /Load them into live/.test(t.text)));
+  // in live: waiting for UAT in live, still not done
+  p = at('live_uploaded');
+  assert.deepEqual([ledger(p).live, ledger(p).agree], ['4 to check', '—']);
+  assert.equal(stageCounts(p.mappings, fieldStages(p)).done, 0);
+  // failed UAT in live: comes before everything in test
+  p = trackedProject(m => (m.sourceTable === 'gl_balance' ? 'live_failed' : 'test_failed'));
+  assert.equal(todoList(p)[0].id, 'live-failed-General ledger');
+  // passed UAT in live: now, and only now, ready to sign
+  p = at('live_passed');
+  assert.equal(ledger(p).agree, 'Ready to sign');
 });

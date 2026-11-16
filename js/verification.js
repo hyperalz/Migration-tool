@@ -1,47 +1,48 @@
 export const VERIFICATION_STATUSES = {
   mapped: { label: 'Matched', phase: 'mapping', color: '#64748b' },
   sql_sent: { label: 'SQL sent', phase: 'delivery', color: '#2563eb' },
-  test_uploaded: { label: 'In test', phase: 'test', color: '#d97706' },
-  test_passed: { label: 'Test passed', phase: 'test', color: '#059669' },
-  test_failed: { label: 'Test failed', phase: 'test', color: '#dc2626' },
-  live_uploaded: { label: 'In live', phase: 'live', color: '#7c3aed' },
-  live_passed: { label: 'Live passed', phase: 'live', color: '#059669' },
-  live_failed: { label: 'Live failed', phase: 'live', color: '#dc2626' },
+  test_uploaded: { label: 'Loaded into test', phase: 'test', color: '#d97706' },
+  test_passed: { label: 'Passed UAT in test', phase: 'test', color: '#059669' },
+  test_failed: { label: 'Failed UAT in test', phase: 'test', color: '#dc2626' },
+  live_uploaded: { label: 'Loaded into live', phase: 'live', color: '#7c3aed' },
+  live_passed: { label: 'Passed UAT in live', phase: 'live', color: '#059669' },
+  live_failed: { label: 'Failed UAT in live', phase: 'live', color: '#dc2626' },
   signed_off: { label: 'Signed off', phase: 'done', color: '#0d5c63' },
 };
 
 export const NEXT_ACTIONS = {
   mapped: [{ status: 'sql_sent', label: 'Record SQL sent to supplier' }],
-  sql_sent: [{ status: 'test_uploaded', label: 'Record uploaded to test' }],
+  sql_sent: [{ status: 'test_uploaded', label: 'Record loaded into test' }],
   test_uploaded: [
-    { status: 'test_passed', label: 'Test check passed' },
-    { status: 'test_failed', label: 'Test check failed' },
+    { status: 'test_passed', label: 'Passed UAT in test' },
+    { status: 'test_failed', label: 'Failed UAT in test' },
   ],
   test_failed: [
     { status: 'sql_sent', label: 'Resend SQL / data' },
     { status: 'mapped', label: 'Match changed — resend SQL' },
   ],
-  test_passed: [{ status: 'live_uploaded', label: 'Record pushed to live' }],
+  test_passed: [{ status: 'live_uploaded', label: 'Record loaded into live' }],
   live_uploaded: [
-    { status: 'live_passed', label: 'Live check passed' },
-    { status: 'live_failed', label: 'Live check failed' },
+    { status: 'live_passed', label: 'Passed UAT in live' },
+    { status: 'live_failed', label: 'Failed UAT in live' },
   ],
   live_failed: [
     { status: 'sql_sent', label: 'Resend from test cycle' },
-    { status: 'live_uploaded', label: 'Re-pushed to live' },
+    { status: 'live_uploaded', label: 'Loaded into live again' },
   ],
-  live_passed: [{ status: 'signed_off', label: 'Sign off field' }],
+  // Fields are signed off with their area, by the service area manager.
+  live_passed: [],
   signed_off: [],
 };
 
 export const TRACE_STEPS = [
   { key: 'mapped', action: 'Matched', label: 'Matched by', statuses: ['mapped'], recordStatus: null },
   { key: 'sql_sent', action: 'SQL sent', label: 'SQL sent by', statuses: ['sql_sent'], recordStatus: 'sql_sent' },
-  { key: 'test_uploaded', action: 'Uploaded', label: 'Uploaded by', statuses: ['test_uploaded'], recordStatus: 'test_uploaded' },
-  { key: 'test_checked', action: 'Checked in test', label: 'Tested in test by', statuses: ['test_passed', 'test_failed'], recordStatus: 'test_passed', failStatus: 'test_failed', checkStep: true },
-  { key: 'live_uploaded', action: 'In live', label: 'Pushed to live by', statuses: ['live_uploaded'], recordStatus: 'live_uploaded' },
-  { key: 'live_checked', action: 'Checked in live', label: 'Tested in live by', statuses: ['live_passed', 'live_failed'], recordStatus: 'live_passed', failStatus: 'live_failed', checkStep: true },
-  { key: 'done', action: 'Done', label: 'Signed off by', statuses: ['signed_off'], recordStatus: 'signed_off' },
+  { key: 'test_uploaded', action: 'Loaded into test', label: 'Loaded into test by', statuses: ['test_uploaded'], recordStatus: 'test_uploaded' },
+  { key: 'test_checked', action: 'UAT in test', label: 'UAT in test by', statuses: ['test_passed', 'test_failed'], recordStatus: 'test_passed', failStatus: 'test_failed', checkStep: true },
+  { key: 'live_uploaded', action: 'Loaded into live', label: 'Loaded into live by', statuses: ['live_uploaded'], recordStatus: 'live_uploaded' },
+  { key: 'live_checked', action: 'UAT in live', label: 'UAT in live by', statuses: ['live_passed', 'live_failed'], recordStatus: 'live_passed', failStatus: 'live_failed', checkStep: true },
+  { key: 'done', action: 'Signed off', label: 'Signed off by', statuses: ['signed_off'], recordStatus: 'signed_off' },
 ];
 
 export function defaultVerification(note = 'Match made', by = 'system') {
@@ -92,8 +93,8 @@ export function recordTransition(mapping, { status, by, note = '', reference = '
 export const PHASE_GROUPS = {
   mapping: { label: 'Matched', statuses: ['mapped'] },
   delivery: { label: 'SQL sent', statuses: ['sql_sent'] },
-  test: { label: 'Test cycle', statuses: ['test_uploaded', 'test_passed', 'test_failed'] },
-  live: { label: 'Live cycle', statuses: ['live_uploaded', 'live_passed', 'live_failed'] },
+  test: { label: 'Test', statuses: ['test_uploaded', 'test_passed', 'test_failed'] },
+  live: { label: 'Live', statuses: ['live_uploaded', 'live_passed', 'live_failed'] },
   done: { label: 'Signed off', statuses: ['signed_off'] },
 };
 
@@ -265,7 +266,7 @@ export function nextTraceStepKey(mapping) {
     test_uploaded: 'test_checked',
     test_passed: 'live_uploaded',
     live_uploaded: 'live_checked',
-    live_passed: 'done',
+    live_passed: null,
     signed_off: null,
     test_failed: 'sql_sent',
     live_failed: 'live_uploaded',
