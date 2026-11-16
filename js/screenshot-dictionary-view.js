@@ -138,7 +138,7 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
         sentHashes.add(hash);
       } catch (err) {
         failures.push({ file: file.name, message: err.message || 'Something went wrong.' });
-        if (/key|address|model/i.test(err.message || '')) break; // a settings problem will fail every picture
+        if (/key|address|model|reach/i.test(err.message || '')) break; // a settings problem will fail every picture
       }
     }
 

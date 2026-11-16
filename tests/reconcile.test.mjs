@@ -845,3 +845,26 @@ test('progress: hiding the import result keeps its "not used" fields ruled out',
   const hidden = projectProgress({ ...base, templateImport: { notUsed: parsed.notUsed, hidden: true } }).steps[1].summary;
   assert.equal(hidden, shown);
 });
+
+import { isLocalAddress, localUnreachable } from '../js/screenshot-dictionary.js';
+
+test('screenshots: an AI on this computer (Ollama) needs no key and gets no key sent', async () => {
+  for (const url of ['http://localhost:11434/v1', 'http://127.0.0.1:11434/v1/', 'http://[::1]:11434/v1', 'http://ollama.localhost/v1']) assert.ok(isLocalAddress(url), url);
+  for (const url of ['https://api.openai.com/v1', 'http://localhost.evil.com/v1', 'not a url', '']) assert.equal(isLocalAddress(url), false, url);
+  const ollama = { baseURL: 'http://localhost:11434/v1', model: 'qwen2.5vl', apiKey: '' };
+  assert.equal(missingKey(ollama), false);
+  assert.equal(missingKey({ baseURL: 'https://api.openai.com/v1', apiKey: '' }), true);
+  const fetch = fakeFetch(CANNED_REPLY);
+  await askAI('data:image/jpeg;base64,AAA', ollama, fetch);
+  assert.equal(fetch.calls[0].url, 'http://localhost:11434/v1/chat/completions');
+  assert.equal(fetch.calls[0].init.headers.Authorization, undefined);
+});
+
+test('screenshots: when Ollama cannot be reached, the message says how to fix it', async () => {
+  const down = async () => { throw new TypeError('Failed to fetch'); };
+  await assert.rejects(askAI('x', { baseURL: 'http://localhost:11434/v1', apiKey: '' }, down, 'https://hyperalz.github.io'),
+    /Check that Ollama is running\. .*OLLAMA_ORIGINS to https:\/\/hyperalz\.github\.io/);
+  await assert.rejects(askAI('x', SETTINGS, down, 'https://hyperalz.github.io'), /Check your connection/);
+  const line = localUnreachable('https://hyperalz.github.io');
+  for (const sentence of line.split(/(?<=\.)\s/)) assert.ok(sentence.split(/\s+/).length <= 22, sentence);
+});

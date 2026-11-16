@@ -1,3 +1,5 @@
+import { missingKey } from './screenshot-dictionary.js';
+
 export function getAISettings() {
   const stored = localStorage.getItem('mapbridge_ai_settings');
   return stored ? JSON.parse(stored) : {
@@ -219,7 +221,7 @@ export function generateHeuristicSuggestions(sourceSchema, targetSchema, existin
 }
 
 export async function generateLLMSuggestions(sourceSchema, targetSchema, existingMappings, settings) {
-  if (!settings.apiKey) {
+  if (missingKey(settings)) {
     throw new Error('API key not configured. Open Settings to add your OpenAI-compatible API key.');
   }
   
@@ -265,7 +267,7 @@ Return ONLY a JSON array of mapping objects. No other text. Example format:
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${settings.apiKey}`,
+      ...(settings.apiKey ? { 'Authorization': `Bearer ${settings.apiKey}` } : {}),
     },
     body: JSON.stringify({
       model: settings.model,
