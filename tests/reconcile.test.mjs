@@ -836,3 +836,12 @@ test('screenshots: the words on screen read at about age eleven', () => {
     for (const sentence of line.split(/[.!?]+/).filter(s => s.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22, `sentence too long: ${sentence.trim()}`);
   }
 });
+
+test('progress: hiding the import result keeps its "not used" fields ruled out', () => {
+  const parsed = parseMappingTemplate(exampleRows(), { targetSystem: 'New' });
+  const base = { name: 'P', sourceSystem: 'Legacy', targetSystem: 'New', sourceSchema: parsed.sourceSchema, targetSchema: parsed.targetSchema,
+    mappings: parsed.mappings.map((m, i) => ({ id: `i${i}`, ...m })) };
+  const shown = projectProgress({ ...base, templateImport: { notUsed: parsed.notUsed } }).steps[1].summary;
+  const hidden = projectProgress({ ...base, templateImport: { notUsed: parsed.notUsed, hidden: true } }).steps[1].summary;
+  assert.equal(hidden, shown);
+});

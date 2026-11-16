@@ -11,7 +11,7 @@ const num = n => Number(n).toLocaleString('en-GB');
 // What the last import did, shown until the next one replaces it.
 function importResult(project) {
   const t = project?.templateImport;
-  if (!t) return '';
+  if (!t || t.hidden) return '';
   const s = t.stats;
   const a = t.added || { targetFields: s.fields, mappings: s.matched, sourceFields: s.sourceFields, areas: 0 };
   const nothingNew = !a.targetFields && !a.mappings && !a.sourceFields;
@@ -36,6 +36,7 @@ function importResult(project) {
         ${s.matched ? `<a class="btn btn-primary btn-sm" href="#/projects/${project.id}/map">Review the matches</a>` : ''}
         ${open ? '<button class="btn btn-secondary btn-sm" id="template-result-questions">Download the question list (CSV)</button>' : ''}
         <a class="btn btn-ghost btn-sm" href="#/projects/${project.id}/verify">Open the field tracker</a>
+        <button class="btn btn-ghost btn-sm result-hide" id="template-result-hide">Hide this</button>
       </div>
     </section>`;
 }
@@ -61,6 +62,12 @@ export function bindTemplateImport(projectId, ui, rerender) {
   const input = document.getElementById('template-file');
   const preview = document.getElementById('template-preview');
   if (!input) return;
+  // Hiding keeps the stored result: its "not used" list still counts towards progress.
+  document.getElementById('template-result-hide')?.addEventListener('click', () => {
+    const p = getProject(projectId);
+    if (p.templateImport) { p.templateImport.hidden = true; saveProject(p); }
+    rerender();
+  });
   document.getElementById('template-result-questions')?.addEventListener('click', () => {
     const t = getProject(projectId).templateImport;
     downloadCSV(questionRows(t), 'mapping-questions.csv');

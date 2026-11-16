@@ -19,7 +19,7 @@ const sentHashes = new Set();
 
 function lastResult(project) {
   const s = project?.screenshotImport;
-  if (!s) return '';
+  if (!s || s.hidden) return '';
   const sum = shotSummary(s.counts);
   const when = new Date(s.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   return `
@@ -36,6 +36,7 @@ function lastResult(project) {
       <p class="template-result-next"><strong>What to do next:</strong> ${esc(sum.next)}</p>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <a class="btn btn-primary btn-sm" href="#/projects/${project.id}/map">Go to the Match screen</a>
+        <button class="btn btn-ghost btn-sm result-hide" id="shot-result-hide">Hide this</button>
       </div>
     </section>`;
 }
@@ -89,6 +90,11 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
   const openSettings = () => ui.openAISettings?.(() => rerender(), { showKey: true });
   document.getElementById('shot-open-settings')?.addEventListener('click', openSettings);
   document.getElementById('shot-settings-link')?.addEventListener('click', openSettings);
+  document.getElementById('shot-result-hide')?.addEventListener('click', () => {
+    const p = getProject(projectId);
+    if (p.screenshotImport) { p.screenshotImport.hidden = true; saveProject(p); }
+    rerender();
+  });
 
   const input = document.getElementById('shot-files');
   const agree = document.getElementById('shot-agree');

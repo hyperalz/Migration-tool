@@ -105,6 +105,8 @@ a { color: inherit; text-decoration: none; }
 .card + .card { margin-top: 1rem; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+/* The grid gap already spaces its cards; the general .card + .card margin would push the second one down. */
+.grid-2 > .card + .card { margin-top: 0; }
 
 .field { margin-bottom: 0.85rem; }
 .field label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.3rem; }
@@ -2053,3 +2055,5 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .shot-table input[type="text"] { width: 100%; min-width: 10rem; padding: 0.25rem 0.4rem; font: inherit; }
 .shot-table select { font: inherit; padding: 0.2rem; }
 .shot-already td { color: var(--muted); }
+.shot-tag { display: inline-block; font-size: 0.78rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: #fef3c7; color: #92400e; white-space: nowrap; }
+.result-hide { margin-left: auto; }
