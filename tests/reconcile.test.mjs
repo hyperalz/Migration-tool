@@ -573,3 +573,57 @@ test('field checks: conflicts are fields marked as passed that are failing', () 
   project.mappings.find(m => m.sourceColumn === 'supplier_name').verification = { status: 'test_uploaded' }; // failing but not claimed
   assert.deepEqual(trackerConflicts(project, idx).map(m => m.sourceColumn).sort(), ['status', 'vat_code']);
 });
+
+// ---------- plain-English guidance ----------
+import { INTRO, STEP_GUIDE, SCREEN_GUIDE, GLOSSARY } from '../js/guide.js';
+import { STEPS } from '../js/progress.js';
+
+function syllables(word) {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return 0;
+  if (w.length <= 3) return 1;
+  const groups = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '').match(/[aeiouy]{1,2}/g);
+  return Math.max(1, groups ? groups.length : 1);
+}
+
+// Flesch-Kincaid grade: about 6 is the reading level of an eleven-year-old.
+function readingGrade(text) {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim()).length;
+  const words = text.split(/\s+/).filter(w => /[a-zA-Z0-9]/.test(w));
+  const syl = words.reduce((n, w) => n + syllables(w), 0);
+  return 0.39 * (words.length / sentences) + 11.8 * (syl / words.length) - 15.59;
+}
+
+function allGuideText() {
+  const steps = Object.values(STEP_GUIDE).flatMap(g => [g.what, ...g.todo, g.done]);
+  const screens = Object.values(SCREEN_GUIDE).flat();
+  return [INTRO, ...steps, ...screens, ...GLOSSARY.map(g => g[1])];
+}
+
+test('guide: every step and every screen has guidance', () => {
+  for (const step of STEPS) {
+    assert.ok(STEP_GUIDE[step.key], `step ${step.key}`);
+    assert.ok(STEP_GUIDE[step.key].todo.length >= 2);
+    for (const screen of step.screens) assert.ok(SCREEN_GUIDE[screen.key]?.length, `screen ${screen.key}`);
+  }
+  assert.ok(SCREEN_GUIDE.home.length);
+});
+
+test('guide: reads at about age eleven', () => {
+  const text = allGuideText();
+  const overall = readingGrade(text.join(' '));
+  assert.ok(overall <= 6, `overall reading grade ${overall.toFixed(1)} is above 6`);
+  for (const line of text) {
+    const words = line.split(/\s+/).length;
+    // very short lines give unreliable scores, so only longer ones are graded
+    if (words >= 12) assert.ok(readingGrade(line) <= 8.5, `too hard (${readingGrade(line).toFixed(1)}): ${line}`);
+    for (const sentence of line.split(/[.!?]+/).filter(s => s.trim())) {
+      assert.ok(sentence.trim().split(/\s+/).length <= 22, `sentence too long: ${sentence.trim()}`);
+    }
+  }
+});
+
+test('guide: avoids specialist words', () => {
+  const banned = /\b(schema|reconcil\w*|extract|metadata|mapping stamp|source|target|verif\w*|traceab\w*|migrat\w*|lookup|transform\w*)\b/i;
+  for (const line of allGuideText()) assert.doesNotMatch(line, banned);
+});
