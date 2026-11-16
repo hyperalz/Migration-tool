@@ -29,6 +29,7 @@ import {
 } from './ai-suggestions.js';
 import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject } from './reconcile-view.js';
 import { renderHome } from './home-view.js';
+import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './field-checks.js';
 import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
 
 let canvasInstance = null;
@@ -870,7 +871,15 @@ function renderVerify({ id }) {
       status: filterStatus,
       serviceArea: filterServiceArea,
     });
-    if (filterQuick === 'active') {
+    const checks = fieldCheckIndex(project, project.reconRuns || [], { finalRunId: project.reconFinalRunId || null });
+    const conflicts = trackerConflicts(project, checks);
+    const conflictIds = new Set(conflicts.map(m => m.id));
+    const failingCount = project.mappings.filter(m => checks.get(m.id)?.state === 'fail').length;
+    if (filterQuick === 'failing') {
+      filtered = filtered.filter(m => checks.get(m.id)?.state === 'fail');
+    } else if (filterQuick === 'conflict') {
+      filtered = filtered.filter(m => conflictIds.has(m.id));
+    } else if (filterQuick === 'active') {
       filtered = filtered.filter(m => m.verification?.status !== 'signed_off');
     } else if (filterQuick === 'issues') {
       filtered = filtered.filter(m => ['test_failed', 'live_failed'].includes(m.verification?.status));
@@ -889,11 +898,17 @@ function renderVerify({ id }) {
       ${projectSteps(project, 'verify')}
       <div class="page-head verify-page-head">
         <div>
-          <h1>Test & live</h1>
-          <p class="verify-lede">Record delivery and checks per column — click <strong>+</strong> on a row to advance, or open a row for full history.</p>
+          <h1>Field tracker</h1>
+          <p class="verify-lede">Record delivery and checks for each field — click <strong>+</strong> on a row to advance, or open a row for full history. The latest load check for each field is shown alongside.</p>
         </div>
-        <a href="#/projects/${id}/export" class="btn btn-secondary btn-sm">Export log →</a>
+        <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Check a load →</a>
       </div>
+      ${conflicts.length ? `
+        <div class="recon-error tracker-conflict" role="alert">
+          <span><strong>${conflicts.length} ${conflicts.length === 1 ? 'field is' : 'fields are'} marked as passed, but the latest load check found differences.</strong>
+          Either the fix has not been re-checked yet, or the field was passed too early.</span>
+          <button class="btn btn-secondary btn-sm" id="show-conflicts">Show ${conflicts.length === 1 ? 'it' : 'them'}</button>
+        </div>` : ''}
       ${renderTraceDashboardHTML(dashData, dashboardOpen)}
       ${renderProjectSetupCard(project, setupOpen)}
       <div class="verify-workspace card">
@@ -924,6 +939,7 @@ function renderVerify({ id }) {
                 <button class="verification-pill ${filterQuick === 'active' ? 'active' : ''}" data-filter-type="quick" data-filter="active">In progress <span class="count">${quickCounts.active}</span></button>
                 <button class="verification-pill verify-pill-warn ${filterQuick === 'issues' ? 'active' : ''}" data-filter-type="quick" data-filter="issues"${quickCounts.issues ? '' : ' disabled'}>Issues <span class="count">${quickCounts.issues}</span></button>
                 <button class="verification-pill ${filterQuick === 'done' ? 'active' : ''}" data-filter-type="quick" data-filter="done">Done <span class="count">${quickCounts.done}</span></button>
+                <button class="verification-pill verify-pill-warn ${filterQuick === 'failing' || filterQuick === 'conflict' ? 'active' : ''}" data-filter-type="quick" data-filter="failing"${failingCount ? '' : ' disabled'}>Failing load check <span class="count">${failingCount}</span></button>
               </div>
             </div>
           </div>
@@ -931,8 +947,9 @@ function renderVerify({ id }) {
         <div class="verify-table-wrap">
           ${filtered.length ? `<table class="verification-table">
             <thead><tr>
-              <th>Column</th>
+              <th>Field</th>
               <th>Status</th>
+              <th>Latest load check</th>
               <th>Progress</th>
               <th class="col-service-area">Area</th>
             </tr></thead>
@@ -944,10 +961,12 @@ function renderVerify({ id }) {
               phase === 'live' ? 'row-live' : '',
               status === 'live_failed' ? 'row-live-failed' : '',
               status === 'signed_off' ? 'row-done' : '',
+              conflictIds.has(m.id) ? 'row-conflict' : '',
             ].filter(Boolean).join(' ');
             return `<tr${rowClass ? ` class="${rowClass}"` : ''} data-mapping-id="${m.id}">
               <td class="col-mapping"><code class="col-mapping-code">${esc(formatColumnRef(m))}</code></td>
               <td class="col-status"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></td>
+              <td class="col-check">${renderCheckCell(id, checks.get(m.id), conflictIds.has(m.id))}</td>
               <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id, compact: true })}</td>
               <td class="col-service-area">
                 <select class="service-area-select" data-mapping-id="${m.id}" aria-label="Service area">
@@ -997,6 +1016,14 @@ function renderVerify({ id }) {
         filterQuick = null;
         render();
       });
+    });
+    document.getElementById('show-conflicts')?.addEventListener('click', () => {
+      filterQuick = 'conflict';
+      filterStep = null;
+      filterPhase = null;
+      filterStatus = null;
+      filterServiceArea = null;
+      render();
     });
     bindProjectSetupForms(id, () => render());
     bindServiceAreaSelects(id, render);
@@ -1086,6 +1113,19 @@ async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
     }
   }
 
+  // Link the step to the evidence: what did the latest load check find for this field?
+  const claimsPass = pass && (step.checkStep || stepKey === 'done');
+  if (claimsPass) {
+    const check = fieldCheckIndex(p, p.reconRuns || [], { finalRunId: p.reconFinalRunId || null }).get(m.id);
+    if (check?.state === 'fail') {
+      const reason = await showCheckWarningModal({ step, mapping: m, check });
+      if (!reason) return;
+      note = `${step.action}. Recorded as passed although the latest load check found differences (${check.run.label}). Reason: ${reason}`;
+    } else if (checkNote(check)) {
+      note = `${step.action}. ${checkNote(check)}`;
+    }
+  }
+
   const user = getCurrentUser();
   const teamNames = getProjectTeamNames(p, getUsers());
   const participants = await showParticipantModal({
@@ -1103,6 +1143,67 @@ async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
   saveProject(p);
   toast(`${step.action} recorded`);
   rerender?.();
+}
+
+// The latest load check for one field, as shown on its tracker row.
+function renderCheckCell(projectId, check, conflict) {
+  if (!check) return '<span class="recon-chip recon-low">Not checked</span>';
+  const chip = { pass: 'recon-ok', fail: 'recon-high', recheck: 'recon-medium', not_checked: 'recon-low' }[check.state];
+  const n = check.findings.length;
+  const label = check.state === 'fail'
+    ? (check.mismatched ? `${check.mismatched.toLocaleString('en-GB')} ${check.mismatched === 1 ? 'difference' : 'differences'}` : 'Total differs')
+    : CHECK_LABEL[check.state];
+  const detail = check.state === 'fail' && n ? esc(check.findings.map(f => f.title).join(' · ')) : esc(check.reason || '');
+  const where = check.run
+    ? `<a class="check-run" href="#/projects/${projectId}/reconcile/${check.run.id}">${esc(check.run.label)}</a>`
+    : '';
+  return `<span class="recon-chip ${chip}"${detail ? ` title="${detail}"` : ''}>${esc(label)}</span>
+    ${where}${conflict ? '<span class="check-conflict">Marked as passed</span>' : ''}`;
+}
+
+// Shown when someone records a pass on a field whose latest load check found
+// differences. They can still record it, but must say why, and the reason
+// goes into the field's history.
+function showCheckWarningModal({ step, mapping, check }) {
+  return new Promise(resolve => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'record-modal-backdrop';
+    const findings = check.findings.slice(0, 5);
+    backdrop.innerHTML = `
+      <div class="record-modal" role="dialog" aria-modal="true" aria-labelledby="check-warn-title" style="width:min(560px,calc(100% - 2rem))">
+        <h3 id="check-warn-title">The latest load check found differences</h3>
+        <p class="record-modal-sub"><code>${esc(formatColumnRef(mapping))}</code> · ${esc(check.run.label)}</p>
+        <ul class="check-warn-list">
+          ${findings.map(f => `<li>${esc(f.title)}${f.kind === 'total_differs' || f.kind === 'not_checked' ? '' : ` <span class="recon-sub" style="display:inline">(${f.count.toLocaleString('en-GB')} ${f.count === 1 ? 'record' : 'records'})</span>`}</li>`).join('')}
+          ${check.findings.length > findings.length ? `<li>…and ${check.findings.length - findings.length} more</li>` : ''}
+        </ul>
+        <div class="field" style="margin:0.75rem 0 0">
+          <label for="check-warn-reason">To record "${esc(step.action)}" as passed anyway, say why</label>
+          <textarea id="check-warn-reason" rows="2" placeholder="e.g. fixed by the supplier on 14 Nov, to be confirmed in the next load"></textarea>
+        </div>
+        <div class="record-modal-actions">
+          <a class="btn btn-ghost btn-sm" href="#/projects/${getCurrentProjectId()}/reconcile/${check.run.id}" id="check-warn-report">Open the report</a>
+          <button type="button" class="btn btn-ghost btn-sm" id="check-warn-cancel">Cancel</button>
+          <button type="button" class="btn btn-danger btn-sm" id="check-warn-confirm">Record as passed anyway</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const close = result => { backdrop.remove(); resolve(result); };
+    backdrop.querySelector('#check-warn-cancel').onclick = () => close(null);
+    backdrop.querySelector('#check-warn-report').onclick = () => close(null);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) close(null); });
+    backdrop.querySelector('#check-warn-confirm').onclick = () => {
+      const reason = backdrop.querySelector('#check-warn-reason').value.trim();
+      if (!reason) { toast('A reason is needed to record this as passed'); return; }
+      close(reason);
+    };
+    backdrop.querySelector('#check-warn-reason').focus();
+  });
+}
+
+// The project id from the current address, for links built inside dialogs.
+function getCurrentProjectId() {
+  return (/#\/projects\/([^/]+)/.exec(location.hash) || [])[1] || '';
 }
 
 function bindTraceClicks(projectId, rerender) {

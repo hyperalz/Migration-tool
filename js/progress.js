@@ -4,6 +4,7 @@
 
 import { projectOverview } from './reconcile-overview.js';
 import { buildExportPackage, evidenceDigest } from './export.js';
+import { fieldCheckIndex, trackerConflicts } from './field-checks.js';
 
 const num = n => Number(n).toLocaleString('en-GB');
 const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
@@ -84,7 +85,9 @@ export function projectProgress(project) {
 
   // 3. Load and check
   const tracked = mappings.filter(m => m.verification?.status === 'signed_off').length;
-  const trackerLine = mappings.length ? ` Field tracker: ${num(tracked)} of ${num(mappings.length)} signed off.` : '';
+  const conflicts = trackerConflicts(project, fieldCheckIndex(project, runs, { finalRunId: project.reconFinalRunId || null })).length;
+  const trackerLine = (mappings.length ? ` Field tracker: ${num(tracked)} of ${num(mappings.length)} signed off.` : '')
+    + (conflicts ? ` ${num(conflicts)} ${plural(conflicts, 'field is', 'fields are')} marked as passed but failing ${plural(conflicts, 'its', 'their')} latest check.` : '');
   if (!mappings.length) {
     out.check = { state: 'blocked', summary: 'Needs mapped fields first.' };
   } else if (o.checked === 0) {
