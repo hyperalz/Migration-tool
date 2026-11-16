@@ -1,5 +1,7 @@
 // The Project settings page. See settings.js for what each part changes.
 
+import { GOVUK_TEXT } from './govuk.js';
+import { showErrors } from './govuk-view.js';
 import { getProject, saveProject, getUsers } from './store.js';
 import { getAISettings } from './ai-suggestions.js';
 import { getProjectTeamNames } from './verification.js';
@@ -61,8 +63,8 @@ export function renderSettings({ id }, ui) {
         </table></div>
         <button class="btn btn-primary btn-sm" type="submit" style="margin-top:0.6rem">Save managers</button>
       </form>` : '<p class="recon-sub">No areas yet.</p>'}
-      <form id="settings-add-area" class="team-add-form" style="margin-top:0.75rem">
-        <input name="name" placeholder="New area, for example Attendance" aria-label="New area name" required>
+      <form id="settings-add-area" class="team-add-form" novalidate style="margin-top:0.75rem">
+        <input id="settings-new-area" name="name" placeholder="New area, for example Attendance" aria-label="New area name">
         <button type="submit" class="btn btn-secondary btn-sm">Add area</button>
       </form>
     </section>
@@ -73,8 +75,8 @@ export function renderSettings({ id }, ui) {
       <div class="team-chips">${people.length
         ? people.map(n => `<span class="team-chip">${esc(n)}<button type="button" class="team-chip-remove settings-remove-person" data-name="${esc(n)}" aria-label="Remove ${esc(n)}">×</button></span>`).join('')
         : '<span class="recon-sub">No names yet.</span>'}</div>
-      <form id="settings-add-person" class="team-add-form" style="margin-top:0.75rem">
-        <input name="name" placeholder="Full name" aria-label="Full name" required>
+      <form id="settings-add-person" class="team-add-form" novalidate style="margin-top:0.75rem">
+        <input id="settings-new-person" name="name" placeholder="Full name" aria-label="Full name">
         <button type="submit" class="btn btn-secondary btn-sm">Add</button>
       </form>
     </section>
@@ -110,16 +112,20 @@ export function renderSettings({ id }, ui) {
   }));
   document.getElementById('settings-add-area').addEventListener('submit', e => {
     e.preventDefault();
-    const name = new FormData(e.target).get('name');
+    const name = String(new FormData(e.target).get('name') || '').trim();
+    if (!name) return showErrors(e.target, [{ id: 'settings-new-area', text: GOVUK_TEXT.enterArea }]);
     const p = getProject(id);
-    if (addArea(p, name)) { saveProject(p); ui.toast('Area added'); } else ui.toast('That area is already there');
+    if (!addArea(p, name)) return showErrors(e.target, [{ id: 'settings-new-area', text: GOVUK_TEXT.areaThere }]);
+    saveProject(p); ui.toast('Area added');
     rerender();
   });
   document.getElementById('settings-add-person').addEventListener('submit', e => {
     e.preventDefault();
-    const name = new FormData(e.target).get('name');
+    const name = String(new FormData(e.target).get('name') || '').trim();
+    if (!name) return showErrors(e.target, [{ id: 'settings-new-person', text: GOVUK_TEXT.enterPerson }]);
     const p = getProject(id);
-    if (addPerson(p, name)) { saveProject(p); ui.toast('Name added'); } else ui.toast('That name is already there');
+    if (!addPerson(p, name)) return showErrors(e.target, [{ id: 'settings-new-person', text: GOVUK_TEXT.personThere }]);
+    saveProject(p); ui.toast('Name added');
     rerender();
   });
   document.querySelectorAll('.settings-remove-person').forEach(b => b.addEventListener('click', () => {

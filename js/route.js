@@ -73,6 +73,15 @@ export function routeSummary(project) {
   }).filter(Boolean);
 }
 
+/** Each question with its answer, for a "check your answers" list. */
+export function routeAnswerRows(project) {
+  const r = project?.route || {};
+  return QUESTIONS.map(q => {
+    const a = readAnswer(r[q.key]);
+    return { key: q.text, value: a === null ? ROUTE_TEXT.notSure : (a ? 'Yes' : 'No') };
+  });
+}
+
 /** The questions as radio buttons. Pure HTML, so it can be tested. */
 export function routeQuestionsHtml(route, esc, prefix = 'rq') {
   const r = route || {};
