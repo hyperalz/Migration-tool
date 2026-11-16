@@ -324,7 +324,7 @@ function renderSetup({ id }) {
   mount(`
     ${projectSteps(project, 'setup')}
     <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates with column definitions and value formats — so both sides know what each field means.</p></div></div>
-    ${templateImportCard()}
+    ${templateImportCard(project, esc)}
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Source · ${esc(project.sourceSystem)}</h3>

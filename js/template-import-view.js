@@ -8,8 +8,44 @@ import { parseMappingTemplate, mergeSchema, questionRows } from './template-impo
 
 const num = n => Number(n).toLocaleString('en-GB');
 
-export function templateImportCard() {
+// What the last import did, shown until the next one replaces it.
+function importResult(project) {
+  const t = project?.templateImport;
+  if (!t) return '';
+  const s = t.stats;
+  const a = t.added || { targetFields: s.fields, mappings: s.matched, sourceFields: s.sourceFields, areas: 0 };
+  const nothingNew = !a.targetFields && !a.mappings && !a.sourceFields;
+  const when = new Date(t.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  // Every field is matched, ruled out, or still open, so these three add up to the total.
+  const open = Math.max(0, s.fields - s.matched - s.notUsed);
   return `
+    <section class="card template-result" id="template-result" role="status" tabindex="-1">
+      <div class="recon-eyebrow">Import complete · ${esc(t.file || 'mapping template')} · ${esc(when)}</div>
+      <h2 class="template-result-title">${nothingNew
+        ? 'Nothing new to add. Everything in this file was already here.'
+        : `Added ${num(a.targetFields)} new-system fields and ${num(a.mappings)} matches.`}</h2>
+      <div class="template-result-grid">
+        <div><b>${num(s.fields)}</b><span>fields in ${num(s.tables)} new-system tables</span></div>
+        <div><b>${num(s.matched)}</b><span>matched to an old-system field</span></div>
+        <div><b>${num(s.notUsed)}</b><span>marked as not used</span></div>
+        <div><b>${num(open)}</b><span>still need an answer</span></div>
+      </div>
+      <p class="template-result-next"><strong>What to do next:</strong>
+        ${s.matched ? 'check the matches that came in, then ' : ''}${open ? `send the question list to the supplier for the ${num(open)} fields that still need an answer.` : 'move on to checking a load.'}</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        ${s.matched ? `<a class="btn btn-primary btn-sm" href="#/projects/${project.id}/map">Review the matches</a>` : ''}
+        ${open ? '<button class="btn btn-secondary btn-sm" id="template-result-questions">Download the question list (CSV)</button>' : ''}
+        <a class="btn btn-ghost btn-sm" href="#/projects/${project.id}/verify">Open the field tracker</a>
+      </div>
+    </section>`;
+}
+
+let esc = v => String(v);
+
+export function templateImportCard(project, escapeHtml) {
+  if (escapeHtml) esc = escapeHtml;
+  return `
+    ${importResult(project)}
     <details class="card template-import" id="template-import">
       <summary><strong>Have a mapping spreadsheet from the supplier?</strong>
         <span class="recon-sub" style="display:inline"> Import the new system's templates, and any matches already made, in one go.</span></summary>
@@ -25,6 +61,10 @@ export function bindTemplateImport(projectId, ui, rerender) {
   const input = document.getElementById('template-file');
   const preview = document.getElementById('template-preview');
   if (!input) return;
+  document.getElementById('template-result-questions')?.addEventListener('click', () => {
+    const t = getProject(projectId).templateImport;
+    downloadCSV(questionRows(t), 'mapping-questions.csv');
+  });
   let parsed = null;
   let fileName = '';
 
@@ -93,16 +133,22 @@ export function bindTemplateImport(projectId, ui, rerender) {
 
     const areas = p.serviceAreas || [];
     const names = new Set(areas.map(a => (typeof a === 'string' ? a : a.name)));
-    for (const a of parsed.areas) if (!names.has(a)) { areas.push({ id: uid(), name: a }); names.add(a); }
+    let areasAdded = 0;
+    for (const a of parsed.areas) if (!names.has(a)) { areas.push({ id: uid(), name: a }); names.add(a); areasAdded++; }
     p.serviceAreas = areas;
 
     p.templateImport = {
       at: new Date().toISOString(), file: fileName, stats: parsed.stats,
+      added: { targetFields: target.added, sourceFields: source.added, mappings: added, areas: areasAdded },
       notUsed: parsed.notUsed, questions: parsed.questions, unmatched: parsed.unmatched,
     };
     if (p.mappings.length) p.status = 'mapping';
     saveProject(p);
-    ui.toast(`Imported ${num(target.added)} new-system fields and ${num(added)} matches`);
+    ui.toast('Import complete');
     rerender();
+    // Bring the result into view and move focus to it, so it is not missed.
+    const result = document.getElementById('template-result');
+    result?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    result?.focus({ preventScroll: true });
   }
 }
