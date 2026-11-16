@@ -504,13 +504,18 @@ Numeric ID,Free text,"1 = eligible, 0 = not eligible"</pre>
 }
 
 function renderSchemaPreview(schema, stats) {
+  const PREVIEW_ROWS = 8;
+  const rows = schema.tables.flatMap(t => t.columns.map(c => ({ t, c })));
+  const fromShots = rows.some(r => r.c.origin === 'screenshot');
   return `
-    <div class="alert alert-success" style="margin-top:0.75rem">${stats.tables} tables · ${stats.columns} columns loaded</div>
+    <div class="alert alert-success" style="margin-top:0.75rem">${stats.tables} ${stats.tables === 1 ? 'table' : 'tables'} · ${stats.columns} ${stats.columns === 1 ? 'field' : 'fields'} loaded</div>
+    ${fromShots ? '<p class="recon-sub" style="margin:0 0 0.5rem">Some names came from screenshots. They are the words shown on a screen, not the real names of the fields.</p>' : ''}
     <div class="schema-preview"><table>
       <thead><tr><th>Table</th><th>Column</th><th>Type</th><th>Definition</th><th>Values</th></tr></thead>
-      <tbody>${schema.tables.flatMap(t => t.columns.slice(0, 8).map(c =>
-        `<tr><td>${esc(t.name)}</td><td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${esc(c.description || '—')}</td><td>${esc(c.values || '—')}</td></tr>`
-      )).join('')}${stats.columns > 8 ? `<tr><td colspan="5" style="color:var(--muted);font-size:0.82rem">… and ${stats.columns - 8} more columns</td></tr>` : ''}
+      <tbody>${rows.slice(0, PREVIEW_ROWS).map(({ t, c }) =>
+        `<tr><td>${esc(t.name)}</td><td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${c.origin === 'screenshot'
+          ? `<span class="shot-tag" title="${esc(c.description || '')}">Label from a screenshot</span>` : esc(c.description || '—')}</td><td>${esc(c.values || '—')}</td></tr>`
+      ).join('')}${rows.length > PREVIEW_ROWS ? `<tr><td colspan="5" style="color:var(--muted);font-size:0.82rem">… and ${rows.length - PREVIEW_ROWS} more fields</td></tr>` : ''}
       </tbody></table></div>`;
 }
 
