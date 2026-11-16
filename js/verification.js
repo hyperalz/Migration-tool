@@ -30,7 +30,8 @@ export const NEXT_ACTIONS = {
     { status: 'sql_sent', label: 'Resend from test cycle' },
     { status: 'live_uploaded', label: 'Re-pushed to live' },
   ],
-  live_passed: [{ status: 'signed_off', label: 'Sign off field' }],
+  // Fields are signed off with their area, by the service area manager.
+  live_passed: [],
   signed_off: [],
 };
 
@@ -265,7 +266,7 @@ export function nextTraceStepKey(mapping) {
     test_uploaded: 'test_checked',
     test_passed: 'live_uploaded',
     live_uploaded: 'live_checked',
-    live_passed: 'done',
+    live_passed: null,
     signed_off: null,
     test_failed: 'sql_sent',
     live_failed: 'live_uploaded',

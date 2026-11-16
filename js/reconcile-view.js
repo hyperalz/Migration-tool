@@ -13,6 +13,7 @@ import {
 } from './reconcile.js';
 import { plainSummary } from './reconcile-plain.js';
 import { projectOverview, buildAreaSignoff } from './reconcile-overview.js';
+import { signOffAreaFields } from './field-progress.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
 } from './demoFinance.js';
@@ -820,6 +821,7 @@ function areaSection(projectId, area, index, userName) {
       <div class="recon-signoff">${signoffLine}</div>
       <details class="recon-fields no-print">
         <summary>Record a sign-off for ${esc(area.name)}</summary>
+        <p class="recon-sub" style="margin:0.5rem 0">Usually the service area manager signs. Signing off marks every field in ${esc(area.name)} as signed off.</p>
         <form class="recon-review-form" data-signoff-area="${index}">
           <div class="field"><label>Name<input name="name" value="${esc(userName)}" required></label></div>
           <div class="field"><label>Recording<select name="role"><option>Signed off</option><option>Not signed off</option></select></label></div>
@@ -916,9 +918,12 @@ export function renderOverview({ id }, ui) {
       const name = String(fd.get('name') || '').trim();
       if (!name) return;
       const p = getProject(id);
-      p.reconAreaSignoffs = [...(p.reconAreaSignoffs || []), buildAreaSignoff(area, { name, role: fd.get('role'), note: String(fd.get('note') || '').trim() })];
+      const signoff = buildAreaSignoff(area, { name, role: fd.get('role'), note: String(fd.get('note') || '').trim() });
+      p.reconAreaSignoffs = [...(p.reconAreaSignoffs || []), signoff];
+      // One sign-off for the area marks every field in it as signed off.
+      const fields = signoff.role === 'Signed off' ? signOffAreaFields(p, area, { by: name, at: signoff.at }) : 0;
       saveProject(p);
-      ui.toast('Sign-off recorded');
+      ui.toast(fields ? `Sign-off recorded. ${fields} ${fields === 1 ? 'field' : 'fields'} marked as signed off.` : 'Sign-off recorded');
       renderOverview({ id }, ui);
     });
   });

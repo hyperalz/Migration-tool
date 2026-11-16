@@ -2124,3 +2124,7 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .route-card { margin-bottom: 1rem; }
 .route-card summary { cursor: pointer; }
 .route-hint { margin: 0.35rem 0 0; font-size: 0.82rem; color: var(--muted); }
+.home-board .schema-preview td { font-size: 0.88rem; max-width: none; }
+.home-board td.home-cell-done { color: #047857; }
+.home-board td.home-cell-open { color: #92400e; font-weight: 600; }
+.home-board td.home-cell-none { color: var(--muted); }

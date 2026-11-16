@@ -5,6 +5,7 @@
 import { projectOverview } from './reconcile-overview.js';
 import { buildExportPackage, evidenceDigest } from './export.js';
 import { fieldCheckIndex, trackerConflicts } from './field-checks.js';
+import { fieldStages, stageCounts } from './field-progress.js';
 
 const num = n => Number(n).toLocaleString('en-GB');
 const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
@@ -122,8 +123,22 @@ export function projectProgress(project) {
   const conflicts = trackerConflicts(project, fieldCheckIndex(project, runs, { finalRunId: project.reconFinalRunId || null })).length;
   const trackerLine = (mappings.length ? ` Field tracker: ${num(tracked)} of ${num(mappings.length)} signed off.` : '')
     + (conflicts ? ` ${num(conflicts)} ${plural(conflicts, 'field is', 'fields are')} marked as passed but failing ${plural(conflicts, 'its', 'their')} latest check.` : '');
+  // Checks recorded in the field tracker (in the new system's own screens)
+  // count as much as file checks.
+  const fc = stageCounts(mappings, fieldStages(project));
+  const trackerActive = fc.testing + fc.failed + fc.done > 0;
   if (!mappings.length) {
     out.check = { state: 'blocked', summary: 'Needs matched fields first.' };
+  } else if (o.checked === 0 && trackerActive) {
+    out.check = {
+      state: fc.done === fc.total ? 'done' : 'progress',
+      summary: `${num(fc.done)} of ${num(fc.total)} ${plural(fc.total, 'field')} passed ${plural(fc.total, 'its', 'their')} check.`
+        + (fc.failed ? ` ${num(fc.failed)} failed.` : '') + (fc.testing ? ` ${num(fc.testing)} in test, waiting for a check.` : ''),
+      next: fc.failed ? `Fix the ${num(fc.failed)} ${plural(fc.failed, 'field')} that failed, then send again`
+        : fc.testing ? `Check the ${num(fc.testing)} ${plural(fc.testing, 'field')} in test`
+          : `Send the SQL for the ${num(fc.matched + fc.sent)} ${plural(fc.matched + fc.sent, 'field')} still to test`,
+      nextPath: 'verify',
+    };
   } else if (o.checked === 0) {
     out.check = { state: 'todo', summary: `No loads checked yet.${trackerLine}`, next: 'Check the first trial load', nextPath: 'reconcile' };
   } else {
@@ -139,18 +154,20 @@ export function projectProgress(project) {
   }
 
   // 4. Sign off
-  if (o.checked === 0) {
+  if (o.checked === 0 && !fc.done) {
     out.signoff = { state: 'blocked', summary: 'Needs at least one checked load first.' };
   } else {
     const allSigned = o.areas > 0 && o.areasSigned === o.areas;
-    const done = allSigned && Boolean(o.finalRun) && o.status.level === 'clear';
+    // With file checks, the final load must be chosen and clear. Without
+    // them, the area sign-offs are the decision.
+    const done = allSigned && (runs.length ? Boolean(o.finalRun) && o.status.level === 'clear' : true);
     const started = o.areasSigned > 0 || Boolean(o.finalRun);
     const unsigned = o.areas - o.areasSigned;
     out.signoff = {
       state: done ? 'done' : started ? 'progress' : 'todo',
-      summary: `${num(o.areasSigned)} of ${num(o.areas)} ${plural(o.areas, 'area')} signed off. `
-        + (o.finalRun ? `Final load: ${o.finalRun.label}.` : 'No final load chosen yet.'),
-      next: !o.finalRun && allSigned ? 'Choose the final load once it has been run and checked'
+      summary: `${num(o.areasSigned)} of ${num(o.areas)} ${plural(o.areas, 'area')} signed off.`
+        + (!runs.length ? '' : o.finalRun ? ` Final load: ${o.finalRun.label}.` : ' No final load chosen yet.'),
+      next: runs.length && !o.finalRun && allSigned ? 'Choose the final load once it has been run and checked'
         : unsigned ? `Record sign-off for ${num(unsigned)} ${plural(unsigned, 'area')}` : 'Clear the remaining issues on the final load',
       nextPath: 'reconcile/overview',
     };
