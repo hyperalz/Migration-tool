@@ -2081,3 +2081,16 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .shot-odd td { background: #fffbeb; }
 .shot-look { font-size: 0.84rem; color: #92400e; }
 .btn-link { background: none; border: none; color: var(--brand); text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
+
+/* Project home: to-do list and area board */
+.home-todo ol { margin: 0; padding-left: 1.4rem; }
+.home-todo li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
+.home-todo li:last-child { border-bottom: none; }
+.home-todo details summary { cursor: pointer; margin-top: 0.5rem; color: var(--brand); font-size: 0.9rem; }
+.home-area { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 0.1rem 0.45rem; margin-right: 0.45rem; border-radius: 999px; background: var(--brand-light); color: var(--brand); }
+.home-board th[scope="row"] { text-align: left; font-weight: 600; white-space: nowrap; }
+.home-cell { font-size: 0.88rem; }
+.home-cell-done { color: #047857; }
+.home-cell-open { color: #92400e; font-weight: 600; }
+.home-cell-none { color: var(--muted); }
+.home-todo, .home-board { margin-bottom: 1.25rem; }

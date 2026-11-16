@@ -105,6 +105,13 @@ export const SCREEN_GUIDE = {
   ],
 };
 
+// The project home page.
+export const HOME_TEXT = {
+  todoHelp: 'This is every job left, from all the steps. The ones at the top hold other work up, so do those first.',
+  boardHelp: 'Each area moves at its own pace. One area can be at the checks while another is still being matched. That is normal.',
+  nothing: 'There is nothing left to do. Every step is complete.',
+};
+
 export const GLOSSARY = [
   ['Field', 'One piece of information, like a name, a date or an amount.'],
   ['Table', 'A group of fields about one kind of thing, like all the facts about a supplier.'],
@@ -112,5 +119,6 @@ export const GLOSSARY = [
   ['Match', 'A link that says this old field goes into that new field.'],
   ['Load', 'Copying data into the new system. A trial load is a practice run.'],
   ['Check', 'Comparing the old data with the new data to see if they are the same.'],
+  ['Area', 'A part of the work, such as Finance or Pupils. Each area has an owner who agrees it is right.'],
   ['Sign off', 'When the person in charge says, on the record, that their part is right.'],
 ];
