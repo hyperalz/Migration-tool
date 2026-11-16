@@ -21,6 +21,7 @@ export const TRACE_TEXT = {
   step2: 'Open the script on the computer that can reach the old database. Type the values from the screenshot of one record between the quotes.',
   step3: 'Run the script on a copy of the database, or out of hours. Save the results as a CSV file.',
   step4: 'Add the results file here. Check each link, tick it and press Link.',
+  empty: 'Add names from pictures of the old system first, in the box above. Then you can link them to the real fields here.',
   privacy: 'The values you type stay on your computer. The results file holds only table names, column names and counts. Delete the filled-in script when you are done.',
   severalHelp: 'Some names were found in more than one place. Run the script again with a second record. MapBridge keeps only the places that match every time.',
   nextStep: 'Run the script again with another record for the names that are not linked yet. Then match the linked fields on the Match screen.',

@@ -5,7 +5,7 @@ import { getProject, saveProject } from './store.js';
 import { getAISettings } from './ai-suggestions.js';
 import { mergeSchema } from './template-import.js';
 import {
-  SHOT_TEXT, KINDS, MAX_FILES, SCREEN_PREFIX, fitSize, dropDuplicates, missingKey, askAI, isLocalAddress, isCloudModel, cleanScreenName,
+  SHOT_TEXT, KINDS, MAX_FILES, SCREEN_PREFIX, fitSize, dropDuplicates, missingKey, askAI, isLocalAddress, isCloudModel, cleanScreenName, worthALook,
   parseScreenReply, reviewRows, screenshotSchema, shotSummary,
 } from './screenshot-dictionary.js';
 
@@ -35,7 +35,8 @@ function lastResult(project) {
       <ul class="shot-detail">${sum.detail.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
       <p class="template-result-next"><strong>What to do next:</strong> ${esc(sum.next)}</p>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-        <a class="btn btn-primary btn-sm" href="#/projects/${project.id}/map">Go to the Match screen</a>
+        <button class="btn btn-primary btn-sm" id="shot-result-link">Link them to the real fields</button>
+        <a class="btn btn-ghost btn-sm" href="#/projects/${project.id}/map">Go to the Match screen</a>
         <button class="btn btn-ghost btn-sm result-hide" id="shot-result-hide">Hide this</button>
       </div>
     </section>`;
@@ -64,6 +65,7 @@ export function screenshotCard(project, escapeHtml) {
           <button class="btn btn-primary btn-sm" id="shot-send" disabled>Send to the AI and read the names</button>
           <button class="btn btn-ghost btn-sm" id="shot-settings-link">AI settings</button>
         </div>`}
+      ${project.screenshotImport?.hidden ? '<p style="margin-top:0.6rem"><button class="btn-link" id="shot-result-show">Show the last result</button></p>' : ''}
       <div id="shot-progress" aria-live="polite"></div>
       <div id="shot-review"></div>
     </details>`;
@@ -93,6 +95,19 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
   const openSettings = () => ui.openAISettings?.(() => rerender(), { showKey: true });
   document.getElementById('shot-open-settings')?.addEventListener('click', openSettings);
   document.getElementById('shot-settings-link')?.addEventListener('click', openSettings);
+  document.getElementById('shot-result-link')?.addEventListener('click', () => {
+    const card = document.getElementById('trace-card');
+    if (!card) return;
+    card.open = true;
+    card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    card.querySelector('select, button')?.focus({ preventScroll: true });
+  });
+  document.getElementById('shot-result-show')?.addEventListener('click', () => {
+    const p = getProject(projectId);
+    if (p.screenshotImport) { delete p.screenshotImport.hidden; saveProject(p); }
+    rerender();
+    document.getElementById('shot-result')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
   document.getElementById('shot-result-hide')?.addEventListener('click', () => {
     const p = getProject(projectId);
     if (p.screenshotImport) { p.screenshotImport.hidden = true; saveProject(p); }
@@ -178,62 +193,85 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
       document.getElementById('shot-discard').onclick = discard;
       return;
     }
-    const screens = new Set(rows.map(r => r.table)).size;
-    // The screen name can be edited once per screen, on its first row.
-    const firstOfScreen = new Set();
-    const seenKeys = new Set();
-    for (const r of rows) if (!seenKeys.has(r.screenKey)) { seenKeys.add(r.screenKey); firstOfScreen.add(r.id); }
+    const groups = [];
+    for (const r of rows) {
+      let g = groups.find(x => x.key === r.screenKey);
+      if (!g) { g = { key: r.screenKey, rows: [] }; groups.push(g); }
+      g.rows.push(r);
+    }
+    for (const g of groups) for (const r of g.rows) r.look = r.already ? [] : worthALook(r, g.rows);
+    const open = rows.filter(r => !r.already);
+    const flagged = open.filter(r => r.look.length).length;
+    const ticked = open.filter(r => r.ticked).length;
+    const only = state.onlyFlagged && flagged;
+    const tickBox = (list, cls, attrs, label) => {
+      const free = list.filter(r => !r.already);
+      const on = free.filter(r => r.ticked).length;
+      return free.length ? `<input type="checkbox" class="${cls}" ${attrs} aria-label="${esc(label)}" ${on === free.length ? 'checked' : ''} data-some="${on > 0 && on < free.length ? 1 : 0}">` : '';
+    };
     review.innerHTML = `
       <div class="template-found shot-review">
-        <p><strong>Found ${num(rows.length)} names on ${num(screens)} ${screens === 1 ? 'screen' : 'screens'}.</strong> ${esc(SHOT_TEXT.reviewHelp)}</p>
+        <p><strong>Found ${num(rows.length)} names on ${num(groups.length)} ${groups.length === 1 ? 'screen' : 'screens'}.</strong> ${esc(SHOT_TEXT.reviewHelp)}</p>
         ${state.counts.removed ? `<p class="alert alert-warn shot-warning" role="note">${esc(SHOT_TEXT.removedNote)}</p>` : ''}
+        ${flagged ? `<p class="recon-sub">${esc(SHOT_TEXT.lookHelp)}</p>` : ''}
+        <div class="shot-bar">
+          <button class="btn btn-primary btn-sm" id="shot-apply">Add the ${num(ticked)} ticked ${ticked === 1 ? 'name' : 'names'}</button>
+          ${flagged ? `<label class="shot-only"><input type="checkbox" id="shot-only" ${only ? 'checked' : ''}> Show only the ${num(flagged)} worth a look</label>` : '<span class="recon-sub">None look odd.</span>'}
+          <button class="btn btn-ghost btn-sm" id="shot-discard">Throw these away</button>
+        </div>
         <div class="schema-preview"><table class="shot-table">
-          <thead><tr><th scope="col"><span class="sr-only">Keep</span></th><th scope="col">Screen</th><th scope="col">Name on screen</th><th scope="col">Kind</th><th scope="col">Choices seen</th><th scope="col">Must fill in?</th></tr></thead>
-          <tbody>${rows.map(r => `
-            <tr class="${r.already ? 'shot-already' : ''}" data-id="${esc(r.id)}">
+          <thead><tr>
+            <th scope="col">${tickBox(rows, 'shot-tick-every', '', 'Tick every name')}</th>
+            <th scope="col">Name on screen</th><th scope="col">Kind</th><th scope="col">Choices seen</th><th scope="col">Must fill in?</th><th scope="col">Worth a look?</th>
+          </tr></thead>
+          <tbody>${groups.map(g => {
+            const list = only ? g.rows.filter(r => r.look.length) : g.rows;
+            if (!list.length) return '';
+            const name = g.rows[0].table.slice(SCREEN_PREFIX.length);
+            const odd = g.rows.filter(r => r.look.length).length;
+            return `
+            <tr class="shot-group">
+              <td>${tickBox(g.rows, 'shot-tick-screen', `data-key="${esc(g.key)}"`, `Tick every name on ${name}`)}</td>
+              <td colspan="5"><label class="sr-only" for="shot-screen-${esc(g.key)}">Screen name</label>
+                <input type="text" class="shot-screen" id="shot-screen-${esc(g.key)}" value="${esc(name)}" data-key="${esc(g.key)}">
+                <span class="recon-sub">${num(g.rows.length)} names${odd ? ` · ${num(odd)} worth a look` : ''}</span></td>
+            </tr>${list.map(r => `
+            <tr class="${r.already ? 'shot-already' : ''} ${r.look.length ? 'shot-odd' : ''}" data-id="${esc(r.id)}">
               <td>${r.already ? '<span class="recon-sub">In the list</span>'
                 : `<input type="checkbox" class="shot-tick" aria-label="Keep ${esc(r.label)}" ${r.ticked ? 'checked' : ''}>`}</td>
-              <td>${firstOfScreen.has(r.id)
-                ? `<input type="text" class="shot-screen" value="${esc(r.table.slice(SCREEN_PREFIX.length))}" aria-label="Screen name" data-key="${esc(r.screenKey)}">`
-                : `<span class="recon-sub">${esc(r.table.slice(SCREEN_PREFIX.length))}</span>`}</td>
               <td><input type="text" class="shot-label" value="${esc(r.label)}" aria-label="Name on screen" ${r.already ? 'disabled' : ''}></td>
               <td><select class="shot-kind" aria-label="Kind of value" ${r.already ? 'disabled' : ''}>${KINDS.map(k => `<option ${k === r.kind ? 'selected' : ''}>${k}</option>`).join('')}</select></td>
               <td>${esc(r.options.join(', ') || '—')}</td>
               <td>${r.required ? 'Looks like it' : '—'}</td>
-            </tr>`).join('')}</tbody>
+              <td>${r.look.length ? `<span class="shot-look">${r.look.map(x => esc(x)).join('<br>')}</span>` : '—'}</td>
+            </tr>`).join('')}`;
+          }).join('')}</tbody>
         </table></div>
-        <p class="recon-sub" id="shot-count" style="margin-top:0.5rem"></p>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem">
-          <button class="btn btn-primary btn-sm" id="shot-apply">Add the ticked names</button>
-          <button class="btn btn-secondary btn-sm" id="shot-tick-all">Tick all</button>
-          <button class="btn btn-ghost btn-sm" id="shot-untick-all">Untick all</button>
-          <button class="btn btn-ghost btn-sm" id="shot-discard">Throw these away</button>
-        </div>
       </div>`;
 
+    review.querySelectorAll('input[data-some="1"]').forEach(b => { b.indeterminate = true; });
     const byId = id => rows.find(r => r.id === id);
-    const count = () => {
-      const n = rows.filter(r => r.ticked && !r.already).length;
-      document.getElementById('shot-count').textContent = `${num(n)} ticked.`;
-      document.getElementById('shot-apply').disabled = !n;
-    };
-    review.querySelectorAll('tbody tr').forEach(tr => {
+    review.querySelectorAll('tbody tr[data-id]').forEach(tr => {
       const row = byId(tr.dataset.id);
-      tr.querySelector('.shot-tick')?.addEventListener('change', e => { row.ticked = e.target.checked; count(); });
-      tr.querySelector('.shot-label')?.addEventListener('input', e => { row.label = e.target.value; });
-      tr.querySelector('.shot-kind')?.addEventListener('change', e => { row.kind = e.target.value; });
+      tr.querySelector('.shot-tick')?.addEventListener('change', e => { row.ticked = e.target.checked; renderReview(); });
+      tr.querySelector('.shot-label')?.addEventListener('change', e => { row.label = e.target.value; renderReview(); });
+      tr.querySelector('.shot-kind')?.addEventListener('change', e => { row.kind = e.target.value; renderReview(); });
     });
+    review.querySelector('.shot-tick-every')?.addEventListener('change', e => { open.forEach(r => { r.ticked = e.target.checked; }); renderReview(); });
+    review.querySelectorAll('.shot-tick-screen').forEach(b => b.addEventListener('change', e => {
+      rows.forEach(r => { if (r.screenKey === b.dataset.key && !r.already) r.ticked = e.target.checked; });
+      renderReview();
+    }));
     review.querySelectorAll('.shot-screen').forEach(input => input.addEventListener('change', () => {
       const name = cleanScreenName(input.value).text || 'Unnamed screen';
       rows.forEach(r => { if (r.screenKey === input.dataset.key) r.table = SCREEN_PREFIX + name; });
       renderReview();
     }));
-    const setAll = v => { rows.forEach(r => { if (!r.already) r.ticked = v; }); renderReview(); };
-    document.getElementById('shot-tick-all').onclick = () => setAll(true);
-    document.getElementById('shot-untick-all').onclick = () => setAll(false);
+    document.getElementById('shot-only')?.addEventListener('change', e => { state.onlyFlagged = e.target.checked; renderReview(); });
     document.getElementById('shot-discard').onclick = discard;
-    document.getElementById('shot-apply').onclick = apply;
-    count();
+    const add = document.getElementById('shot-apply');
+    add.disabled = !ticked;
+    add.onclick = apply;
   }
 
   function discard() {
