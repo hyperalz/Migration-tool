@@ -1,22 +1,20 @@
-// The project home: one thing to do now, and the five steps at a glance.
+// The project home: the one thing to do now, everything left to do, and
+// where each area is. How a move works and the word list live in Help.
 // Detail is one click away, so the page is not a wall of text.
 
 import { getProject } from './store.js';
-import { projectProgress, STATE_LABEL, visibleScreens } from './progress.js';
-import { INTRO, STEP_GUIDE, GLOSSARY, HOME_TEXT } from './guide.js';
+import { projectProgress } from './progress.js';
+import { INTRO, STEP_GUIDE, HOME_TEXT } from './guide.js';
 import { areaBoard, todoList, STAGES } from './work-queue.js';
 
-const STATE_CHIP = { done: 'recon-ok', progress: 'recon-medium', todo: 'recon-low', blocked: 'recon-low' };
 
 export function renderHome({ id }, ui) {
   const esc = ui.esc;
   const project = getProject(id);
   if (!project) return ui.renderNotFound();
-  const { steps, next, overview } = projectProgress(project);
+  const { steps, overview } = projectProgress(project);
   const status = overview.summary.status;
   const started = (project.reconRuns || []).length > 0;
-  const current = next ? steps.find(s => s.key === next.step) : null;
-  const guide = current ? STEP_GUIDE[current.key] : null;
 
   // Every open job, most important first. The top one is "do this now".
   const todo = todoList(project);
@@ -64,24 +62,6 @@ export function renderHome({ id }, ui) {
       </table></div>
     </section>` : '';
 
-  const row = s => `
-    <details class="home-step home-step-${s.state}${current?.key === s.key ? ' home-step-current' : ''}">
-      <summary>
-        <span class="home-step-num" aria-hidden="true">${s.state === 'done' ? '✓' : s.number}</span>
-        <span class="home-step-title">${esc(s.label)}</span>
-        <span class="recon-chip ${STATE_CHIP[s.state]}">${STATE_LABEL[s.state]}</span>
-        <span class="home-step-sum">${esc(STEP_GUIDE[s.key].what)}</span>
-      </summary>
-      <div class="home-step-body">
-        <ol>${STEP_GUIDE[s.key].todo.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
-        <p><strong>You are done when:</strong> ${esc(STEP_GUIDE[s.key].done)}</p>
-        <p class="recon-sub">Where it stands: ${esc(s.summary)}</p>
-        ${s.state === 'blocked' ? '' : `<div class="home-step-links">
-          ${visibleScreens(s).map((sc, _, shown) => `<a class="btn btn-secondary btn-sm" href="#/projects/${id}/${sc.path}">${esc(shown.length > 1 ? sc.label : `Open ${s.label}`)}</a>`).join('')}
-        </div>`}
-      </div>
-    </details>`;
-
   document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
   ui.mount(`
     ${ui.projectSteps(project, 'home')}
@@ -92,13 +72,7 @@ export function renderHome({ id }, ui) {
     ${todoSection}
     ${boardSection}
 
-    <h2 class="home-heading">The five steps</h2>
-    <div class="card home-steps">${steps.map(row).join('')}</div>
-
-    <details class="card home-glossary">
-      <summary>Words we use</summary>
-      <dl>${GLOSSARY.map(([term, meaning]) => `<dt>${esc(term)}</dt><dd>${esc(meaning)}</dd>`).join('')}</dl>
-    </details>
+    <p class="home-help"><button type="button" class="btn-link" data-open-help aria-haspopup="dialog">How does a move work? Open Help</button></p>
   `);
   ui.attachLogout();
 }

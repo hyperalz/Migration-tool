@@ -5,7 +5,7 @@
 // Keep it that way when editing. tests/reconcile.test.mjs checks the reading
 // level and fails if it creeps up.
 
-export const INTRO = 'You are moving information from an old system to a new one. There are five steps. Do them in order. This page shows which step you are on and what to do next.';
+export const INTRO = 'You are moving information from an old system to a new one. There are five steps. Each area of the work goes through them at its own pace, and may need to go back a step. The home page shows what to do next.';
 
 // Keyed by step key (see STEPS in progress.js).
 export const STEP_GUIDE = {
@@ -114,11 +114,14 @@ export const HOME_TEXT = {
 
 export const GLOSSARY = [
   ['Field', 'One piece of information, like a name, a date or an amount.'],
+  ['Field list', 'All the fields one system holds, with what each one means.'],
   ['Table', 'A group of fields about one kind of thing, like all the facts about a supplier.'],
   ['Record', 'One row in a table. For example, one supplier.'],
   ['Match', 'A link that says this old field goes into that new field.'],
   ['Load', 'Copying data into the new system. A trial load is a practice run.'],
   ['Check', 'Comparing the old data with the new data to see if they are the same.'],
   ['Area', 'A part of the work, such as Finance or Pupils. Each area has an owner who agrees it is right.'],
+  ['Old and new system', 'The system the data comes from, and the one it moves to. MapBridge uses their own names when you give them.'],
   ['Sign off', 'When the person in charge says, on the record, that their part is right.'],
+  ['Evidence pack', 'One file with the whole story of the move: what was matched, checked and signed.'],
 ];

@@ -1244,3 +1244,21 @@ test('strays: rare options sit one click deeper', () => {
   for (const id of ['load-source-sample', 'load-target-sample', 'import-source-connector', 'import-target-connector', 'export-csv', 'export-xlsx', 'export-sql']) assert.ok(inside(id), id);
   assert.ok(!inside('export-json'), 'the evidence pack stays in front');
 });
+
+// ---------- help panel ----------
+import { helpHtml } from '../js/help-view.js';
+
+test('help: the five steps and the word list live in Help, not on the home page', () => {
+  const plain = v => String(v);
+  const html = helpHtml(plain);
+  for (const s of STEPS) assert.ok(html.includes(STEP_GUIDE[s.key].what), s.key);
+  for (const [term] of GLOSSARY) assert.ok(html.includes(`<dt>${term}</dt>`), term);
+  assert.doesNotMatch(html, /Where this move stands/);
+  // inside a project, each step also says where that project stands
+  const inProject = helpHtml(plain, projectProgress(emptyProject()).steps);
+  assert.match(inProject, /Where this move stands: Add the field list for each system\./);
+  const home = readFileSync(new URL('../js/home-view.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(home, /The five steps|home-glossary|GLOSSARY/);
+  assert.match(home, /data-open-help/);
+  assert.match(readFileSync(new URL('../js/app.js', import.meta.url), 'utf8'), /data-open-help/);
+});

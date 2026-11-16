@@ -36,6 +36,7 @@ import { templateImportCard, bindTemplateImport } from './template-import-view.j
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
+import { bindHelp } from './help-view.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -59,6 +60,7 @@ const routes = {
 
 export function initApp() {
   seedDemoUser();
+  bindHelp(esc);
   window.addEventListener('hashchange', route);
   if (!location.hash) location.hash = '#/login';
   route();
@@ -113,6 +115,7 @@ function nav(title = '') {
       <a href="#/dashboard" class="logo"><span class="logo-mark">MB</span> MapBridge</a>
       <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;color:var(--muted)">
         ${title ? `<span>${title}</span>` : ''}
+        <button type="button" class="btn btn-ghost btn-sm" data-open-help aria-haspopup="dialog">Help</button>
         ${user ? `<span>${user.name}</span><button class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>` : ''}
       </div>
     </nav>`;
