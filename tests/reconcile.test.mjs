@@ -575,7 +575,7 @@ test('field checks: conflicts are fields marked as passed that are failing', () 
 });
 
 // ---------- plain-English guidance ----------
-import { INTRO, STEP_GUIDE, SCREEN_GUIDE, GLOSSARY } from '../js/guide.js';
+import { INTRO, STEP_GUIDE, SCREEN_GUIDE, GLOSSARY, HOME_TEXT } from '../js/guide.js';
 import { STEPS } from '../js/progress.js';
 
 function syllables(word) {
@@ -597,7 +597,7 @@ function readingGrade(text) {
 function allGuideText() {
   const steps = Object.values(STEP_GUIDE).flatMap(g => [g.what, ...g.todo, g.done]);
   const screens = Object.values(SCREEN_GUIDE).flat();
-  return [INTRO, ...steps, ...screens, ...GLOSSARY.map(g => g[1])];
+  return [INTRO, ...steps, ...screens, ...GLOSSARY.map(g => g[1]), ...Object.values(HOME_TEXT)];
 }
 
 test('guide: every step and every screen has guidance', () => {
@@ -1093,4 +1093,85 @@ test('screenshots: plain checks pick out names worth a second look, and leave no
     for (const sentence of line.split(/[.!?]+/).filter(x => x.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22);
   }
   assert.ok(readingGrade(Object.values(LOOK).join(' ')) <= 6);
+});
+
+// ---------- area board and to-do list ----------
+import { areaBoard, todoList } from '../js/work-queue.js';
+
+function templateProject() {
+  const parsed = parseMappingTemplate(exampleRows(), { targetSystem: 'New' });
+  return {
+    name: 'P', sourceSystem: 'Legacy', targetSystem: 'New', sourceSchema: parsed.sourceSchema, targetSchema: parsed.targetSchema,
+    mappings: parsed.mappings.map((m, i) => ({ id: `i${i}`, ...m })),
+    templateImport: { notUsed: parsed.notUsed, questions: parsed.questions },
+    serviceAreas: [{ name: 'Customer' }, { name: 'Order' }, { name: 'Payroll' }],
+  };
+}
+const cells = r => Object.fromEntries(Object.entries(r.cells).map(([k, v]) => [k, v.text]));
+
+test('board: each area shows its own stage, and the spreadsheet\'s areas are kept on new tables', () => {
+  const p = templateProject();
+  assert.deepEqual(p.targetSchema.tables.map(t => t.section), ['Customer', 'Order']);
+  const board = areaBoard(p);
+  assert.deepEqual(board.map(r => r.name), ['Customer', 'Order', 'Payroll']);
+  assert.deepEqual(cells(board[0]), { list: '5 fields', match: '1 to match', check: '1 table to check', agree: '—' });
+  assert.deepEqual(cells(board[2]), { list: 'Not in yet', match: '—', check: '—', agree: '—' });
+  assert.equal(board[0].now, 'match');
+  assert.equal(board[2].now, 'list');
+  // every open field lands in exactly one area
+  assert.equal(board.reduce((n, r) => n + r.counts.open, 0), 3);
+});
+
+test('to-do: one list across steps and areas, with the jobs that hold work up first', () => {
+  const list = todoList(templateProject());
+  assert.deepEqual(list.map(t => t.id), ['list-Payroll', 'match-Customer', 'match-Order', 'unchecked-Customer', 'unchecked-Order', 'questions']);
+  assert.equal(list[0].area, 'Payroll');
+  assert.equal(list[1].text, '1 field in the new system has no match yet. Match it or mark it as not used.');
+  assert.ok(list.every(t => t.path && t.step));
+
+  assert.deepEqual(todoList(emptyProject()).map(t => t.id), ['old-list', 'new-list']);
+  assert.deepEqual(areaBoard(emptyProject()), []);
+});
+
+test('to-do: serious problems and changed tables come before matching; checked areas move on', () => {
+  const p = schemaProjectFull({ reconRuns: [runDemo(1)] });
+  const list = todoList(p);
+  const firstSerious = list.findIndex(t => t.id.startsWith('serious-'));
+  const firstMatch = list.findIndex(t => t.id.startsWith('match-'));
+  assert.ok(firstSerious >= 0);
+  assert.ok(firstMatch === -1 || firstSerious < firstMatch);
+  const board = areaBoard(p);
+  assert.ok(board.some(r => /serious problem/.test(r.cells.check.text)));
+  assert.ok(board.every(r => r.cells.agree.text !== 'Ready to sign' || r.cells.check.state === 'done'));
+});
+
+test('to-do: sign-off, final load and evidence pack appear in turn', () => {
+  const gl = runDemoPartial(1, [LEDGER], 'g', 'Ledger final');
+  const p = schemaProjectFull({ reconRuns: [gl] });
+  p.mappings = p.mappings.filter(m => m.sourceTable === 'gl_balance');
+  p.sourceSchema = { ...legacyFinanceSchema, tables: legacyFinanceSchema.tables.filter(t => t.name === 'gl_balance') };
+  p.targetSchema = { ...newFinanceSchema, tables: newFinanceSchema.tables.filter(t => t.name === 'GL_Opening_Balance') };
+  const ids = () => todoList(p).map(t => t.id.replace(/-.*/, ''));
+  assert.ok(ids().includes('sign'));
+  const area = projectProgress(p).overview.areas[0];
+  p.reconAreaSignoffs = [buildAreaSignoff(area, { name: 'Lead', role: 'Signed off', note: '' })];
+  assert.equal(areaBoard(p)[0].cells.agree.text, 'Signed by Lead');
+  assert.ok(ids().includes('final') && !ids().includes('sign'));
+  p.reconFinalRunId = 'g';
+  assert.ok(ids().includes('evidence') && !ids().includes('final'));
+  p.lastEvidenceExportAt = 'T';
+  p.lastEvidenceDigest = evidenceDigest(buildExportPackage(p, null));
+  assert.ok(!ids().includes('evidence'));
+});
+
+test('to-do: screen names not yet linked are listed, and the words read at about age eleven', () => {
+  const p = templateProject();
+  p.sourceSchema = { ...p.sourceSchema, tables: [...p.sourceSchema.tables, { name: 'Screen: Pupil details', origin: 'screenshot', columns: [
+    { name: 'Surname', type: 'text' }, { name: 'On roll', type: 'yes/no' }, { name: 'Done', type: 'text', link: { table: 't', column: 'c' } }] }] };
+  const item = todoList(p).find(t => t.id === 'screens');
+  assert.equal(item.text, '1 name from screenshots is not linked to a real field yet.');
+  const texts = [...todoList(p), ...todoList(schemaProjectFull({ reconRuns: [runDemo(1)] }))].map(t => t.text);
+  const overall = readingGrade(texts.join(' '));
+  assert.ok(overall <= 6, `overall reading grade ${overall.toFixed(1)} is above 6`);
+  for (const line of texts) for (const sentence of line.split(/[.!?]+/).filter(x => x.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22, sentence);
 });

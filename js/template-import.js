@@ -140,7 +140,7 @@ export function parseMappingTemplate(rows, { targetSystem = '', sourceSystem = '
 
   const targetSchema = {
     system: targetSystem,
-    tables: [...targetTables.values()].map(t => ({ name: t.name, columns: t.columns })),
+    tables: [...targetTables.values()].map(t => ({ name: t.name, ...(t.section ? { section: t.section } : {}), columns: t.columns })),
   };
   const sourceSchema = {
     system: sourceSystem || c.sourceSystem || '',
@@ -170,6 +170,8 @@ export function mergeSchema(existing, incoming) {
   for (const t of incoming.tables) {
     let table = out.tables.find(x => x.name === t.name);
     if (!table) { table = { name: t.name, columns: [] }; out.tables.push(table); }
+    // Keep the table's area, unless it already has one.
+    if (t.section && !table.section) table.section = t.section;
     for (const col of t.columns) {
       if (!table.columns.some(x => x.name === col.name)) { table.columns.push(col); added++; }
     }
