@@ -6,6 +6,7 @@ import { buildAreaSignoff, projectOverview } from './reconcile-overview.js';
 import { signOffAreaFields } from './field-progress.js';
 import { fileCheckTable } from './reconcile-view.js';
 import { areaPageData, AREA_TEXT } from './area-page.js';
+import { areaManager } from './settings.js';
 
 const fmt = iso => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 const num = n => Number(n).toLocaleString('en-GB');
@@ -34,7 +35,9 @@ export function renderArea({ id, area }, ui) {
       <td><span class="area-stage">${esc(f.label)}</span></td>
       <td>${f.last ? `${esc(f.last.note || '—')}<div class="recon-sub">${esc(f.last.by)}${f.last.at ? ` · ${esc(fmt(f.last.at))}` : ''}</div>` : '—'}</td>
     </tr>`;
-  const userName = getCurrentUser()?.name || '';
+  // The service area manager usually signs, so their name is filled in.
+  const manager = areaManager(project, name);
+  const userName = manager || getCurrentUser()?.name || '';
 
   ui.mount(`
     ${ui.projectSteps(project, 'area')}
@@ -70,6 +73,7 @@ export function renderArea({ id, area }, ui) {
     <h2 class="home-heading">Sign-off</h2>
     <section class="card area-signoff">
       <p>${esc(AREA_TEXT.signHelp)}</p>
+      <p class="recon-sub">Service area manager: ${manager ? `<strong>${esc(manager)}</strong>` : 'not set yet'} · <a href="#/projects/${id}/settings#settings-areas-card">Change in Project settings</a></p>
       ${d.signoffs.length ? `<ul class="area-signoffs">${d.signoffs.map(s => `<li><strong>${esc(s.role)}</strong> by ${esc(s.name)} · ${esc(fmt(s.at))}${s.note ? ` · ${esc(s.note)}` : ''}</li>`).join('')}</ul>` : ''}
       ${!d.area ? `<p class="recon-sub">${esc(AREA_TEXT.nothing)}</p>` : `
         ${d.ready || d.signedOff ? '' : `<p class="alert alert-warn shot-warning">${esc(AREA_TEXT.notReady)}</p>`}

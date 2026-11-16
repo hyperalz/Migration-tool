@@ -1445,3 +1445,42 @@ test('area page: links survive odd area names, and the words read at about age e
   assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
   for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
 });
+
+// ---------- project settings ----------
+import { setNames, areaRows, setAreaManager, areaManager, addArea, removeArea, addPerson, removePerson, aiSummary, SETTINGS_TEXT } from '../js/settings.js';
+
+test('settings: names, areas with their managers, and people, in one place', () => {
+  const p = templateProject();
+  setNames(p, { name: '  Lost keys move ', oldName: 'Synergy', newName: ' Impulse ' });
+  assert.deepEqual([p.name, p.sourceSystem, p.targetSystem], ['Lost keys move', 'Synergy', 'Impulse']);
+  setNames(p, { name: '', oldName: '', newName: 'Impulse' });
+  assert.equal(p.name, 'Lost keys move', 'a blank project name is not saved');
+  assert.equal(p.sourceSystem, '', 'a blank system name falls back to "old system" on screen');
+
+  // areas from the spreadsheet show up, with their field counts
+  assert.deepEqual(areaRows(p).map(r => [r.name, r.fields, r.removable]), [['Customer', 5, false], ['Order', 4, false], ['Payroll', 0, true]]);
+  setAreaManager(p, 'Customer', ' Sam Manager ');
+  setAreaManager(p, 'Order', 'Jo Lead');
+  assert.equal(areaManager(p, 'Customer'), 'Sam Manager');
+  assert.equal(areaRows(p).find(r => r.name === 'Order').manager, 'Jo Lead');
+  // an area with fields cannot be removed; an empty one can
+  assert.equal(removeArea(p, 'Customer'), false);
+  assert.equal(removeArea(p, 'Payroll'), true);
+  assert.ok(!areaRows(p).some(r => r.name === 'Payroll'));
+  assert.equal(addArea(p, 'Attendance'), true);
+  assert.equal(addArea(p, 'attendance'), false);
+  // people
+  assert.equal(addPerson(p, 'Alex'), true);
+  assert.equal(addPerson(p, 'ALEX'), false);
+  removePerson(p, 'Alex');
+  assert.deepEqual(p.team, []);
+});
+
+test('settings: AI settings in plain words, and the page reads at about age eleven', () => {
+  assert.match(aiSummary(null), /No AI service is set up/);
+  assert.match(aiSummary({ mode: 'heuristic', baseURL: 'http://localhost:11434/v1', model: 'gemma4:12b' }), /Screenshots are read by gemma4:12b/);
+  assert.match(aiSummary({ mode: 'llm', model: 'gpt-4o-mini', apiKey: 'k' }), /suggested by gpt-4o-mini/);
+  const text = [...Object.values(SETTINGS_TEXT), ...SCREEN_GUIDE.settings];
+  assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
+  for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
+});
