@@ -7,11 +7,13 @@ import { signOffAreaFields } from './field-progress.js';
 import { fileCheckTable } from './reconcile-view.js';
 import { areaPageData, AREA_TEXT } from './area-page.js';
 import { areaManager } from './settings.js';
+import { GOVUK_TEXT, panelHtml, requiredErrors } from './govuk.js';
+import { showErrors } from './govuk-view.js';
 
 const fmt = iso => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 const num = n => Number(n).toLocaleString('en-GB');
 
-export function renderArea({ id, area }, ui) {
+export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
   const esc = ui.esc;
   const project = getProject(id);
   if (!project) return ui.renderNotFound();
@@ -41,6 +43,7 @@ export function renderArea({ id, area }, ui) {
 
   ui.mount(`
     ${ui.projectSteps(project, 'area')}
+    ${justRecorded ? panelHtml(justRecorded.title, justRecorded.body, esc) : ''}
     <div class="page-head"><div>
       <div class="recon-eyebrow"><a href="#/projects/${id}">Home</a> · <a href="#/projects/${id}/reconcile/overview">All areas</a></div>
       <h1>${esc(d.label)}</h1>
@@ -77,8 +80,8 @@ export function renderArea({ id, area }, ui) {
       ${d.signoffs.length ? `<ul class="area-signoffs">${d.signoffs.map(s => `<li><strong>${esc(s.role)}</strong> by ${esc(s.name)} · ${esc(fmt(s.at))}${s.note ? ` · ${esc(s.note)}` : ''}</li>`).join('')}</ul>` : ''}
       ${!d.area ? `<p class="recon-sub">${esc(AREA_TEXT.nothing)}</p>` : `
         ${d.ready || d.signedOff ? '' : `<p class="alert alert-warn shot-warning">${esc(AREA_TEXT.notReady)}</p>`}
-        <form class="recon-review-form" id="area-signoff-form">
-          <div class="field"><label>Name<input name="name" value="${esc(userName)}" required></label></div>
+        <form class="recon-review-form" id="area-signoff-form" novalidate>
+          <div class="field"><label for="signoff-name">Name</label><input id="signoff-name" name="name" value="${esc(userName)}" autocomplete="name"></div>
           <div class="field"><label>Recording<select name="role"><option>Signed off</option><option>Not signed off</option></select></label></div>
           <div class="field" style="flex:2"><label>Note (optional)<input name="note" placeholder="e.g. live checked with the service team"></label></div>
           <button class="btn btn-primary" type="submit">Record</button>
@@ -91,7 +94,7 @@ export function renderArea({ id, area }, ui) {
     e.preventDefault();
     const fd = new FormData(e.target);
     const who = String(fd.get('name') || '').trim();
-    if (!who) return;
+    if (showErrors(e.target, requiredErrors([{ id: 'signoff-name', value: who, text: GOVUK_TEXT.enterName }]))) return;
     const p = getProject(id);
     const ov = projectOverview(p, p.reconRuns || [], { finalRunId: p.reconFinalRunId || null, signoffs: p.reconAreaSignoffs || [] });
     const a = ov.areas.find(x => x.name === name);
@@ -101,7 +104,11 @@ export function renderArea({ id, area }, ui) {
     // One sign-off for the area marks every field in it as signed off.
     const changed = signoff.role === 'Signed off' ? signOffAreaFields(p, a, { by: who, at: signoff.at }) : 0;
     saveProject(p);
-    ui.toast(changed ? `Sign-off recorded. ${changed} ${changed === 1 ? 'field' : 'fields'} marked as signed off.` : 'Sign-off recorded');
-    renderArea({ id, area }, ui);
+    const signed = signoff.role === 'Signed off';
+    const body = signed
+      ? `${who} signed off ${name}.${changed ? ` ${num(changed)} ${changed === 1 ? 'field is' : 'fields are'} now marked as signed off.` : ''}`
+      : `${who} recorded that ${name} is not signed off yet.`;
+    renderArea({ id, area }, ui, { justRecorded: { title: signed ? GOVUK_TEXT.signedTitle : GOVUK_TEXT.notSignedTitle, body } });
+    window.scrollTo(0, 0);
   });
 }

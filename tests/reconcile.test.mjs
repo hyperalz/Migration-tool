@@ -1,5 +1,6 @@
 // Run with: node --test tests/reconcile.test.mjs
 import { test } from 'node:test';
+import { GOVUK_TEXT, errorSummaryHtml, errorMessageHtml, panelHtml, summaryListHtml, passQuestionHtml, readPassAnswer, requiredErrors } from '../js/govuk.js';
 import assert from 'node:assert/strict';
 import {
   parseLookupRule, parseNumber, parseDate, compareValues, tablePairs, guessKeyMappingIds,
@@ -1269,7 +1270,7 @@ test('help: the five steps and the word list live in Help, not on the home page'
 });
 
 // ---------- start questions ----------
-import { QUESTIONS, ROUTE_TEXT, firstBox, fieldListsPlan, routeFromForm, routeSummary, routeQuestionsHtml, readAnswer } from '../js/route.js';
+import { QUESTIONS, ROUTE_TEXT, firstBox, fieldListsPlan, routeFromForm, routeSummary, routeQuestionsHtml, readAnswer, routeAnswerRows } from '../js/route.js';
 
 test('route: the answers decide which boxes Field lists shows', () => {
   assert.deepEqual(fieldListsPlan({}), { order: ['template', 'screenshots', 'trace'], oldUpload: true, answered: false });
@@ -1482,5 +1483,44 @@ test('settings: AI settings in plain words, and the page reads at about age elev
   assert.match(aiSummary({ mode: 'llm', model: 'gpt-4o-mini', apiKey: 'k' }), /suggested by gpt-4o-mini/);
   const text = [...Object.values(SETTINGS_TEXT), ...SCREEN_GUIDE.settings];
   assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
+  for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
+});
+
+test('GOV.UK patterns: error summary links to each box, and words are escaped', () => {
+  assert.equal(errorSummaryHtml([]), '');
+  const html = errorSummaryHtml([{ id: 'login-email', text: 'Enter your email address' }, { id: 'x', text: '<b>bad</b>' }]);
+  assert.match(html, /There is a problem/);
+  assert.match(html, /role="alert"/);
+  assert.match(html, /href="#login-email" data-error-for="login-email">Enter your email address</);
+  assert.ok(!html.includes('<b>bad'), 'error text is escaped');
+  const msg = errorMessageHtml('login-email', 'Enter your email address');
+  assert.match(msg, /id="login-email-error"/);
+  assert.match(msg, /visually-hidden">Error: </);
+  assert.match(panelHtml('Area signed off', 'Sam signed off <x>.'), /Area signed off[\s\S]*Sam signed off &lt;x&gt;\./);
+});
+
+test('GOV.UK patterns: "Did it pass?" needs an answer, and a fail needs a note', () => {
+  assert.deepEqual(readPassAnswer(undefined, '').errors.map(e => e.id), ['pass-answer']);
+  assert.deepEqual(readPassAnswer('no', '   ').errors, [{ id: 'pass-note', text: GOVUK_TEXT.sayWhatWentWrong }]);
+  assert.deepEqual(readPassAnswer('no', ' Dates are one day out '), { pass: false, note: 'Dates are one day out', errors: [] });
+  // a note typed before switching to "Yes" is not kept
+  assert.deepEqual(readPassAnswer('yes', 'left over'), { pass: true, note: '', errors: [] });
+  const q = passQuestionHtml();
+  assert.match(q, /<legend>Did it pass\?<\/legend>/);
+  assert.match(q, /id="pass-fail-reveal" hidden/, 'the note box stays hidden until "No" is picked');
+});
+
+test('GOV.UK patterns: required boxes and the "check your answers" list', () => {
+  assert.deepEqual(requiredErrors([{ id: 'a', value: ' ', text: 'Enter a' }, { id: 'b', value: 'ok', text: 'Enter b' }, { id: 'c', value: null, text: 'Enter c' }]).map(e => e.id), ['a', 'c']);
+  const rows = routeAnswerRows({ route: { oldSystemOpen: false, oldDatabase: true } });
+  assert.deepEqual(rows.map(r => r.value), ['No', 'Yes', 'Not sure']);
+  const list = summaryListHtml(rows.map(r => ({ ...r, href: '#/projects/p1/settings' })));
+  assert.equal((list.match(/summary-list-row/g) || []).length, 3);
+  assert.match(list, /Change<span class="visually-hidden"> can you still open the old system\?<\/span>/, 'each Change link says what it changes');
+});
+
+test('GOV.UK patterns: the new words read at about age eleven', () => {
+  const text = Object.values(GOVUK_TEXT);
+  assert.ok(readingGrade(text.join('. ')) <= 6, readingGrade(text.join('. ')).toFixed(1));
   for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
 });

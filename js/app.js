@@ -1,3 +1,5 @@
+import { GOVUK_TEXT, passQuestionHtml, readPassAnswer, requiredErrors, summaryListHtml } from './govuk.js';
+import { showErrors } from './govuk-view.js';
 import { getCurrentUser, login, signup, logout, seedDemoUser } from './auth.js';
 import {
   getProjects, getProject, saveProject, createProject, deleteProject,
@@ -39,7 +41,7 @@ import { oldName, newName, oldLabel, newLabel } from './words.js';
 import { bindHelp } from './help-view.js';
 import { renderArea } from './area-view.js';
 import { renderSettings } from './settings-view.js';
-import { ROUTE_TEXT, routeQuestionsHtml, routeFromForm, fieldListsPlan, routeSummary, firstBox } from './route.js';
+import { ROUTE_TEXT, routeQuestionsHtml, routeFromForm, fieldListsPlan, routeAnswerRows, firstBox } from './route.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -117,10 +119,11 @@ function mount(html) {
 function nav(title = '') {
   const user = getCurrentUser();
   return `
+    <a href="#app-main" class="skip-link" data-skip-link>${GOVUK_TEXT.skip}</a>
     <nav class="app-nav">
       <a href="#/dashboard" class="logo"><span class="logo-mark">MB</span> MapBridge</a>
       <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;color:var(--muted)">
-        ${title ? `<span>${title}</span>` : ''}
+        ${title ? `<span>${esc(title)}</span>` : ''}
         <button type="button" class="btn btn-ghost btn-sm" data-open-help aria-haspopup="dialog">Help</button>
         ${user ? `<span>${user.name}</span><button class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>` : ''}
       </div>
@@ -170,6 +173,17 @@ document.addEventListener('toggle', e => {
   try { localStorage.setItem(`mapbridge_help_closed_${screen}`, e.target.open ? '0' : '1'); } catch { /* storage unavailable */ }
 }, true);
 
+// The skip link moves focus to the main content without changing the route.
+document.addEventListener('click', e => {
+  const link = e.target.closest?.('[data-skip-link]');
+  if (!link) return;
+  e.preventDefault();
+  const main = document.getElementById('app-main');
+  if (!main) return;
+  main.setAttribute('tabindex', '-1');
+  main.focus();
+});
+
 function attachLogout() {
   document.getElementById('logout-btn')?.addEventListener('click', () => {
     logout();
@@ -197,9 +211,9 @@ function renderLogin() {
       <h1>Sign in</h1>
       <p>Demo app — data stored locally in your browser.</p>
       <div class="alert alert-info">Demo account: <strong>demo@mapbridge.local</strong> / <strong>demo123</strong></div>
-      <form id="login-form">
-        <div class="field"><label>Email</label><input type="email" name="email" value="demo@mapbridge.local" required></div>
-        <div class="field"><label>Password</label><input type="password" name="password" value="demo123" required></div>
+      <form id="login-form" novalidate>
+        <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" name="email" value="demo@mapbridge.local" autocomplete="email"></div>
+        <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" name="password" value="demo123" autocomplete="current-password"></div>
         <button class="btn btn-primary" type="submit" style="width:100%">Sign in</button>
       </form>
       <p style="margin-top:1rem;font-size:0.88rem;color:var(--muted)">No account? <a href="#/signup" style="color:var(--brand);font-weight:600">Create one</a></p>
@@ -208,11 +222,15 @@ function renderLogin() {
   document.getElementById('login-form').addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    if (showErrors(e.target, requiredErrors([
+      { id: 'login-email', value: fd.get('email'), text: GOVUK_TEXT.enterEmail },
+      { id: 'login-password', value: fd.get('password'), text: GOVUK_TEXT.enterPassword },
+    ]))) return;
     try {
       login({ email: fd.get('email'), password: fd.get('password') });
       location.hash = '#/dashboard';
     } catch (err) {
-      toast(err.message);
+      showErrors(e.target, [{ id: 'login-email', text: err.message }]);
     }
   });
 }
@@ -223,12 +241,12 @@ function renderSignup() {
     <div class="auth-page card">
       <h1>Create account</h1>
       <p>Local demo — no server, no real auth.</p>
-      <form id="signup-form">
-        <div class="field"><label>Name</label><input name="name" required></div>
-        <div class="field"><label>Email</label><input type="email" name="email" required></div>
-        <div class="field"><label>Password</label><input type="password" name="password" required minlength="6"></div>
-        <div class="field"><label>Organisation role</label>
-          <select name="orgRole">
+      <form id="signup-form" novalidate>
+        <div class="field"><label for="signup-name">Name</label><input id="signup-name" name="name" autocomplete="name"></div>
+        <div class="field"><label for="signup-email">Email</label><input id="signup-email" type="email" name="email" autocomplete="email"></div>
+        <div class="field"><label for="signup-password">Password</label><p class="route-hint">At least 6 letters or numbers.</p><input id="signup-password" type="password" name="password" autocomplete="new-password"></div>
+        <div class="field"><label for="signup-role">Organisation role</label>
+          <select id="signup-role" name="orgRole">
             <option value="consultant">Delivery consultant</option>
             <option value="la">Local Authority</option>
             <option value="vendor">System supplier</option>
@@ -242,11 +260,20 @@ function renderSignup() {
   document.getElementById('signup-form').addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    const errors = requiredErrors([
+      { id: 'signup-name', value: fd.get('name'), text: GOVUK_TEXT.enterName },
+      { id: 'signup-email', value: fd.get('email'), text: GOVUK_TEXT.enterEmail },
+      { id: 'signup-password', value: fd.get('password'), text: GOVUK_TEXT.enterPassword },
+    ]);
+    if (!errors.some(x => x.id === 'signup-password') && String(fd.get('password')).length < 6) {
+      errors.push({ id: 'signup-password', text: 'Your password must be at least 6 letters or numbers long' });
+    }
+    if (showErrors(e.target, errors)) return;
     try {
       signup(Object.fromEntries(fd));
       location.hash = '#/dashboard';
     } catch (err) {
-      toast(err.message);
+      showErrors(e.target, [{ id: 'signup-email', text: err.message }]);
     }
   });
 }
@@ -414,16 +441,20 @@ function renderSetup({ id }) {
   });
 }
 
-// "What you have": the start answers in plain words, with a way to change them.
-// "What you have": the start answers in plain words. They are changed in
-// Project settings, so they live in one place.
+// "What you have": the start answers as a "check your answers" list. They
+// are changed in Project settings, so they live in one place.
 function routeCard(project, plan) {
-  const said = routeSummary(project);
-  return `
+  const href = `#/projects/${project.id}/settings#settings-route-card`;
+  if (!plan.answered) return `
     <section class="card route-card" id="route-card">
       <strong>${esc(ROUTE_TEXT.summary)}</strong>
-      <span class="recon-sub"> ${plan.answered ? esc(said.join(' ')) : esc(ROUTE_TEXT.unanswered)}</span>
-      <a class="btn btn-ghost btn-sm" style="margin-left:0.5rem" href="#/projects/${project.id}/settings#settings-route-card">${plan.answered ? 'Change your answers' : 'Answer the questions'}</a>
+      <span class="recon-sub"> ${esc(ROUTE_TEXT.unanswered)}</span>
+      <a class="btn btn-ghost btn-sm" style="margin-left:0.5rem" href="${href}">Answer the questions</a>
+    </section>`;
+  return `
+    <section class="card route-card" id="route-card">
+      <h2 class="route-card-title">${esc(ROUTE_TEXT.summary)}</h2>
+      ${summaryListHtml(routeAnswerRows(project).map(r => ({ ...r, href })), esc)}
     </section>`;
 }
 
@@ -736,6 +767,42 @@ function formatStepNames(t) {
   return t.names.join(', ');
 }
 
+// Asks "Did it pass?" with two clear answers. A fail needs a note, which
+// shows only when "No" is picked.
+function showPassModal({ step, mapping }) {
+  return new Promise(resolve => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'record-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="record-modal" role="dialog" aria-modal="true" aria-labelledby="pass-title">
+        <h3 id="pass-title">${esc(step.action)}</h3>
+        <p class="record-modal-sub"><code>${esc(formatColumnRef(mapping))}</code></p>
+        ${passQuestionHtml(esc)}
+        <div class="record-modal-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="pass-cancel">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm" id="pass-continue">Continue</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const modal = backdrop.querySelector('.record-modal');
+    const reveal = backdrop.querySelector('#pass-fail-reveal');
+    const close = result => { backdrop.remove(); resolve(result); };
+    backdrop.querySelectorAll('input[name="pass"]').forEach(r => r.addEventListener('change', () => {
+      reveal.hidden = r.value !== 'no' || !r.checked;
+      if (!reveal.hidden) backdrop.querySelector('#pass-note').focus();
+    }));
+    backdrop.querySelector('#pass-cancel').onclick = () => close(null);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) close(null); });
+    backdrop.querySelector('#pass-continue').onclick = () => {
+      const choice = backdrop.querySelector('input[name="pass"]:checked')?.value;
+      const answer = readPassAnswer(choice, backdrop.querySelector('#pass-note').value);
+      if (showErrors(modal, answer.errors)) return;
+      close({ pass: answer.pass, note: answer.note });
+    };
+    backdrop.querySelector('input[name="pass"]').focus();
+  });
+}
+
 function showParticipantModal({ step, teamNames, defaultName, multi }) {
   return new Promise(resolve => {
     const backdrop = document.createElement('div');
@@ -744,8 +811,8 @@ function showParticipantModal({ step, teamNames, defaultName, multi }) {
     const selected = new Set(multi ? [defaultName].filter(Boolean) : [defaultName || names[0] || '']);
 
     backdrop.innerHTML = `
-      <div class="record-modal" role="dialog" aria-modal="true">
-        <h3>${multi ? 'Who checked?' : 'Recorded by'}</h3>
+      <div class="record-modal" role="dialog" aria-modal="true" aria-labelledby="participant-title">
+        <h3 id="participant-title">${multi ? 'Who checked?' : 'Recorded by'}</h3>
         <p class="record-modal-sub">${esc(step.action)}${multi ? ' — select everyone who checked' : ''}</p>
         <div class="record-modal-list">${names.length ? names.map(name => `
           <label class="record-modal-option">
@@ -754,7 +821,7 @@ function showParticipantModal({ step, teamNames, defaultName, multi }) {
             <span>${esc(name)}</span>
           </label>`).join('') : '<p class="record-modal-empty">Add names to the migration team below first.</p>'}
         <div class="field" style="margin:0.75rem 0 0">
-          <label>${multi ? 'Add someone not listed' : 'Or type a name'}</label>
+          <label for="participant-custom">${multi ? 'Add someone not listed' : 'Or type a name'}</label>
           <input id="participant-custom" placeholder="Full name">
         </div>
         <div class="record-modal-actions">
@@ -783,7 +850,7 @@ function showParticipantModal({ step, teamNames, defaultName, multi }) {
         picked = custom ? [custom] : [...backdrop.querySelectorAll('input[name="participant"]:checked')].map(el => el.value).slice(0, 1);
       }
       if (!picked.length) {
-        toast('Select or enter at least one name');
+        showErrors(backdrop.querySelector('.record-modal'), [{ id: 'participant-custom', text: GOVUK_TEXT.pickName }]);
         return;
       }
       close(picked);
@@ -1088,14 +1155,9 @@ async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
   let pass = true;
   let note = '';
   if (step.checkStep) {
-    pass = confirm(`${step.action} — did this pass?\n\nOK = Pass · Cancel = Fail`);
-    if (!pass) {
-      note = window.prompt('Note required — describe the issue:')?.trim() || '';
-      if (!note) {
-        toast('Not recorded — note required for failures');
-        return;
-      }
-    }
+    const answer = await showPassModal({ step, mapping: m });
+    if (!answer) return;
+    ({ pass, note } = answer);
   }
 
   // Link the step to the evidence: what did the latest load check find for this field?
@@ -1179,7 +1241,7 @@ function showCheckWarningModal({ step, mapping, check }) {
     backdrop.addEventListener('click', e => { if (e.target === backdrop) close(null); });
     backdrop.querySelector('#check-warn-confirm').onclick = () => {
       const reason = backdrop.querySelector('#check-warn-reason').value.trim();
-      if (!reason) { toast('A reason is needed to record this as passed'); return; }
+      if (!reason) { showErrors(backdrop.querySelector('.record-modal'), [{ id: 'check-warn-reason', text: GOVUK_TEXT.sayWhy }]); return; }
       close(reason);
     };
     backdrop.querySelector('#check-warn-reason').focus();

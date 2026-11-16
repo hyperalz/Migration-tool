@@ -2162,3 +2162,40 @@ a.home-area { text-decoration: none; }
 .settings-table input { width: 100%; padding: 0.3rem 0.45rem; font: inherit; }
 .route-card { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; }
 @media (max-width: 760px) { .settings-form { grid-template-columns: 1fr; } }
+
+/* ---- GOV.UK patterns, in MapBridge colours (piece 8) ---- */
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); border: 0; white-space: nowrap; }
+
+.skip-link { position: absolute; left: -9999px; top: 0; z-index: 1000; padding: 0.6rem 1rem; background: #ffdd00; color: #0b0c0c; font-weight: 700; text-decoration: underline; }
+.skip-link:focus { left: 0.5rem; top: 0.5rem; }
+
+/* A strong focus ring everyone can see: yellow with a dark edge. */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid #ffdd00 !important; outline-offset: 0 !important; box-shadow: 0 0 0 5px #0b0c0c !important;
+}
+#app-main:focus { outline: none; box-shadow: none !important; }
+
+.error-summary { border: 4px solid var(--danger); background: var(--surface); padding: 1rem 1.15rem; margin: 0 0 1.25rem; border-radius: 6px; flex-basis: 100%; }
+.error-summary:focus { outline: 3px solid #ffdd00; outline-offset: 0; }
+.error-summary-title { font-size: 1.1rem; margin: 0 0 0.5rem; }
+.error-summary-list { margin: 0; padding-left: 1.1rem; }
+.error-summary-list a { color: var(--danger); font-weight: 700; text-decoration: underline; }
+.error-message, .auth-page p.error-message, .field p.error-message { color: var(--danger); font-weight: 700; margin: 0.25rem 0 0.4rem; font-size: 0.92rem; flex-basis: 100%; }
+.has-error { border-left: 4px solid var(--danger); padding-left: 0.75rem; }
+.team-add-form.has-error, .team-add-form { flex-wrap: wrap; }
+[aria-invalid="true"] { border: 2px solid var(--danger) !important; }
+
+.confirm-panel { background: var(--target); color: #fff; text-align: center; padding: 1.5rem 1.25rem; border-radius: var(--radius); margin: 0 0 1.25rem; }
+.confirm-panel-title { color: #fff; font-size: 1.6rem; margin: 0 0 0.35rem; }
+.confirm-panel-body { font-size: 1.05rem; }
+
+.summary-list { margin: 0 0 1rem; }
+.summary-list-row { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr auto; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+.summary-list-key { font-weight: 600; margin: 0; }
+.summary-list-value, .summary-list-actions { margin: 0; }
+.summary-list-actions a { color: var(--brand); font-weight: 600; }
+
+.pass-q { margin-top: 0.5rem; }
+.radio-reveal { margin: 0.5rem 0 0 0.6rem; padding-left: 1rem; border-left: 4px solid var(--line); }
+.radio-reveal textarea { width: 100%; }
+.route-card-title { font-size: 1.05rem; margin: 0 0 0.25rem; }
