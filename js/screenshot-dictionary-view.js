@@ -5,7 +5,7 @@ import { getProject, saveProject } from './store.js';
 import { getAISettings } from './ai-suggestions.js';
 import { mergeSchema } from './template-import.js';
 import {
-  SHOT_TEXT, KINDS, MAX_FILES, fitSize, dropDuplicates, missingKey, askAI, isLocalAddress, isCloudModel,
+  SHOT_TEXT, KINDS, MAX_FILES, SCREEN_PREFIX, fitSize, dropDuplicates, missingKey, askAI, isLocalAddress, isCloudModel, cleanScreenName,
   parseScreenReply, reviewRows, screenshotSchema, shotSummary,
 } from './screenshot-dictionary.js';
 
@@ -149,6 +149,7 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
       pictures: (prev?.counts.pictures || 0) + keep.length - failures.length,
       duplicates: (prev?.counts.duplicates || 0) + duplicates.length,
       failed: (prev?.counts.failed || 0) + failures.length,
+      removed: results.reduce((n, r) => n + (r.removed || 0), 0),
     };
     pending.set(projectId, { results, counts, rows: reviewRows(results, getProject(projectId).sourceSchema) });
     input.value = '';
@@ -178,16 +179,23 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
       return;
     }
     const screens = new Set(rows.map(r => r.table)).size;
+    // The screen name can be edited once per screen, on its first row.
+    const firstOfScreen = new Set();
+    const seenKeys = new Set();
+    for (const r of rows) if (!seenKeys.has(r.screenKey)) { seenKeys.add(r.screenKey); firstOfScreen.add(r.id); }
     review.innerHTML = `
       <div class="template-found shot-review">
         <p><strong>Found ${num(rows.length)} names on ${num(screens)} ${screens === 1 ? 'screen' : 'screens'}.</strong> ${esc(SHOT_TEXT.reviewHelp)}</p>
+        ${state.counts.removed ? `<p class="alert alert-warn shot-warning" role="note">${esc(SHOT_TEXT.removedNote)}</p>` : ''}
         <div class="schema-preview"><table class="shot-table">
           <thead><tr><th scope="col"><span class="sr-only">Keep</span></th><th scope="col">Screen</th><th scope="col">Name on screen</th><th scope="col">Kind</th><th scope="col">Choices seen</th><th scope="col">Must fill in?</th></tr></thead>
           <tbody>${rows.map(r => `
             <tr class="${r.already ? 'shot-already' : ''}" data-id="${esc(r.id)}">
               <td>${r.already ? '<span class="recon-sub">In the list</span>'
                 : `<input type="checkbox" class="shot-tick" aria-label="Keep ${esc(r.label)}" ${r.ticked ? 'checked' : ''}>`}</td>
-              <td>${esc(r.table.replace(/^Screen: /, ''))}</td>
+              <td>${firstOfScreen.has(r.id)
+                ? `<input type="text" class="shot-screen" value="${esc(r.table.slice(SCREEN_PREFIX.length))}" aria-label="Screen name" data-key="${esc(r.screenKey)}">`
+                : `<span class="recon-sub">${esc(r.table.slice(SCREEN_PREFIX.length))}</span>`}</td>
               <td><input type="text" class="shot-label" value="${esc(r.label)}" aria-label="Name on screen" ${r.already ? 'disabled' : ''}></td>
               <td><select class="shot-kind" aria-label="Kind of value" ${r.already ? 'disabled' : ''}>${KINDS.map(k => `<option ${k === r.kind ? 'selected' : ''}>${k}</option>`).join('')}</select></td>
               <td>${esc(r.options.join(', ') || '—')}</td>
@@ -215,6 +223,11 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
       tr.querySelector('.shot-label')?.addEventListener('input', e => { row.label = e.target.value; });
       tr.querySelector('.shot-kind')?.addEventListener('change', e => { row.kind = e.target.value; });
     });
+    review.querySelectorAll('.shot-screen').forEach(input => input.addEventListener('change', () => {
+      const name = cleanScreenName(input.value).text || 'Unnamed screen';
+      rows.forEach(r => { if (r.screenKey === input.dataset.key) r.table = SCREEN_PREFIX + name; });
+      renderReview();
+    }));
     const setAll = v => { rows.forEach(r => { if (!r.already) r.ticked = v; }); renderReview(); };
     document.getElementById('shot-tick-all').onclick = () => setAll(true);
     document.getElementById('shot-untick-all').onclick = () => setAll(false);
