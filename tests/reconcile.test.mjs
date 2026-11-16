@@ -937,3 +937,140 @@ test('screenshots: the file name is never used for a screen, and the AI is told 
   const s = shotSummary({ pictures: 1, duplicates: 0, failed: 0, found: 3, added: 3, already: 0, leftOut: 0, screens: 1, removed: 2 });
   assert.ok(s.detail.includes("2 bits that looked like a real person's details were taken out."));
 });
+
+// ---------- tracing known records ----------
+import {
+  TRACE_TEXT, buildTraceScript, parseTraceResults, combineRuns, traceReviewRows, applyLinks, traceSummary, screenTables,
+} from '../js/trace.js';
+
+function tracedProject() {
+  return {
+    system: 'Old',
+    tables: [
+      { name: 'dbo.tblStud', columns: [{ name: 'STU_ID', type: 'int' }, { name: 'STU_LN2', type: 'varchar(50)', description: 'Kept as is' }] },
+      { name: 'Screen: Pupil details', origin: 'screenshot', columns: [
+        { name: 'Surname', type: 'text', origin: 'screenshot' },
+        { name: 'Date of Birth', type: 'date', origin: 'screenshot' },
+        { name: 'Tutor', type: 'pick-list', origin: 'screenshot' },
+        { name: 'Postcode', type: 'text', origin: 'screenshot' },
+        { name: 'Ethnicity', type: 'text', origin: 'screenshot' },
+        { name: 'On roll', type: 'yes/no', origin: 'screenshot' },
+      ] },
+    ],
+  };
+}
+
+// Results as SSMS saves them: no heading row.
+const RUN_1 = [
+  ['Pupil details', 'Surname', 'dbo.tblStud', 'STU_LN2', '1'],
+  ['Pupil details', 'Date of Birth', 'dbo.tblStud', 'STU_DOB', '3'],
+  ['Pupil details', 'Date of Birth', 'dbo.tblContact', 'CON_DOB', '3'],
+  ['Pupil details', 'Tutor', 'dbo.tblStud', 'STU_TUTOR', '24'],
+  ['Pupil details', 'Tutor', 'dbo.tblStaffGroup', 'GRP_NAME', '1'],
+  ['Pupil details', 'Postcode', 'dbo.tblAddr', 'ADR_PC', '2'],
+  ['Pupil details', 'Postcode', 'dbo.tblAddrHist', 'AH_PC', '2'],
+  ['Pupil details', 'Ethnicity', 'NULL', 'NULL', '0'],
+];
+const RUN_2 = [
+  ['screen', 'label', 'table_name', 'column_name', 'matching_rows'],
+  ['Pupil details', 'Surname', 'dbo.tblStud', 'STU_LN2', '2'],
+  ['Pupil details', 'Postcode', 'dbo.tblAddr', 'ADR_PC', '1'],
+  ['Pupil details', 'Postcode', 'dbo.tblOldAddr', 'OA_PC', '1'],
+  ['Pupil details', 'Tutor', 'dbo.tblStud', 'STU_TUTOR', '20'],
+  ['Pupil details', 'Tutor', 'dbo.tblStaffGroup', 'GRP_NAME', '1'],
+];
+
+test('trace: the script has one blank per searchable name, safe quoting, and is read-only', () => {
+  const schema = tracedProject();
+  schema.tables[1].columns.push({ name: "Parent's name", type: 'text' }, { name: 'Linked already', type: 'text', link: { table: 'x', column: 'y' } });
+  const sql = buildTraceScript(screenTables(schema), { project: 'Demo */ DROP' });
+  assert.match(sql, /\(1, N'Pupil details', N'Surname', 'text', N''\),/);
+  assert.match(sql, /N'Parent''s name', 'text', N''\);/);
+  assert.doesNotMatch(sql, /N'On roll'/);
+  assert.match(sql, /--\s+Pupil details: On roll/);
+  assert.doesNotMatch(sql, /Linked already/);
+  // Outside comments, every statement that changes anything targets the script's own #mb_ temp tables.
+  const code = sql.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter(l => !/^\s*--/.test(l)).join('\n');
+  const changes = code.match(/\b(UPDATE|DELETE\s+FROM|INSERT\s+INTO|DROP\s+TABLE|ALTER|TRUNCATE|MERGE|CREATE\s+TABLE)\b\s+\S+/gi) || [];
+  assert.ok(changes.length >= 5);
+  for (const c of changes) assert.match(c, /#mb_(labels|found);?$/, c);
+  assert.doesNotMatch(code, /\b(sp_configure|xp_cmdshell|GRANT|EXEC\s*\()/i);
+  assert.doesNotMatch(sql, /Demo \*\/ DROP/);
+  assert.match(sql, /QUOTENAME\(@col\)/);
+  assert.match(sql, /never lists the values themselves/i);
+  // more than 1,000 names are split across INSERT statements
+  const many = [{ name: 'Screen: Big', columns: Array.from({ length: 1900 }, (_, i) => ({ name: `Field ${i}`, type: 'text' })) }];
+  assert.equal((buildTraceScript(many).match(/INSERT INTO #mb_labels/g) || []).length, 3);
+  assert.throws(() => buildTraceScript([{ name: 'Screen: X', columns: [{ name: 'Flag', type: 'yes/no' }] }]), /no names left/);
+});
+
+test('trace: results files are read with or without a heading row, and other files are refused', () => {
+  const a = parseTraceResults(RUN_1);
+  assert.equal(a.length, 8);
+  assert.deepEqual(a[7], { screen: 'Pupil details', label: 'Ethnicity', table: '', column: '', rows: 0 });
+  assert.equal(parseTraceResults(RUN_2).length, 5);
+  assert.throws(() => parseTraceResults([['a', 'b']]), /five columns/);
+  assert.throws(() => parseTraceResults([['a', 'b', 'c', 'd', 'lots']]), /not a count/);
+  assert.throws(() => parseTraceResults([]), /empty/);
+});
+
+test('trace: a second record narrows several places down; same-table hints; not found and conflicts', () => {
+  const one = combineRuns([{ rows: parseTraceResults(RUN_1) }]);
+  assert.equal(one.get('Pupil details␟Surname').status, 'one');
+  assert.equal(one.get('Pupil details␟Date of Birth').status, 'likely'); // tblStud also holds Surname
+  assert.equal(one.get('Pupil details␟Date of Birth').candidates[0].table, 'dbo.tblStud');
+  assert.equal(one.get('Pupil details␟Postcode').status, 'several');
+  assert.equal(one.get('Pupil details␟Ethnicity').status, 'none');
+
+  const both = combineRuns([{ rows: parseTraceResults(RUN_1) }, { rows: parseTraceResults(RUN_2) }]);
+  assert.equal(both.get('Pupil details␟Surname').runs, 2);
+  assert.deepEqual(both.get('Pupil details␟Postcode').candidates.map(c => c.column), ['ADR_PC']);
+  assert.equal(both.get('Pupil details␟Postcode').status, 'one');
+  // Date of Birth was not looked for in run 2, so run 1 still stands
+  assert.equal(both.get('Pupil details␟Date of Birth').runs, 1);
+  // the pupil's own table (where Surname was found) beats a code list with fewer rows
+  assert.equal(both.get('Pupil details␟Tutor').status, 'likely');
+  assert.deepEqual(both.get('Pupil details␟Tutor').candidates.map(c => c.column), ['STU_TUTOR', 'GRP_NAME']);
+
+  const clash = combineRuns([{ rows: [{ screen: 'S', label: 'L', table: 't', column: 'a', rows: 1 }] }, { rows: [{ screen: 'S', label: 'L', table: 't', column: 'b', rows: 1 }] }]);
+  assert.equal(clash.get('S␟L').status, 'conflict');
+});
+
+test('trace: nothing is linked until ticked; links never overwrite; new columns are added', () => {
+  const schema = tracedProject();
+  const combined = combineRuns([{ rows: parseTraceResults(RUN_1) }, { rows: parseTraceResults(RUN_2) }]);
+  const rows = traceReviewRows(schema, combined);
+  assert.equal(rows.find(r => r.label === 'On roll').status, 'skipped');
+  assert.match(rows.find(r => r.label === 'On roll').why, /too many rows/);
+  assert.equal(applyLinks(schema, rows).linked, 0);
+
+  for (const r of rows) r.ticked = ['Surname', 'Postcode', 'Ethnicity'].includes(r.label);
+  const { schema: out, linked, addedColumns } = applyLinks(schema, rows, { by: 'Alex', at: 'T' });
+  assert.equal(linked, 2); // Ethnicity has nowhere to link
+  assert.equal(addedColumns, 1); // tblAddr.ADR_PC was not in the list
+  const surname = out.tables[1].columns.find(c => c.name === 'Surname');
+  assert.deepEqual(surname.link, { table: 'dbo.tblStud', column: 'STU_LN2', records: 2, by: 'Alex', at: 'T' });
+  const real = out.tables[0].columns[1];
+  assert.equal(real.description, 'Kept as is');
+  assert.deepEqual(real.screenLabels, [{ screen: 'Pupil details', label: 'Surname' }]);
+  const addr = out.tables.find(t => t.name === 'dbo.tblAddr');
+  assert.equal(addr.origin, 'traced');
+  assert.equal(addr.columns[0].description, 'Shown as "Postcode" on the Pupil details screen.');
+  assert.equal(schema.tables[1].columns[0].link, undefined, 'the input is not changed');
+  // a linked name is left out of the next script
+  assert.doesNotMatch(buildTraceScript(screenTables(out)), /N'Surname'/);
+});
+
+test('trace: results hold no record values, and the words on screen read at about age eleven', () => {
+  const stored = JSON.stringify(combineRuns([{ rows: parseTraceResults(RUN_1) }]));
+  assert.doesNotMatch(stored, /Zedwick|value/i);
+  const s = traceSummary({ files: 2, records: 2, linked: 5, waiting: 1, several: 2, none: 1 });
+  assert.equal(s.title, 'Linked 5 names to a real field.');
+  const text = [...Object.values(TRACE_TEXT), s.title, ...s.detail];
+  const overall = readingGrade(text.join(' '));
+  assert.ok(overall <= 6, `overall reading grade ${overall.toFixed(1)} is above 6`);
+  for (const line of text) {
+    if (line.split(/\s+/).length >= 12) assert.ok(readingGrade(line) <= 8.5, `too hard (${readingGrade(line).toFixed(1)}): ${line}`);
+    for (const sentence of line.split(/[.!?]+/).filter(x => x.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22, `sentence too long: ${sentence.trim()}`);
+  }
+});
