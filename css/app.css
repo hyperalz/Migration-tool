@@ -2057,3 +2057,18 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .shot-already td { color: var(--muted); }
 .shot-tag { display: inline-block; font-size: 0.78rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: #fef3c7; color: #92400e; white-space: nowrap; }
 .result-hide { margin-left: auto; }
+
+/* Tracing known records */
+.trace-steps { margin: 0 0 0.75rem 1.3rem; font-size: 0.92rem; }
+.trace-steps li { margin-bottom: 0.2rem; }
+.trace-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.trace-row label { min-width: 5.5rem; }
+.trace-row select { font: inherit; padding: 0.3rem; max-width: 100%; }
+.trace-runs { margin: 0.6rem 0 0 1.2rem; font-size: 0.88rem; }
+.trace-runs .btn-link { background: none; border: none; color: var(--brand); text-decoration: underline; cursor: pointer; padding: 0 0.3rem; font: inherit; }
+.trace-table select { font: inherit; padding: 0.2rem; max-width: 26rem; }
+.trace-status { font-weight: 600; }
+.trace-one .trace-status { color: #047857; }
+.trace-likely .trace-status { color: #0f766e; }
+.trace-several .trace-status, .trace-conflict .trace-status { color: #92400e; }
+.trace-none .trace-status { color: var(--muted); }

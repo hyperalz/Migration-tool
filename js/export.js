@@ -55,6 +55,10 @@ export function downloadJSON(data, filename) {
   triggerDownload(blob, filename);
 }
 
+export function downloadText(text, filename, type = 'text/plain') {
+  triggerDownload(new Blob([text], { type }), filename);
+}
+
 export function downloadCSV(rows, filename) {
   if (!rows.length) return;
   const headers = Object.keys(rows[0]);

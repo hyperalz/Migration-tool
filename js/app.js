@@ -34,6 +34,7 @@ import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
 import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
+import { traceCard, bindTrace } from './trace-view.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -327,6 +328,7 @@ function renderSetup({ id }) {
     <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates with column definitions and value formats — so both sides know what each field means.</p></div></div>
     ${templateImportCard(project, esc)}
     ${screenshotCard(project, esc)}
+    ${traceCard(project, esc)}
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Source · ${esc(project.sourceSystem)}</h3>
@@ -364,6 +366,7 @@ function renderSetup({ id }) {
   `);
   bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
   bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }));
+  bindTrace(id, reconcileUI(), () => renderSetup({ id }));
   attachLogout();
   setupUpload('source', id, project);
   setupUpload('target', id, project);
