@@ -1,3 +1,5 @@
+import { renderProblems } from './problems-view.js';
+import { projectProblems, isOpen } from './problems.js';
 import { GOVUK_TEXT, passQuestionHtml, readPassAnswer, requiredErrors, summaryListHtml } from './govuk.js';
 import { showErrors } from './govuk-view.js';
 import { getCurrentUser, login, signup, logout, seedDemoUser } from './auth.js';
@@ -59,6 +61,7 @@ const routes = {
   '/projects/:id/reconcile': params => renderReconcile(params, reconcileUI()),
   '/projects/:id/reconcile/overview': params => renderOverview(params, reconcileUI()),
   '/projects/:id/areas/:area': params => renderArea(params, reconcileUI()),
+  '/projects/:id/problems': params => renderProblems(params, reconcileUI()),
   '/projects/:id/settings': params => renderSettings(params, { ...reconcileUI(), openAISettings: openAISettingsModal }),
   '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
@@ -148,13 +151,22 @@ function projectSteps(project, active) {
       `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
     : '';
   return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}
-    <a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${screenHelp(active)}`;
+    ${problemsChip(project, active)}<a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${screenHelp(active)}`;
 }
 
 // "What do I do here?" for the screen being shown. Open until the reader
 // closes it; after that it stays closed on that screen.
 function helpClosed(screen) {
   try { return localStorage.getItem(`mapbridge_help_closed_${screen}`) === '1'; } catch { return false; }
+}
+
+// A link to the problems log, once there is anything in it, with how many are open.
+function problemsChip(project, active) {
+  const rows = projectProblems(project);
+  if (!rows.length) return '';
+  const open = rows.filter(isOpen).length;
+  const on = active === 'problems';
+  return `<a href="#/projects/${project.id}/problems" class="step-chip step-problems ${on ? 'active' : ''} ${open ? 'has-open' : ''}"${on ? ' aria-current="page"' : ''}>Problems${open ? ` <span class="problems-count">${open} open</span>` : ''}</a>`;
 }
 
 function screenHelp(screen) {
@@ -797,7 +809,7 @@ function showPassModal({ step, mapping }) {
       const choice = backdrop.querySelector('input[name="pass"]:checked')?.value;
       const answer = readPassAnswer(choice, backdrop.querySelector('#pass-note').value);
       if (showErrors(modal, answer.errors)) return;
-      close({ pass: answer.pass, note: answer.note });
+      close({ pass: answer.pass, note: answer.note, reference: answer.pass ? '' : backdrop.querySelector('#pass-ref').value.trim() });
     };
     backdrop.querySelector('input[name="pass"]').focus();
   });
@@ -1154,10 +1166,11 @@ async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
 
   let pass = true;
   let note = '';
+  let reference = '';
   if (step.checkStep) {
     const answer = await showPassModal({ step, mapping: m });
     if (!answer) return;
-    ({ pass, note } = answer);
+    ({ pass, note, reference } = answer);
   }
 
   // Link the step to the evidence: what did the latest load check find for this field?
@@ -1183,7 +1196,7 @@ async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
   });
   if (!participants?.length) return;
 
-  if (!recordTraceStep(m, stepKey, { by: participants[0], participants, pass, note })) {
+  if (!recordTraceStep(m, stepKey, { by: participants[0], participants, pass, note, reference })) {
     toast('Could not record step');
     return;
   }

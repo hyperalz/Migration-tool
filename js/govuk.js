@@ -30,6 +30,8 @@ export const GOVUK_TEXT = {
   areaThere: 'That area is already in the list',
   enterPerson: 'Enter the person’s full name',
   personThere: 'That name is already in the list',
+  refLabel: 'Supplier reference (optional)',
+  refHint: 'For example the number of the ticket you raised with them.',
   signedTitle: 'Area signed off',
   notSignedTitle: 'Recorded as not signed off',
 };
@@ -81,6 +83,9 @@ export function passQuestionHtml(esc = plainEsc) {
         <label for="pass-note">${esc(GOVUK_TEXT.failLabel)}</label>
         <p class="route-hint">${esc(GOVUK_TEXT.failHint)}</p>
         <textarea id="pass-note" rows="3"></textarea>
+        <label for="pass-ref">${esc(GOVUK_TEXT.refLabel)}</label>
+        <p class="route-hint">${esc(GOVUK_TEXT.refHint)}</p>
+        <input id="pass-ref" autocomplete="off">
       </div>
     </fieldset>`;
 }

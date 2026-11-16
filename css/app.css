@@ -2199,3 +2199,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .radio-reveal { margin: 0.5rem 0 0 0.6rem; padding-left: 1rem; border-left: 4px solid var(--line); }
 .radio-reveal textarea { width: 100%; }
 .route-card-title { font-size: 1.05rem; margin: 0 0 0.25rem; }
+
+/* ---- Problems log ---- */
+.step-problems.has-open { border-color: #fca5a5; }
+.problems-count { display: inline-block; margin-left: 0.3rem; padding: 0 0.45rem; border-radius: 999px; background: var(--danger); color: #fff; font-size: 0.72rem; font-weight: 700; }
+.problems-counts { grid-template-columns: repeat(3, 1fr); }
+.area-cell-failed { border-color: #fca5a5; background: #fef2f2; }
+.area-cell-failed .area-cell-text { color: #b91c1c; }
+.problems-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 0.5rem; }
+.problems-filters .field { margin: 0; }
+.problems-table { max-height: none; }
+.problem-status { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--bg); }
+.problem-status-open { background: #fef2f2; color: #b91c1c; }
+.problem-status-reloaded { background: #fffbeb; color: #92400e; }
+.problem-status-fixed, .problem-status-signed { background: #ecfdf5; color: #047857; }
+.problem-status-withdrawn { color: var(--muted); text-decoration: line-through; }
+.problems-table td a { color: var(--brand); text-decoration: underline; font-weight: 600; }

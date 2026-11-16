@@ -92,6 +92,12 @@ export const SCREEN_GUIDE = {
     'The Latest load check part of each row shows if the field matched in the last check.',
     'A red row means it was marked as passed but the last check found a problem.',
   ],
+  problems: [
+    'Each time UAT fails, the problem is listed here.',
+    'When you load a fix, it shows as waiting for UAT again.',
+    'When the field passes, its problem is marked fixed.',
+    'Download the list to send to the supplier.',
+  ],
   settings: [
     'This page holds the things you set once and may change later.',
     'Give each area a service area manager. They sign off the area.',
