@@ -20,6 +20,7 @@ export const SHOT_TEXT = {
   warning: 'Take care. The pictures are sent to the AI service you chose in the AI settings. If a picture shows a real person, their details go too. Use a blank screen or a test record where you can.',
   agree: 'I have checked the pictures. They show no real person, or I am allowed to send them.',
   noKey: 'There is no AI key yet. Add your own key in the AI settings, then come back here. If you run Ollama on this computer, you do not need a key. Just set the address.',
+  cloudModel: 'This model runs in Ollama\'s cloud, not on this computer. The pictures will leave this computer. Pick a model without :cloud in its name to keep them here.',
   notStored: 'The pictures are made smaller in this browser and are not saved. Only the names that come back are kept.',
   labelOnly: 'From a screenshot, label only. This is the name shown on the screen. It is not the real name of the field.',
   reviewHelp: 'Tick each name you want to keep. You can fix a name or its kind first. Nothing is added until you press Add.',
@@ -82,6 +83,22 @@ export function missingKey(settings) {
   return !isLocalAddress(settings?.baseURL) && !String(settings?.apiKey || '').trim();
 }
 
+// Ollama names models that run on its own servers "...:cloud" or "...-cloud".
+export function isCloudModel(model) {
+  return /[:-]cloud$/i.test(String(model || '').trim());
+}
+
+// Ollama on this computer speaks plain http. An https address fails with a
+// connection error that looks like Ollama being down, so say what to change.
+export function wrongLocalScheme(baseURL) {
+  try {
+    const u = new URL(String(baseURL || ''));
+    return isLocalAddress(u.href) && u.protocol === 'https:' ? `http://${u.host}${u.pathname.replace(/\/+$/, '')}` : '';
+  } catch {
+    return '';
+  }
+}
+
 // When the AI on this computer cannot be reached. A browser cannot tell a
 // stopped Ollama from one that blocks this website, so both are named.
 export function localUnreachable(origin) {
@@ -90,9 +107,15 @@ export function localUnreachable(origin) {
 
 // The body sent to an OpenAI-compatible chat endpoint for one image.
 export function buildRequest(dataUrl, settings) {
+  // For an AI on this computer (Ollama): turn off "thinking", which makes a
+  // local model many times slower, and ask for JSON directly. Not sent to
+  // other services, some of which reject these settings.
+  const local = isLocalAddress(settings.baseURL)
+    ? { reasoning_effort: 'none', response_format: { type: 'json_object' } } : {};
   return {
     model: settings.model || 'gpt-4o-mini',
     temperature: 0,
+    ...local,
     messages: [
       { role: 'system', content: 'You read screenshots of business software and return only valid JSON.' },
       { role: 'user', content: [
@@ -134,6 +157,8 @@ export async function askAI(dataUrl, settings, fetchImpl = globalThis.fetch, ori
       body: JSON.stringify(buildRequest(dataUrl, settings)),
     });
   } catch {
+    const fixed = wrongLocalScheme(base);
+    if (fixed) throw new Error(`Ollama uses http, not https. In the AI settings, change the address to ${fixed} and try again.`);
     throw new Error(isLocalAddress(base) ? localUnreachable(origin)
       : 'Could not reach the AI service. Check your connection and the address in the AI settings.');
   }

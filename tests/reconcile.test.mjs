@@ -868,3 +868,29 @@ test('screenshots: when Ollama cannot be reached, the message says how to fix it
   const line = localUnreachable('https://hyperalz.github.io');
   for (const sentence of line.split(/(?<=\.)\s/)) assert.ok(sentence.split(/\s+/).length <= 22, sentence);
 });
+
+import { isCloudModel, wrongLocalScheme } from '../js/screenshot-dictionary.js';
+
+test('screenshots: Ollama on this computer gets thinking off and JSON mode; other services do not', () => {
+  const local = buildRequest('x', { baseURL: 'http://localhost:11434/v1', model: 'gemma4:12b' });
+  assert.equal(local.reasoning_effort, 'none');
+  assert.deepEqual(local.response_format, { type: 'json_object' });
+  const remote = buildRequest('x', SETTINGS);
+  assert.equal('reasoning_effort' in remote, false);
+  assert.equal('response_format' in remote, false);
+});
+
+test('screenshots: https to Ollama is spotted and the right address given', async () => {
+  assert.equal(wrongLocalScheme('https://localhost:11434/v1/'), 'http://localhost:11434/v1');
+  assert.equal(wrongLocalScheme('http://localhost:11434/v1'), '');
+  assert.equal(wrongLocalScheme('https://api.openai.com/v1'), '');
+  const down = async () => { throw new TypeError('Failed to fetch'); };
+  await assert.rejects(askAI('x', { baseURL: 'https://localhost:11434/v1', apiKey: '' }, down),
+    /Ollama uses http, not https\. In the AI settings, change the address to http:\/\/localhost:11434\/v1/);
+});
+
+test('screenshots: Ollama cloud models are flagged, local ones are not', () => {
+  for (const m of ['glm-5.3:cloud', 'gpt-oss:120b-cloud', ' Kimi:CLOUD ']) assert.ok(isCloudModel(m), m);
+  for (const m of ['gemma4:12b', 'qwen2.5vl:7b', 'cloudy-model', '']) assert.equal(isCloudModel(m), false, m);
+  assert.match(SHOT_TEXT.cloudModel, /leave this computer/);
+});

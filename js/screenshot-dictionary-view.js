@@ -5,7 +5,7 @@ import { getProject, saveProject } from './store.js';
 import { getAISettings } from './ai-suggestions.js';
 import { mergeSchema } from './template-import.js';
 import {
-  SHOT_TEXT, KINDS, MAX_FILES, fitSize, dropDuplicates, missingKey, askAI,
+  SHOT_TEXT, KINDS, MAX_FILES, fitSize, dropDuplicates, missingKey, askAI, isLocalAddress, isCloudModel,
   parseScreenReply, reviewRows, screenshotSchema, shotSummary,
 } from './screenshot-dictionary.js';
 
@@ -43,7 +43,9 @@ function lastResult(project) {
 
 export function screenshotCard(project, escapeHtml) {
   if (escapeHtml) esc = escapeHtml;
-  const noKey = missingKey(getAISettings());
+  const settings = getAISettings();
+  const noKey = missingKey(settings);
+  const cloud = isLocalAddress(settings.baseURL) && isCloudModel(settings.model);
   return `
     ${lastResult(project)}
     <details class="card template-import shot-dict" id="shot-dict" ${pending.has(project.id) ? 'open' : ''}>
@@ -51,6 +53,7 @@ export function screenshotCard(project, escapeHtml) {
         <span class="recon-sub" style="display:inline"> Make a list of its fields from pictures of its screens.</span></summary>
       <p class="recon-sub" style="margin:0.75rem 0">${esc(SHOT_TEXT.lead)}</p>
       <div class="alert alert-warn shot-warning" role="note"><strong>Before you send:</strong> ${esc(SHOT_TEXT.warning)}</div>
+      ${cloud ? `<div class="alert alert-warn shot-warning" role="note" id="shot-cloud"><strong>${esc(settings.model)}:</strong> ${esc(SHOT_TEXT.cloudModel)}</div>` : ''}
       <p class="recon-sub" style="margin:0.5rem 0 0.75rem">${esc(SHOT_TEXT.notStored)}</p>
       ${noKey ? `
         <p class="recon-error" id="shot-no-key">${esc(SHOT_TEXT.noKey)}</p>
