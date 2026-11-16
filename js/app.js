@@ -37,6 +37,7 @@ import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionar
 import { traceCard, bindTrace } from './trace-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
 import { bindHelp } from './help-view.js';
+import { renderArea } from './area-view.js';
 import { ROUTE_TEXT, routeQuestionsHtml, routeFromForm, fieldListsPlan, routeSummary, firstBox } from './route.js';
 
 let canvasInstance = null;
@@ -54,6 +55,7 @@ const routes = {
   '/projects/:id/verify': renderVerify,
   '/projects/:id/reconcile': params => renderReconcile(params, reconcileUI()),
   '/projects/:id/reconcile/overview': params => renderOverview(params, reconcileUI()),
+  '/projects/:id/areas/:area': params => renderArea(params, reconcileUI()),
   '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
   '/invite/:token': renderAcceptInvite,

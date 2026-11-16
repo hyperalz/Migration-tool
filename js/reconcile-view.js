@@ -12,8 +12,9 @@ import {
   formatAmount, SEVERITY_LABEL,
 } from './reconcile.js';
 import { plainSummary } from './reconcile-plain.js';
-import { projectOverview, buildAreaSignoff } from './reconcile-overview.js';
-import { signOffAreaFields } from './field-progress.js';
+import { projectOverview } from './reconcile-overview.js';
+import { areaBoard, STAGES } from './work-queue.js';
+import { areaPath } from './area-page.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
 } from './demoFinance.js';
@@ -805,6 +806,16 @@ function overviewTableRow(projectId, t) {
     </tr>`;
 }
 
+// The file checks for one area's tables. Used by the area page.
+export function fileCheckTable(projectId, area, escapeHtml) {
+  if (escapeHtml) esc = escapeHtml;
+  return `
+      <table class="recon-table">
+        <thead><tr><th>Table</th><th>Last checked</th><th class="recon-r">Records, old → new</th><th class="recon-r">Details matched</th><th>Totals</th><th>Open issues</th><th class="recon-r">Issues over time</th><th class="no-print"></th></tr></thead>
+        <tbody>${area.tables.map(t => overviewTableRow(projectId, t)).join('')}</tbody>
+      </table>`;
+}
+
 function areaSection(projectId, area, index, userName) {
   const so = area.signoff;
   const signoffLine = !so ? '<span class="recon-sub">Not signed off.</span>'
@@ -818,17 +829,7 @@ function areaSection(projectId, area, index, userName) {
         <thead><tr><th>Table</th><th>Last checked</th><th class="recon-r">Records, old → new</th><th class="recon-r">Details matched</th><th>Totals</th><th>Open issues</th><th class="recon-r">Issues over time</th><th class="no-print"></th></tr></thead>
         <tbody>${area.tables.map(t => overviewTableRow(projectId, t)).join('')}</tbody>
       </table>
-      <div class="recon-signoff">${signoffLine}</div>
-      <details class="recon-fields no-print">
-        <summary>Record a sign-off for ${esc(area.name)}</summary>
-        <p class="recon-sub" style="margin:0.5rem 0">Usually the service area manager signs. Signing off marks every field in ${esc(area.name)} as signed off.</p>
-        <form class="recon-review-form" data-signoff-area="${index}">
-          <div class="field"><label>Name<input name="name" value="${esc(userName)}" required></label></div>
-          <div class="field"><label>Recording<select name="role"><option>Signed off</option><option>Not signed off</option></select></label></div>
-          <div class="field" style="flex:2"><label>Note (optional)<input name="note" placeholder="e.g. accepted with two known issues"></label></div>
-          <button class="btn btn-secondary" type="submit">Record</button>
-        </form>
-      </details>
+      <div class="recon-signoff">${signoffLine} <a class="no-print" href="${areaPath(projectId, area.name)}">Open the ${esc(area.name)} page to sign off</a></div>
     </section>`;
 }
 
@@ -840,6 +841,7 @@ export function renderOverview({ id }, ui) {
   const all = runs(project);
   const o = projectOverview(project, all, { finalRunId: project.reconFinalRunId || null, signoffs: project.reconAreaSignoffs || [] });
   const s = o.summary;
+  const board = areaBoard(project, o);
   const olderChecks = o.tables.some(t => t.run && !all.find(r => r.id === t.run.id)?.pairs.find(p => p.id === t.id)?.mappingStamp);
 
   document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
@@ -852,14 +854,24 @@ export function renderOverview({ id }, ui) {
 
     <article class="recon-report">
       <header class="recon-report-head">
-        <div class="recon-eyebrow">Project data check overview</div>
+        <div class="recon-eyebrow">All areas</div>
         <h1>${esc(project.name)}</h1>
         <p class="recon-meta">Moving from ${esc(project.sourceSystem)} to ${esc(project.targetSystem)} · as at ${esc(fmtDate(new Date().toISOString()))}</p>
-        <p class="recon-meta">${s.finalRun
-          ? `Judged on the final load: <strong>${esc(s.finalRun.label)}</strong> (${esc(fmtDate(s.finalRun.at))}). Earlier checks are not counted.`
-          : 'Each table is judged on its own most recent check. No final load has been chosen.'}</p>
+        ${all.length ? `<p class="recon-meta">File checks: ${s.finalRun
+          ? `judged on the final load, <strong>${esc(s.finalRun.label)}</strong> (${esc(fmtDate(s.finalRun.at))}). Earlier checks are not counted.`
+          : 'each table is judged on its own most recent check. No final load has been chosen.'}</p>` : ''}
       </header>
 
+      <section>
+        <h2>Where each area is</h2>
+        <p class="recon-sub">Open an area to see its fields and to record its sign-off.</p>
+        <table class="recon-table">
+          <thead><tr><th>Area</th>${STAGES.map(st => `<th>${esc(st.label)}</th>`).join('')}</tr></thead>
+          <tbody>${board.map(r => `<tr><td><a href="${areaPath(id, r.name)}"><strong>${esc(r.name)}</strong></a></td>${STAGES.map(st => `<td class="home-cell-${r.cells[st.key].state}">${esc(r.cells[st.key].text)}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </section>
+
+      ${!all.length ? '' : `<h2>File checks</h2>
       <section class="recon-status recon-status-${s.status.level}">
         <div class="recon-status-label">${esc(s.status.label)}</div>
         <div class="recon-status-headline">${esc(s.status.headline)}</div>
@@ -874,9 +886,9 @@ export function renderOverview({ id }, ui) {
         </div>
       </section>
 
-      ${o.areas.map((a, i) => areaSection(id, a, i, user?.name || '')).join('')}
+      ${o.areas.map((a, i) => areaSection(id, a, i, user?.name || '')).join('')}`}
 
-      <section>
+      ${!all.length ? '' : `<section>
         <h2>Final load</h2>
         <p class="recon-sub">During trial loads each table is judged on its latest check. Once the final load has been run and checked, choose it here.
           Every table is then judged on that load alone, and any table missing from it shows as not checked.</p>
@@ -888,7 +900,7 @@ export function renderOverview({ id }, ui) {
             </select></label></div>
             <button class="btn btn-secondary" type="submit">Save</button>
           </form>` : '<p class="recon-sub">No loads have been checked yet.</p>'}
-      </section>
+      </section>`}
 
       <section>
         <h2>What this overview does not tell you</h2>
@@ -909,24 +921,6 @@ export function renderOverview({ id }, ui) {
   ui.attachLogout();
 
   document.getElementById('recon-print').onclick = () => window.print();
-
-  document.querySelectorAll('form[data-signoff-area]').forEach(form => {
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const area = o.areas[Number(form.dataset.signoffArea)];
-      const fd = new FormData(form);
-      const name = String(fd.get('name') || '').trim();
-      if (!name) return;
-      const p = getProject(id);
-      const signoff = buildAreaSignoff(area, { name, role: fd.get('role'), note: String(fd.get('note') || '').trim() });
-      p.reconAreaSignoffs = [...(p.reconAreaSignoffs || []), signoff];
-      // One sign-off for the area marks every field in it as signed off.
-      const fields = signoff.role === 'Signed off' ? signOffAreaFields(p, area, { by: name, at: signoff.at }) : 0;
-      saveProject(p);
-      ui.toast(fields ? `Sign-off recorded. ${fields} ${fields === 1 ? 'field' : 'fields'} marked as signed off.` : 'Sign-off recorded');
-      renderOverview({ id }, ui);
-    });
-  });
 
   document.getElementById('recon-final-form')?.addEventListener('submit', e => {
     e.preventDefault();

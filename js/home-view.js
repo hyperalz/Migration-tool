@@ -6,6 +6,7 @@ import { getProject } from './store.js';
 import { projectProgress } from './progress.js';
 import { INTRO, STEP_GUIDE, HOME_TEXT } from './guide.js';
 import { areaBoard, todoList, STAGES } from './work-queue.js';
+import { areaPath } from './area-page.js';
 
 
 export function renderHome({ id }, ui) {
@@ -22,7 +23,7 @@ export function renderHome({ id }, ui) {
   const top = todo[0] || null;
   const topStep = top ? steps.find(s => s.key === top.step) : null;
   const guideTop = topStep ? STEP_GUIDE[topStep.key] : null;
-  const areaChip = a => (a ? `<span class="home-area">${esc(a)}</span>` : '');
+  const areaChip = a => (a ? `<a class="home-area" href="${areaPath(id, a)}">${esc(a)}</a>` : '');
 
   const hero = top ? `
     <section class="card home-next">
@@ -58,7 +59,7 @@ export function renderHome({ id }, ui) {
       <p class="recon-sub" style="margin:0 0 0.6rem">${esc(HOME_TEXT.boardHelp)}</p>
       <div class="schema-preview"><table>
         <thead><tr><th scope="col">Area</th>${STAGES.map(st => `<th scope="col">${esc(st.label)}</th>`).join('')}</tr></thead>
-        <tbody>${board.map(r => `<tr><th scope="row">${esc(r.name)}</th>${STAGES.map(st => cell(r.cells[st.key])).join('')}</tr>`).join('')}</tbody>
+        <tbody>${board.map(r => `<tr><th scope="row"><a href="${areaPath(id, r.name)}">${esc(r.name)}</a></th>${STAGES.map(st => cell(r.cells[st.key])).join('')}</tr>`).join('')}</tbody>
       </table></div>
     </section>` : '';
 

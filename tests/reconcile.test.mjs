@@ -1409,3 +1409,39 @@ test('fields: in live is not done — only passing UAT in live is, and only then
   p = at('live_passed');
   assert.equal(ledger(p).agree, 'Ready to sign');
 });
+
+// ---------- area pages ----------
+import { areaPageData, areaPath, STAGE_LABEL, AREA_TEXT } from '../js/area-page.js';
+
+test('area page: one area\'s steps, jobs and fields, from the same records as the home page', () => {
+  const p = trackedProject(m => (m.sourceTable === 'gl_balance' ? 'live_passed'
+    : m.sourceColumn === 'supplier_id' ? 'live_failed' : m.sourceColumn === 'supplier_name' ? 'test_uploaded' : 'test_passed'));
+  const ap = areaPageData(p, 'Accounts payable');
+  assert.equal(ap.name, 'Accounts payable');
+  assert.deepEqual(ap.cells.map(c => c.key), ['list', 'match', 'send', 'test', 'live', 'agree']);
+  // the same cells as the home board
+  assert.deepEqual(Object.fromEntries(ap.cells.map(c => [c.key, c.text])), cells(areaBoard(p).find(r => r.name === 'Accounts payable')));
+  // only this area's jobs
+  assert.ok(ap.todo.length && ap.todo.every(t => t.area === 'Accounts payable'));
+  // fields grouped by new table, failures first, with their latest note
+  assert.equal(ap.tables.length, 1);
+  const first = ap.tables[0].fields[0];
+  assert.deepEqual([first.field, first.stage, first.label], ['SUPPLIER_REF', 'liveFailed', 'Failed UAT in live']);
+  assert.equal(first.from, 'supplier.supplier_id');
+  assert.deepEqual(first.last, { note: '', by: 'x', at: 'T' });
+  assert.equal(ap.open, 9);
+  assert.equal(ap.ready, false);
+  assert.equal(ap.usesFileChecks, false);
+  const gl = areaPageData(p, 'General ledger');
+  assert.equal(gl.ready, true);
+  assert.equal(gl.open, 0);
+  assert.equal(areaPageData(p, 'No such area'), null);
+});
+
+test('area page: links survive odd area names, and the words read at about age eleven', () => {
+  assert.equal(areaPath('p1', 'Pupils & Staff/Admin'), '#/projects/p1/areas/Pupils%20%26%20Staff%2FAdmin');
+  assert.equal(decodeURIComponent(areaPath('p1', 'Pupils & Staff/Admin').split('/').at(-1)), 'Pupils & Staff/Admin');
+  const text = [...Object.values(STAGE_LABEL), ...Object.values(AREA_TEXT), ...SCREEN_GUIDE.area];
+  assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
+  for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
+});
