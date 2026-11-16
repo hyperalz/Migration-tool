@@ -3,7 +3,9 @@ import { defaultVerification } from './verification.js';
 import { getSchemaColumn, valuesFormatMismatch } from './schema.js';
 
 export class MappingCanvas {
-  constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping, getActor }) {
+  constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping, getActor, oldLabel = 'Old system', newLabel = 'New system' }) {
+    this.oldLabel = oldLabel;
+    this.newLabel = newLabel;
     this.container = container;
     this.sourceSchema = sourceSchema;
     this.targetSchema = targetSchema;
@@ -23,17 +25,17 @@ export class MappingCanvas {
     this.container.innerHTML = `
       <div class="workspace">
         <div class="panel panel-source">
-          <div class="panel-header">Source · ${this.sourceSchema?.system || '—'}</div>
+          <div class="panel-header">${this.oldLabel}</div>
           <div class="panel-scroll" id="source-panel">${this.renderPanel(this.sourceSchema, 'source')}</div>
         </div>
         <div class="canvas-wrap" id="canvas-wrap">
           <div class="canvas-toolbar">
-            <span id="map-hint">Drag from source ● to target ●</span>
+            <span id="map-hint">Drag from ● on the left to ● on the right</span>
           </div>
           <svg id="mapping-svg"><g id="lines-group"></g></svg>
         </div>
         <div class="panel panel-target">
-          <div class="panel-header">Target · ${this.targetSchema?.system || '—'}</div>
+          <div class="panel-header">${this.newLabel}</div>
           <div class="panel-scroll" id="target-panel">${this.renderPanel(this.targetSchema, 'target')}</div>
         </div>
         <div class="workspace-footer" id="workspace-footer"></div>
@@ -46,7 +48,7 @@ export class MappingCanvas {
   }
 
   renderPanel(schema, side) {
-    if (!schema?.tables?.length) return '<p class="empty-state">No schema loaded</p>';
+    if (!schema?.tables?.length) return '<p class="empty-state">No field list yet</p>';
     const mappedSet = new Set(
       this.mappings.map(m =>
         side === 'source'
@@ -57,7 +59,7 @@ export class MappingCanvas {
 
     return schema.tables.map(table => `
       <details class="table-group" open>
-        <summary>${table.name} <span>${table.columns.length} cols</span></summary>
+        <summary>${table.name} <span>${table.columns.length} ${table.columns.length === 1 ? 'field' : 'fields'}</span></summary>
         ${table.columns.map(col => this.renderColumnItem(table.name, col, side, mappedSet)).join('')}
       </details>
     `).join('');
@@ -95,7 +97,7 @@ export class MappingCanvas {
       ? `<div class="col-values"><span class="col-values-label">Values:</span> <span class="value-chip">${escHtml(col.values)}</span></div>`
       : `<div class="col-values col-values-missing"><span class="col-values-label">Values:</span> not documented</div>`;
     const mismatchNote = mismatch && pairCol?.values
-      ? `<div class="col-values-warn">Format differs from ${side === 'source' ? 'target' : 'source'} (${escHtml(pairCol.values)})</div>`
+      ? `<div class="col-values-warn">Written differently in the ${side === 'source' ? 'new' : 'old'} system (${escHtml(pairCol.values)})</div>`
       : '';
 
     return `
@@ -201,7 +203,7 @@ export class MappingCanvas {
       lookupRule: '',
       defaultValue: '',
       serviceArea: '',
-      verification: defaultVerification('Mapping created', this.getActor?.() || 'unknown'),
+      verification: defaultVerification('Match made', this.getActor?.() || 'unknown'),
     };
     this.mappings.push(mapping);
     this.refreshPanels();
@@ -272,7 +274,7 @@ export class MappingCanvas {
     const footer = this.container.querySelector('#workspace-footer');
     if (!footer) return;
     footer.innerHTML = `
-      <span>${stats.mappedCount} mappings · ${stats.unmappedSource.length} unmapped source · ${stats.unmappedTarget.length} unmapped target</span>
+      <span>${stats.mappedCount} matches · ${stats.unmappedSource.length} old fields not matched · ${stats.unmappedTarget.length} new fields not matched</span>
       <div class="progress-bar"><div class="progress-fill" style="width:${stats.percent}%"></div></div>
     `;
   }

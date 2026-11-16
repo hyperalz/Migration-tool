@@ -282,10 +282,10 @@ export function reconcilePair({
 
   for (const km of keyMappings) {
     if (sourceRows.length && !sourceCols.has(km.sourceColumn)) {
-      throw new Error(`Key column "${km.sourceColumn}" is not in the old system extract for ${pairLabel}.`);
+      throw new Error(`The key field "${km.sourceColumn}" is not in the old system's file for ${pairLabel}.`);
     }
     if (targetRows.length && !targetCols.has(km.targetColumn)) {
-      throw new Error(`Key column "${km.targetColumn}" is not in the new system extract for ${pairLabel}.`);
+      throw new Error(`The key field "${km.targetColumn}" is not in the new system's file for ${pairLabel}.`);
     }
   }
 
@@ -360,8 +360,8 @@ export function reconcilePair({
       total: null, totalSkipped: '', skipped: '',
     };
 
-    if (sourceRows.length && !sourceCols.has(m.sourceColumn)) f.skipped = 'Column is not in the old system extract';
-    else if (targetRows.length && !targetCols.has(m.targetColumn)) f.skipped = 'Column is not in the new system extract';
+    if (sourceRows.length && !sourceCols.has(m.sourceColumn)) f.skipped = 'This field is not in the old system\'s file';
+    else if (targetRows.length && !targetCols.has(m.targetColumn)) f.skipped = 'This field is not in the new system\'s file';
 
     if (f.skipped) {
       groups.add({

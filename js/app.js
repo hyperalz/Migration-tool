@@ -35,6 +35,7 @@ import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
+import { oldName, newName, oldLabel, newLabel } from './words.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -262,7 +263,7 @@ function renderDashboard() {
       </a>
     `).join('')}</div>` : `
       <div class="empty-state card">
-        <p>No projects yet. Create one to connect schemas and start mapping.</p>
+        <p>No projects yet. Create one to add the field lists and start matching.</p>
         <a href="#/projects/new" class="btn btn-primary" style="margin-top:1rem">Create first project</a>
       </div>`}
   `);
@@ -277,24 +278,17 @@ function renderDashboard() {
 function renderNewProject() {
   document.getElementById('app-shell').innerHTML = nav('New project') + '<main class="app-main" id="app-main"></main>';
   mount(`
-    <div class="page-head"><div><h1>New migration project</h1><p>Set up a project workspace for two parties to collaborate.</p></div></div>
+    <div class="page-head"><div><h1>New project</h1><p>Name the move and the two systems. The names you give are used on every screen.</p></div></div>
     <div class="card" style="max-width:520px">
       <form id="new-project-form">
         <div class="field"><label>Project name</label><input name="name" placeholder="e.g. Birmingham LA — Synergy to Impulse" required></div>
-        <div class="field"><label>Source system</label>
-          <select name="sourceSystem">
-            <option>Synergy (Access Group)</option>
-            <option>Capita One</option>
-            <option>SIMS</option>
-            <option>Other / Generic</option>
-          </select>
+        <div class="field"><label for="np-old">The old system's name</label>
+          <input id="np-old" name="sourceSystem" list="np-old-names" placeholder="e.g. Synergy">
+          <datalist id="np-old-names"><option value="Synergy"><option value="Capita One"><option value="SIMS"></datalist>
         </div>
-        <div class="field"><label>Target system</label>
-          <select name="targetSystem">
-            <option>Impulse (CACI)</option>
-            <option>Impulse Nexus</option>
-            <option>Other / Generic</option>
-          </select>
+        <div class="field"><label for="np-new">The new system's name</label>
+          <input id="np-new" name="targetSystem" list="np-new-names" placeholder="e.g. Impulse">
+          <datalist id="np-new-names"><option value="Impulse"><option value="Impulse Nexus"></datalist>
         </div>
         <button class="btn btn-primary" type="submit">Create project</button>
       </form>
@@ -325,34 +319,34 @@ function renderSetup({ id }) {
 
   mount(`
     ${projectSteps(project, 'setup')}
-    <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates with column definitions and value formats — so both sides know what each field means.</p></div></div>
+    <div class="page-head"><div><h1>Field lists</h1><p>Add the list of fields for each system, with what each field means and the values it holds.</p></div></div>
     ${templateImportCard(project, esc)}
     ${screenshotCard(project, esc)}
     ${traceCard(project, esc)}
     <div class="grid-2">
       <div class="card">
-        <h3 style="margin-bottom:0.75rem">Source · ${esc(project.sourceSystem)}</h3>
+        <h3 style="margin-bottom:0.75rem">${esc(oldLabel(project))}</h3>
         <div class="upload-zone" id="source-upload">
           <input type="file" id="source-file" accept=".json,.csv">
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">JSON: <code>description</code> + <code>values</code> per column · CSV: optional rows 3–4</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">A JSON or CSV file. See the examples below.</p>
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.65rem">
           <button class="btn btn-ghost btn-sm" id="load-source-sample">Load Synergy sample</button>
-          <button class="btn btn-ghost btn-sm" id="import-source-connector" title="Import from MapBridge connector output">Import connector file</button>
+          <button class="btn btn-ghost btn-sm" id="import-source-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
         </div>
         ${project.sourceSchema ? renderSchemaPreview(project.sourceSchema, srcStats) : ''}
       </div>
       <div class="card">
-        <h3 style="margin-bottom:0.75rem">Target · ${esc(project.targetSystem)}</h3>
+        <h3 style="margin-bottom:0.75rem">${esc(newLabel(project))}</h3>
         <div class="upload-zone" id="target-upload">
           <input type="file" id="target-file" accept=".json,.csv">
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Include vendor value lists — e.g. Y/N vs 1/0</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Include the values each field allows, for example Y/N or 1/0</p>
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.65rem">
           <button class="btn btn-ghost btn-sm" id="load-target-sample">Load Impulse sample</button>
-          <button class="btn btn-ghost btn-sm" id="import-target-connector" title="Import from MapBridge connector output">Import connector file</button>
+          <button class="btn btn-ghost btn-sm" id="import-target-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
         </div>
         ${project.targetSchema ? renderSchemaPreview(project.targetSchema, tgtStats) : ''}
       </div>
@@ -361,7 +355,7 @@ function renderSetup({ id }) {
     <div style="margin-top:1.25rem;display:flex;gap:0.65rem">
       <a href="#/projects/${id}/invite" class="btn btn-secondary">Next: Invite party →</a>
       ${project.sourceSchema && project.targetSchema ? `
-        <a href="#/projects/${id}/map" class="btn btn-primary">Start mapping →</a>` : ''}
+        <a href="#/projects/${id}/map" class="btn btn-primary">Start matching →</a>` : ''}
     </div>
   `);
   bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
@@ -423,9 +417,9 @@ async function handleSchemaFile(file, side, projectId) {
     delete schema._warnings;
     
     if (warnings?.length) {
-      toast(`${side} schema imported with warnings: ${warnings[0]}`);
+      toast(`Field list added, with a warning: ${warnings[0]}`);
     } else {
-      toast(`${side} schema imported`);
+      toast('Field list added');
     }
     renderSetup({ id: projectId });
   } catch (err) {
@@ -437,11 +431,11 @@ function renderSchemaExamples() {
   return `
     <details class="card schema-examples-card">
       <summary class="schema-examples-summary">
-        <span class="schema-examples-title">Schema examples</span>
-        <span class="schema-examples-meta">How to document definitions and value formats</span>
+        <span class="schema-examples-title">Field list examples</span>
+        <span class="schema-examples-meta">How to write down what each field means and the values it holds</span>
       </summary>
       <div class="schema-examples-body">
-        <p class="schema-examples-lede">Each column can include a plain-English <strong>definition</strong> and a <strong>values</strong> note. MapBridge shows these on both sides when mapping and flags format mismatches — e.g. you send <code>1/0</code> but the vendor expects <code>Y/N</code>.</p>
+        <p class="schema-examples-lede">Each field can have a plain-English <strong>definition</strong> and a <strong>values</strong> note. MapBridge shows these on both sides when you match fields, and warns when the values are written differently. For example, one system says <code>1/0</code> and the other expects <code>Y/N</code>.</p>
         <div class="schema-examples-grid">
           <div class="schema-example-block">
             <h4>JSON example</h4>
@@ -471,21 +465,21 @@ int,varchar(50),char(1)
 Internal pupil ID,Pupil given name,FSM eligibility flag
 Numeric ID,Free text,"1 = eligible, 0 = not eligible"</pre>
             <div class="schema-example-downloads">
-              <a href="samples/synergy-pupil-extract.csv" download class="btn btn-ghost btn-sm">Source CSV</a>
-              <a href="samples/impulse-pupil-template.csv" download class="btn btn-ghost btn-sm">Target CSV</a>
+              <a href="samples/synergy-pupil-extract.csv" download class="btn btn-ghost btn-sm">Old system CSV</a>
+              <a href="samples/impulse-pupil-template.csv" download class="btn btn-ghost btn-sm">New system CSV</a>
             </div>
           </div>
         </div>
         <div class="schema-example-pairs">
           <h4>Side-by-side: document both formats</h4>
           <table class="schema-pairs-table">
-            <thead><tr><th>Column</th><th>Source (you)</th><th>Target (vendor)</th><th>Why it matters</th></tr></thead>
+            <thead><tr><th>Field</th><th>Old system</th><th>New system</th><th>Why it matters</th></tr></thead>
             <tbody>
               <tr>
                 <td><code>fsm_flag</code> → <code>FSM_STATUS</code></td>
                 <td><span class="value-chip">1 = eligible, 0 = not eligible</span></td>
                 <td><span class="value-chip">Y = eligible, N = not eligible</span></td>
-                <td>Needs a transform rule — flagged when mapped</td>
+                <td>Needs a rule to turn one into the other. MapBridge warns you when you match them</td>
               </tr>
               <tr>
                 <td><code>relationship</code> → <code>REL_CODE</code></td>
@@ -514,7 +508,7 @@ function renderSchemaPreview(schema, stats) {
     <div class="alert alert-success" style="margin-top:0.75rem">${stats.tables} ${stats.tables === 1 ? 'table' : 'tables'} · ${stats.columns} ${stats.columns === 1 ? 'field' : 'fields'} loaded</div>
     ${fromShots ? '<p class="recon-sub" style="margin:0 0 0.5rem">Some names came from screenshots. They are the words shown on a screen, not the real names of the fields.</p>' : ''}
     <div class="schema-preview"><table>
-      <thead><tr><th>Table</th><th>Column</th><th>Type</th><th>Definition</th><th>Values</th></tr></thead>
+      <thead><tr><th>Table</th><th>Field</th><th>Type</th><th>Definition</th><th>Values</th></tr></thead>
       <tbody>${rows.slice(0, PREVIEW_ROWS).map(({ t, c }) =>
         `<tr><td>${esc(t.name)}</td><td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${c.origin === 'screenshot'
           ? `<span class="shot-tag" title="${esc(c.description || '')}">Label from a screenshot</span>` : esc(c.description || '—')}</td><td>${esc(c.values || '—')}</td></tr>`
@@ -524,13 +518,13 @@ function renderSchemaPreview(schema, stats) {
 
 function renderColumnDefinitionCard(label, col, sideClass) {
   if (!col) {
-    return `<div class="col-def-card ${sideClass}"><div class="col-def-label">${esc(label)}</div><p class="col-def-empty">Column not found in schema</p></div>`;
+    return `<div class="col-def-card ${sideClass}"><div class="col-def-label">${esc(label)}</div><p class="col-def-empty">This field is not in the field list</p></div>`;
   }
   return `
     <div class="col-def-card ${sideClass}">
       <div class="col-def-label">${esc(label)}</div>
       <div class="col-def-name">${esc(col.name)} <span class="col-type">${esc(col.type)}</span></div>
-      <p class="col-def-text">${col.description ? esc(col.description) : '<span class="col-def-missing">No definition provided — ask the vendor to document this column.</span>'}</p>
+      <p class="col-def-text">${col.description ? esc(col.description) : '<span class="col-def-missing">No definition yet. Ask the supplier what this field means.</span>'}</p>
       <div class="col-def-values">${col.values
         ? `<span class="value-chip">${esc(col.values)}</span>`
         : '<span class="col-def-missing">Values not documented</span>'}</div>
@@ -545,14 +539,14 @@ function renderInvite({ id }) {
   document.getElementById('app-shell').innerHTML = nav(project.name) + '<main class="app-main" id="app-main"></main>';
   mount(`
     ${projectSteps(project, 'invite')}
-    <div class="page-head"><div><h1>Invite the other party</h1><p>LA, vendor, or consultant — they join this project only.</p></div></div>
+    <div class="page-head"><div><h1>Team</h1><p>Invite the people working on this move. They join this project only.</p></div></div>
     <div class="grid-2">
       <div class="card">
         <form id="invite-form">
           <div class="field"><label>Email address</label><input type="email" name="email" placeholder="colleague@authority.gov.uk" required></div>
           <div class="field"><label>Role</label>
             <select name="role">
-              <option value="editor">Editor — can map columns</option>
+              <option value="editor">Editor — can match fields</option>
               <option value="viewer">Viewer — read and comment only</option>
             </select>
           </div>
@@ -569,7 +563,7 @@ function renderInvite({ id }) {
       </div>
     </div>
     <div style="margin-top:1.25rem">
-      <a href="#/projects/${id}/map" class="btn btn-secondary">Continue to mapping →</a>
+      <a href="#/projects/${id}/map" class="btn btn-secondary">Continue to matching →</a>
       <a href="#/projects/${id}/verify" class="btn btn-primary" style="margin-left:0.5rem">Test & live →</a>
     </div>
   `);
@@ -654,12 +648,12 @@ function renderMap({ id }) {
   mount(`
     ${projectSteps(project, 'map')}
     <div class="page-head">
-      <div><h1>Mapping workspace</h1><p>Drag from source ● to target ● to map columns. Definitions and value formats are shown on each side — mismatches like 1/0 vs Y/N are flagged.</p></div>
+      <div><h1>Match fields</h1><p>Drag from a dot on the ${esc(oldName(project))} side to a dot on the ${esc(newName(project))} side. Each side shows what the field means. MapBridge warns you when the values are written differently, like 1/0 and Y/N.</p></div>
       <div style="display:flex;gap:0.5rem">
-        <button class="btn btn-primary btn-sm" id="ai-suggest">AI-suggest mappings</button>
-        <button class="btn btn-ghost btn-sm" id="ai-settings">Settings</button>
+        <button class="btn btn-primary btn-sm" id="ai-suggest">Suggest matches</button>
+        <button class="btn btn-ghost btn-sm" id="ai-settings">AI settings</button>
         <a href="#/projects/${id}/verify" class="btn btn-secondary btn-sm">Test & live →</a>
-        <a href="#/projects/${id}/export" class="btn btn-ghost btn-sm">Export</a>
+        <a href="#/projects/${id}/export" class="btn btn-ghost btn-sm">Downloads</a>
       </div>
     </div>
     <div id="mapping-container"></div>
@@ -670,6 +664,8 @@ function renderMap({ id }) {
   canvasInstance = new MappingCanvas(container, {
     sourceSchema: project.sourceSchema,
     targetSchema: project.targetSchema,
+    oldLabel: esc(oldLabel(project)),
+    newLabel: esc(newLabel(project)),
     mappings: [...project.mappings],
     getActor: () => getCurrentUser()?.name || 'unknown',
     onChange: mappings => {
@@ -781,7 +777,7 @@ function renderProjectSetupCard(project, open = false) {
       <div class="project-setup-grid">
         <section>
           <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Migration team</h3>
-          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Everyone who may be recorded on column steps.</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Everyone whose name may be recorded against a step.</p>
           <div class="team-chips">${teamNames.length
             ? teamNames.map(n => `<span class="team-chip">${esc(n)}<button type="button" class="team-chip-remove" data-list="team" data-name="${esc(n)}" aria-label="Remove">×</button></span>`).join('')
             : '<span style="font-size:0.82rem;color:var(--muted)">No names yet.</span>'}</div>
@@ -792,7 +788,7 @@ function renderProjectSetupCard(project, open = false) {
         </section>
         <section>
           <h3 style="margin-bottom:0.35rem;font-size:0.95rem">Service areas</h3>
-          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Group columns — e.g. Pupil, Attendance, Staff.</p>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Group fields into areas, for example Pupil, Attendance, Staff.</p>
           <div class="team-chips">${areas.length
             ? areas.map(a => `<span class="team-chip area-chip">${esc(a)}<button type="button" class="team-chip-remove" data-list="area" data-name="${esc(a)}" aria-label="Remove">×</button></span>`).join('')
             : '<span style="font-size:0.82rem;color:var(--muted)">No areas yet.</span>'}</div>
@@ -1013,7 +1009,7 @@ function renderVerify({ id }) {
             </tr>`;
           }).join('')}</tbody>
           </table>` : `<div class="empty-state verify-empty">
-            <p>No columns match this filter.</p>
+            <p>No fields match this filter.</p>
             <p class="verify-empty-hint">Try clearing filters, or click <strong>+</strong> on a row to record the next step.</p>
           </div>`}
         </div>
@@ -1387,7 +1383,7 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
     <div class="drawer-header">
       <div class="drawer-header-top">
         <div>
-          <div class="drawer-title">Column</div>
+          <div class="drawer-title">Field</div>
           <div class="drawer-col-ref">${esc(mapping.sourceTable)}.${esc(mapping.sourceColumn)}<br>→ ${esc(mapping.targetTable)}.${esc(mapping.targetColumn)}</div>
         </div>
         <button class="drawer-close" id="close-drawer" aria-label="Close">×</button>
@@ -1401,21 +1397,21 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
       <p style="margin:0.5rem 0 0"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></p>
       <p class="drawer-hint">${fromVerify
     ? 'Click + to record the next step. Click a completed tick to go back. Every action is kept in the audit log below.'
-    : 'Column definitions from each schema are shown below. Flag value format differences before you map.'}</p>
+    : 'What each field means is shown below. Check how the values are written before you match.'}</p>
     </div>
     <div class="drawer-body">
       <details class="drawer-section" open>
-        <summary>Column definitions</summary>
+        <summary>What each field means</summary>
         <div class="drawer-section-body">
           <div class="col-def-grid">
-            ${renderColumnDefinitionCard('Source', sourceCol, 'col-def-source')}
-            ${renderColumnDefinitionCard('Target', targetCol, 'col-def-target')}
+            ${renderColumnDefinitionCard(oldLabel(proj), sourceCol, 'col-def-source')}
+            ${renderColumnDefinitionCard(newLabel(proj), targetCol, 'col-def-target')}
           </div>
-          ${valueMismatch ? `<div class="alert alert-warn col-def-alert">Value formats differ — e.g. source sends <strong>${esc(sourceCol?.values || '')}</strong> but target expects <strong>${esc(targetCol?.values || '')}</strong>. Document the conversion in transform or lookup rules.</div>` : ''}
+          ${valueMismatch ? `<div class="alert alert-warn col-def-alert">The values are written differently. ${esc(oldName(proj))} has <strong>${esc(sourceCol?.values || '')}</strong>, and ${esc(newName(proj))} expects <strong>${esc(targetCol?.values || '')}</strong>. Add a rule below to turn one into the other.</div>` : ''}
         </div>
       </details>
       <details class="drawer-section"${fromVerify ? ' open' : ''}>
-        <summary>Traceability</summary>
+        <summary>Steps and history</summary>
         <div class="drawer-section-body">${renderTraceDetail(mapping, { interactive: fromVerify, mappingId: mapping.id })}</div>
       </details>
       <details class="drawer-section" open>
@@ -1440,7 +1436,7 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
       </details>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-danger btn-sm" id="delete-mapping">Delete mapping</button>
+      <button class="btn btn-danger btn-sm" id="delete-mapping">Delete this match</button>
     </div>
   `;
 
@@ -1469,7 +1465,7 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
       saveProject(p);
     }
     closeDrawer();
-    toast('Mapping deleted');
+    toast('Match deleted');
     if (location.hash.includes('/verify')) renderVerify({ id: projectId });
   };
 }
@@ -1504,25 +1500,25 @@ function renderExport({ id }) {
   document.getElementById('app-shell').innerHTML = nav(project.name) + '<main class="app-main" id="app-main"></main>';
   mount(`
     ${projectSteps(project, 'export')}
-    <div class="page-head"><div><h1>Hand over and close</h1><p>Download the evidence pack: the agreed mappings, the field-by-field log, every checked load and every sign-off. Then close the project.</p></div></div>
+    <div class="page-head"><div><h1>Hand over and close</h1><p>Download the evidence pack: the agreed matches, the field-by-field log, every checked load and every sign-off. Then close the project.</p></div></div>
     <div class="card" style="margin-bottom:1rem">
-      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">${stats.mappedCount} mappings · ${stats.percent}% of new-system fields mapped · ${vCounts.signed_off || 0} fields signed off in the tracker · ${reconRuns.length} checked ${reconRuns.length === 1 ? 'load' : 'loads'} · ${areaSignoffs.length} area ${areaSignoffs.length === 1 ? 'sign-off' : 'sign-offs'}</p>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">${stats.mappedCount} matches · ${stats.percent}% of new-system fields matched · ${vCounts.signed_off || 0} fields signed off in the tracker · ${reconRuns.length} checked ${reconRuns.length === 1 ? 'load' : 'loads'} · ${areaSignoffs.length} area ${areaSignoffs.length === 1 ? 'sign-off' : 'sign-offs'}</p>
       ${project.lastEvidenceExportAt ? `<p style="font-size:0.85rem;color:var(--muted)">Evidence pack last downloaded ${esc(new Date(project.lastEvidenceExportAt).toLocaleString('en-GB'))}.${evidenceChanged ? ' <strong style="color:var(--warn)">The project has changed since then.</strong>' : ''}</p>` : ''}
     </div>
     <div class="grid-2">
       <div class="card">
-        <h3 style="margin-bottom:0.75rem">Export</h3>
+        <h3 style="margin-bottom:0.75rem">Downloads</h3>
         <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
           <button class="btn btn-primary btn-sm" id="export-json">Download evidence pack (JSON)</button>
           <button class="btn btn-secondary btn-sm" id="export-csv">Download CSV</button>
-          <button class="btn btn-secondary btn-sm" id="export-xlsx">Download Excel (mappings + log)</button>
+          <button class="btn btn-secondary btn-sm" id="export-xlsx">Download Excel (matches and log)</button>
           <button class="btn btn-ghost btn-sm" id="export-sql">Download SQL stubs</button>
         </div>
       </div>
       <div class="card">
         <h3 style="margin-bottom:0.75rem;color:var(--danger)">Close & delete project</h3>
-        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">All field lists, mappings, checked loads, reports, sign-offs and comments are permanently deleted. You keep only what you exported.</p>
-        ${needsExport ? `<p class="recon-error" style="margin-bottom:1rem">${project.lastEvidenceExportAt ? 'The project has changed since the evidence pack was last downloaded.' : 'The evidence pack has not been downloaded.'} ${reconRuns.length ? `Closing now would lose ${reconRuns.length} checked ${reconRuns.length === 1 ? 'load' : 'loads'} and ${areaSignoffs.length} area ${areaSignoffs.length === 1 ? 'sign-off' : 'sign-offs'}.` : 'Closing now would lose the mappings and the field log.'}</p>` : ''}
+        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">All field lists, matches, checked loads, reports, sign-offs and comments are deleted for good. You keep only what you exported.</p>
+        ${needsExport ? `<p class="recon-error" style="margin-bottom:1rem">${project.lastEvidenceExportAt ? 'The project has changed since the evidence pack was last downloaded.' : 'The evidence pack has not been downloaded.'} ${reconRuns.length ? `Closing now would lose ${reconRuns.length} checked ${reconRuns.length === 1 ? 'load' : 'loads'} and ${areaSignoffs.length} area ${areaSignoffs.length === 1 ? 'sign-off' : 'sign-offs'}.` : 'Closing now would lose the matches and the field log.'}</p>` : ''}
         <button class="btn btn-danger" id="close-project">Close project & wipe data</button>
       </div>
     </div>
@@ -1583,7 +1579,7 @@ function openConnectorImportModal(side, projectId) {
   backdrop.innerHTML = `
     <div class="record-modal" role="dialog" aria-modal="true" style="width:min(520px,calc(100% - 2rem))">
       <h3>Import from connector file</h3>
-      <p class="record-modal-sub">Select the JSON file generated by the MapBridge schema connector.</p>
+      <p class="record-modal-sub">Choose the JSON file made by the MapBridge connector.</p>
       
       <div class="field" style="margin:1rem 0">
         <label>Select connector output file</label>
@@ -1629,7 +1625,7 @@ function openConnectorImportModal(side, projectId) {
         <div style="font-size:0.85rem">
           <p><strong>System:</strong> ${esc(schema.system)}</p>
           <p><strong>Tables:</strong> ${stats.tables}</p>
-          <p><strong>Columns:</strong> ${stats.columns}</p>
+          <p><strong>Fields:</strong> ${stats.columns}</p>
           ${schema.importedAt ? `<p style="color:var(--muted);font-size:0.78rem;margin-top:0.5rem">Extracted: ${new Date(schema.importedAt).toLocaleString()}</p>` : ''}
         </div>`;
       
@@ -1651,7 +1647,7 @@ function openConnectorImportModal(side, projectId) {
     p[side === 'source' ? 'sourceSchema' : 'targetSchema'] = loadedSchema;
     saveProject(p);
     
-    toast(`${side === 'source' ? 'Source' : 'Target'} schema imported from connector`);
+    toast('Field list added from the connector file');
     backdrop.remove();
     renderSetup({ id: projectId });
   };
@@ -1664,20 +1660,20 @@ function openAISettingsModal(onSave, { showKey = false } = {}) {
   backdrop.className = 'record-modal-backdrop';
   backdrop.innerHTML = `
     <div class="record-modal ai-settings-modal" role="dialog" aria-modal="true" style="width:min(520px,calc(100% - 2rem))">
-      <h3>AI Mapping Settings</h3>
-      <p class="record-modal-sub">Configure how MapBridge suggests column mappings.</p>
+      <h3>AI settings</h3>
+      <p class="record-modal-sub">Choose how MapBridge suggests matches and reads screenshots.</p>
       
       <div class="field" style="margin:1rem 0 0.5rem">
-        <label>Suggestion mode</label>
+        <label>How to suggest matches</label>
         <select id="ai-mode">
-          <option value="heuristic" ${settings.mode === 'heuristic' ? 'selected' : ''}>Heuristic (offline, no API key needed)</option>
-          <option value="llm" ${settings.mode === 'llm' ? 'selected' : ''}>LLM (requires OpenAI-compatible API)</option>
+          <option value="heuristic" ${settings.mode === 'heuristic' ? 'selected' : ''}>Built-in rules (no AI, nothing sent anywhere)</option>
+          <option value="llm" ${settings.mode === 'llm' ? 'selected' : ''}>AI service (needs an OpenAI-compatible service)</option>
         </select>
       </div>
       
       <div id="llm-settings" style="display:${settings.mode === 'llm' || showKey ? 'block' : 'none'}">
         <div class="alert alert-info" style="font-size:0.82rem;margin:0.75rem 0">
-          <strong>Privacy:</strong> Mapping suggestions send only field lists (names, types, definitions, allowed values). No row data.
+          <strong>Privacy:</strong> Suggested matches send only field lists (names, types, definitions, allowed values). No row data.
           If you use the screenshot reader, the pictures you choose are sent too, and they may show personal data.
           Your API key is stored in this browser only and is sent only to the address you set here.
         </div>
@@ -1739,8 +1735,8 @@ async function openAISuggestModal(projectId) {
   backdrop.className = 'record-modal-backdrop';
   backdrop.innerHTML = `
     <div class="record-modal ai-suggest-modal" role="dialog" aria-modal="true" style="width:min(900px,calc(100% - 2rem));max-height:calc(100vh - 4rem);overflow:auto">
-      <h3>AI Mapping Suggestions</h3>
-      <p class="record-modal-sub">Mode: <strong>${settings.mode === 'heuristic' ? 'Heuristic (offline)' : 'LLM'}</strong> · 
+      <h3>Suggested matches</h3>
+      <p class="record-modal-sub">Using: <strong>${settings.mode === 'heuristic' ? 'built-in rules (no AI)' : 'your AI service'}</strong> · 
         <button type="button" class="btn-link" id="change-mode" style="color:var(--brand);text-decoration:underline;background:none;border:none;padding:0;cursor:pointer">Change in settings</button>
       </p>
       <div id="suggestion-status" style="margin:1rem 0;padding:0.75rem;background:#f8fafc;border:1px solid var(--line);border-radius:8px;text-align:center">
@@ -1779,7 +1775,7 @@ async function openAISuggestModal(projectId) {
       }
       
       if (suggestions.length === 0) {
-        statusEl.innerHTML = '<p style="color:var(--muted)">No new suggestions found. All potential mappings may already exist.</p>';
+        statusEl.innerHTML = '<p style="color:var(--muted)">No new suggestions. The likely matches may all be made already.</p>';
         return;
       }
       
@@ -1876,7 +1872,7 @@ function acceptSuggestion(projectId, suggestions, index, backdrop) {
   card.classList.add('suggestion-accepted');
   card.querySelector('.suggestion-actions').innerHTML = '<span style="color:#059669;font-weight:600">✓ Accepted</span>';
   
-  toast('Mapping accepted');
+  toast('Match added');
 }
 
 function rejectSuggestion(suggestions, index, backdrop) {

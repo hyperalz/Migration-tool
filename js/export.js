@@ -106,7 +106,7 @@ export function downloadExcel(mappings, filename) {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mappingsToRows(mappings)), 'Mappings');
   const history = verificationHistoryRows(mappings);
   if (history.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(history), 'Verification log');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(history), 'Field log');
   }
   XLSX.writeFile(wb, filename);
 }

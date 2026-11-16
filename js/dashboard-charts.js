@@ -121,7 +121,7 @@ function renderActionPanel(data) {
           <span class="dash-backlog-label">${esc(item.label)}</span>
           <span class="dash-backlog-count">${item.count}</span>
         </li>`).join('')}</ul>`
-    : `<p class="dash-action-empty">All columns signed off — nothing waiting.</p>`;
+    : `<p class="dash-action-empty">All fields signed off. Nothing is waiting.</p>`;
 
   const activityHtml = data.recentActivity.length
     ? `<ul class="dash-activity-list">${data.recentActivity.map(ev => {
@@ -143,12 +143,12 @@ function renderActionPanel(data) {
     <div class="dash-action-grid">
       <div class="dash-action-block">
         <h3>Waiting on next step</h3>
-        <p class="dash-chart-hint">Columns ready for the next action</p>
+        <p class="dash-chart-hint">Fields ready for the next step</p>
         ${backlogHtml}
       </div>
       <div class="dash-action-block">
         <h3>Recent activity</h3>
-        <p class="dash-chart-hint">Latest recorded steps — click to open column</p>
+        <p class="dash-chart-hint">Latest steps. Click one to open its field</p>
         ${activityHtml}
       </div>
     </div>`;
@@ -159,14 +159,14 @@ export function renderTraceDashboardHTML(data, open = false) {
     <details class="trace-dashboard card" id="trace-dashboard-panel"${open ? ' open' : ''}>
       <summary class="dash-summary">
         <span class="dash-summary-text">
-          <span class="dash-summary-title">Traceability dashboard</span>
+          <span class="dash-summary-title">Field progress</span>
           <span class="dash-summary-meta">${data.signedOff}/${data.total} signed off · ${data.donePct}% complete${data.blocked ? ` · ${data.blocked} blocked` : ''}</span>
         </span>
         <span class="dash-live"><span class="dash-live-dot"></span> Live</span>
       </summary>
       <div class="dash-body">
         <div class="dash-stats">
-          <div class="dash-stat"><span class="dash-stat-value">${data.total}</span><span class="dash-stat-label">Columns</span></div>
+          <div class="dash-stat"><span class="dash-stat-value">${data.total}</span><span class="dash-stat-label">Fields</span></div>
           <div class="dash-stat dash-stat-brand"><span class="dash-stat-value">${data.signedOff}</span><span class="dash-stat-label">Signed off</span></div>
           <div class="dash-stat"><span class="dash-stat-value">${data.inProgress}</span><span class="dash-stat-label">In progress</span></div>
           <div class="dash-stat dash-stat-warn"><span class="dash-stat-value">${data.blocked}</span><span class="dash-stat-label">Blocked</span></div>
@@ -175,7 +175,7 @@ export function renderTraceDashboardHTML(data, open = false) {
         <div class="dash-charts-grid">
           <div class="dash-chart-card dash-chart-main">
             <h3>Pipeline completion</h3>
-            <p class="dash-chart-hint">Columns that completed each trace step</p>
+            <p class="dash-chart-hint">Fields that finished each step</p>
             <div class="dash-chart-wrap"><canvas id="chart-funnel"></canvas></div>
           </div>
           <div class="dash-chart-card">
@@ -227,7 +227,7 @@ export function mountDashboardCharts(mappings) {
       data: {
         labels: data.steps.map(s => s.label),
         datasets: [{
-          label: 'Columns',
+          label: 'Fields',
           data: data.steps.map(s => s.count),
           backgroundColor: data.steps.map(s => s.color),
           borderRadius: 4,
@@ -243,7 +243,7 @@ export function mountDashboardCharts(mappings) {
             callbacks: {
               afterLabel: ctx => {
                 const s = data.steps[ctx.dataIndex];
-                return `${s.pct}% of ${data.total} columns`;
+                return `${s.pct}% of ${data.total} fields`;
               },
             },
           },

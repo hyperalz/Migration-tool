@@ -170,11 +170,11 @@ test('missing columns and missing keys are reported, not ignored', () => {
   ] };
   const res = reconcilePair({ pair, keyMappingIds: ['k'],
     sourceRows: [{ id: '1', x: 'a' }, { id: '', x: 'b' }], targetRows: [{ ID: '1' }] });
-  assert.equal(res.fields[1].skipped, 'Column is not in the new system extract');
+  assert.equal(res.fields[1].skipped, 'This field is not in the new system\'s file');
   assert.ok(res.groups.some(g => g.kind === 'not_checked'));
   assert.ok(res.groups.some(g => g.kind === 'blank_key' && g.count === 1));
   assert.throws(() => reconcilePair({ pair, keyMappingIds: [], sourceRows: [], targetRows: [] }), /at least one key/);
-  assert.throws(() => reconcilePair({ pair, keyMappingIds: ['k'], sourceRows: [{ nope: 1 }], targetRows: [{ ID: 1 }] }), /not in the old system extract/);
+  assert.throws(() => reconcilePair({ pair, keyMappingIds: ['k'], sourceRows: [{ nope: 1 }], targetRows: [{ ID: 1 }] }), /not in the old system's file/);
 });
 
 test('default values and blank handling', () => {
@@ -427,7 +427,7 @@ test('progress: a new project starts at set up and later steps are blocked', () 
 test('progress: field lists loaded, nothing mapped', () => {
   const p = { ...emptyProject(), sourceSchema: legacyFinanceSchema, targetSchema: newFinanceSchema };
   assert.deepEqual(states(p), { setup: 'done', map: 'todo', check: 'blocked', signoff: 'blocked', handover: 'blocked' });
-  assert.equal(projectProgress(p).next.text, 'Start mapping fields');
+  assert.equal(projectProgress(p).next.text, 'Start matching fields');
 });
 
 test('progress: required new-system fields without a source keep mapping in progress', () => {
@@ -435,7 +435,7 @@ test('progress: required new-system fields without a source keep mapping in prog
   p.mappings = p.mappings.filter(m => m.targetColumn !== 'STATUS');
   const pr = projectProgress(p);
   assert.equal(pr.steps[1].state, 'progress');
-  assert.match(pr.steps[1].summary, /1 required field in the new system still has no source\.$/);
+  assert.match(pr.steps[1].summary, /1 field the new system must have still has no match\.$/);
   assert.equal(pr.next.step, 'map');
 });
 
@@ -677,7 +677,7 @@ test('progress: after a template import, unmatched fields keep mapping in progre
     mappings: parsed.mappings.map((m, i) => ({ id: `i${i}`, ...m })), templateImport: { notUsed: parsed.notUsed } };
   const step = projectProgress(p).steps[1];
   assert.equal(step.state, 'progress');
-  assert.match(step.summary, /^5 fields mapped\. 3 fields in the new system have no match/);
+  assert.match(step.summary, /^5 fields matched\. 3 fields in the new system have no match/);
   assert.equal(projectProgress(p).next.text, 'Match or rule out the 3 fields with no match yet');
 });
 
@@ -1009,7 +1009,7 @@ test('trace: results files are read with or without a heading row, and other fil
   assert.equal(a.length, 8);
   assert.deepEqual(a[7], { screen: 'Pupil details', label: 'Ethnicity', table: '', column: '', rows: 0 });
   assert.equal(parseTraceResults(RUN_2).length, 5);
-  assert.throws(() => parseTraceResults([['a', 'b']]), /five columns/);
+  assert.throws(() => parseTraceResults([['a', 'b']]), /five values on each line/);
   assert.throws(() => parseTraceResults([['a', 'b', 'c', 'd', 'lots']]), /not a count/);
   assert.throws(() => parseTraceResults([]), /empty/);
 });
@@ -1174,4 +1174,51 @@ test('to-do: screen names not yet linked are listed, and the words read at about
   const overall = readingGrade(texts.join(' '));
   assert.ok(overall <= 6, `overall reading grade ${overall.toFixed(1)} is above 6`);
   for (const line of texts) for (const sentence of line.split(/[.!?]+/).filter(x => x.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22, sentence);
+});
+
+// ---------- one name per thing ----------
+// Every word people read on screen uses the agreed words (see the
+// simplification plan): field not column, match not map, check not
+// reconcile, old and new system (or their own names) not source and target.
+import { readdirSync } from 'node:fs';
+import { oldName, newName, oldLabel, newLabel } from '../js/words.js';
+
+const OLD_WORDS = /\b(schemas?|sources?|targets?|reconcil\w*|legacy|columns?|cols?|mappings?|mapped|unmapped|traceab\w*|verif\w*|LLM|heuristic)\b/i;
+// Allowed: the supplier's own document is called a mapping spreadsheet or template.
+const ALLOWED = /\bmapping (spreadsheet|template|master)s?\b/gi;
+
+function onScreenText(file) {
+  const src = readFileSync(new URL(`../js/${file}`, import.meta.url), 'utf8')
+    .replace(/<pre[\s\S]*?<\/pre>/g, '')          // example files shown as code
+    .replace(/<code>[\s\S]*?<\/code>/g, '');      // names shown as code
+  const out = [];
+  const keep = t => {
+    t = t.replace(/\$\{[^}]*\}/g, ' ').replace(/\s+/g, ' ').trim();
+    if (/[a-z]{2}/i.test(t) && !/[;={}()]|=>/.test(t)) out.push(t);
+  };
+  for (const m of src.matchAll(/>([^<>`]+)</g)) keep(m[1]);
+  for (const m of src.matchAll(/\b(?:title|placeholder|aria-label)="([^"$]*)"/g)) keep(m[1]);
+  for (const m of src.matchAll(/\b(?:toast|say)\((['`])((?:(?!\1).)*)\1/g)) keep(m[2]);
+  for (const m of src.matchAll(/new Error\((['`])((?:(?!\1).)*)\1/g)) keep(m[2]);
+  for (const m of src.matchAll(/\b(?:summary|next|text|headline|why|label):\s*(['`])((?:(?!\1).)* (?:(?!\1).)*)\1/g)) keep(m[2]);
+  for (const m of src.matchAll(/\b(?:label|action):\s*'([^']+)'/g)) keep(m[1]);   // one-word status and step names
+  // words picked inside \${…} inside on-screen text, such as \${a ? 'target' : 'source'}
+  for (const m of src.matchAll(/>[^<>`]*\$\{([^}]*)\}[^<>`]*</g)) for (const q of m[1].matchAll(/[?:]\s*'([a-z ]+)'/gi)) keep(q[1]);
+  for (const m of src.matchAll(/(?:\d|\})\s(cols?)\b/g)) out.push(m[1]);
+  return out;
+}
+
+test('words: no screen uses the old words', () => {
+  const files = readdirSync(new URL('../js/', import.meta.url)).filter(f => f.endsWith('.js') && !['sampleData.js', 'demoFinance.js'].includes(f));
+  const found = [];
+  for (const f of files) for (const t of onScreenText(f)) if (OLD_WORDS.test(t.replace(ALLOWED, ''))) found.push(`${f}: ${t.slice(0, 100)}`);
+  assert.deepEqual(found, []);
+});
+
+test('words: the systems\' own names are used, with plain words when none is given', () => {
+  const p = { sourceSystem: 'Synergy', targetSystem: 'Impulse' };
+  assert.deepEqual([oldName(p), newName(p), oldLabel(p), newLabel(p)], ['Synergy', 'Impulse', 'Synergy (old system)', 'Impulse (new system)']);
+  for (const blank of [{}, { sourceSystem: 'Other / Generic', targetSystem: '  ' }]) {
+    assert.deepEqual([oldName(blank), newName(blank), oldLabel(blank), newLabel(blank)], ['the old system', 'the new system', 'Old system', 'New system']);
+  }
 });

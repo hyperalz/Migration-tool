@@ -244,6 +244,6 @@ function plainNotCovered(note) {
   if (m) return `The ${tableNoun(m[1])} records were not included in this check.`;
   // "Table: 3 new-system fields with no mapping, so not checked (A, B, C)."
   m = /^(.+?): (\d+) new-system fields? with no mapping/.exec(note);
-  if (m) return `${m[2]} ${plural(Number(m[2]), 'piece', 'pieces')} of information in the new system’s ${tableNoun(m[1])} area ${plural(Number(m[2]), 'has', 'have')} no agreed source in the old system, so ${plural(Number(m[2]), 'was', 'were')} not checked.`;
+  if (m) return `${m[2]} ${plural(Number(m[2]), 'piece', 'pieces')} of information in the new system’s ${tableNoun(m[1])} area ${plural(Number(m[2]), 'has', 'have')} no agreed match in the old system, so ${plural(Number(m[2]), 'was', 'were')} not checked.`;
   return note;
 }

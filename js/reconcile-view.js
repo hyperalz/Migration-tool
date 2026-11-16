@@ -3,6 +3,7 @@
 
 import { getProject, saveProject, createProject, uid } from './store.js';
 import { getCurrentUser } from './auth.js';
+import { oldName, newName } from './words.js';
 import { defaultVerification } from './verification.js';
 import { downloadCSV, downloadJSON } from './export.js';
 import {
@@ -62,7 +63,7 @@ export function createFinanceDemoProject(user) {
     lookupRule: '',
     defaultValue: '',
     ...m,
-    verification: defaultVerification('Demo mapping', user.name || 'demo'),
+    verification: defaultVerification('Demo match', user.name || 'demo'),
   }));
   project.status = 'mapping';
   project.reconRuns = [];
@@ -79,7 +80,7 @@ function unmappedTargetNotes(project, pairs) {
     const mapped = new Set(pair.mappings.map(m => m.targetColumn));
     const unmapped = table.columns.filter(c => !mapped.has(c.name)).map(c => c.name);
     if (unmapped.length) {
-      notes.push(`${pair.targetTable}: ${unmapped.length} new-system field${unmapped.length === 1 ? '' : 's'} with no mapping, so not checked (${unmapped.slice(0, 8).join(', ')}${unmapped.length > 8 ? ', …' : ''}).`);
+      notes.push(`${pair.targetTable}: ${unmapped.length} new-system field${unmapped.length === 1 ? '' : 's'} with no match, so not checked (${unmapped.slice(0, 8).join(', ')}${unmapped.length > 8 ? ', …' : ''}).`);
     }
   }
   return notes;
@@ -150,7 +151,7 @@ function parseExtract(text) {
     transformHeader: h => String(h).trim(),
   });
   const columns = (parsed.meta?.fields || []).filter(Boolean);
-  if (!columns.length) throw new Error('No column headings found in the first row.');
+  if (!columns.length) throw new Error('No headings found in the first row of the file.');
   return { rows: parsed.data, columns };
 }
 
@@ -170,9 +171,9 @@ export function renderReconcile({ id }, ui) {
   if (!pairs.length) {
     ui.mount(`
       ${ui.projectSteps(project, 'reconcile')}
-      <div class="page-head"><div><h1>Reconcile a trial load</h1><p>Check that what landed in the new system matches the old system.</p></div></div>
-      <div class="card empty-state"><p>Map some fields first. The agreed mappings are the rule book for the checks.</p>
-      <a class="btn btn-primary" style="margin-top:1rem" href="#/projects/${project.id}/map">Go to mapping</a></div>`);
+      <div class="page-head"><div><h1>Check a load</h1><p>Check that what landed in ${esc(newName(project))} matches ${esc(oldName(project))}.</p></div></div>
+      <div class="card empty-state"><p>Match some fields first. The agreed matches are the rule book for the checks.</p>
+      <a class="btn btn-primary" style="margin-top:1rem" href="#/projects/${project.id}/map">Go to Match fields</a></div>`);
     ui.attachLogout();
     return;
   }
@@ -198,15 +199,15 @@ export function renderReconcile({ id }, ui) {
     return `
       <section class="recon-pair" data-pair-block="${esc(pair.id)}">
         <h3><span class="recon-mono">${esc(pair.sourceTable)}</span> → <span class="recon-mono">${esc(pair.targetTable)}</span>
-          <span class="recon-sub" style="display:inline">· ${pair.mappings.length} mapped field${pair.mappings.length === 1 ? '' : 's'}</span></h3>
+          <span class="recon-sub" style="display:inline">· ${pair.mappings.length} matched field${pair.mappings.length === 1 ? '' : 's'}</span></h3>
         <div class="grid-2 recon-files">
           <div class="field">
-            <label for="src-${esc(pair.id)}">Old system extract (CSV)</label>
+            <label for="src-${esc(pair.id)}">File from ${esc(oldName(project))} (CSV)</label>
             <input type="file" accept=".csv,text/csv" id="src-${esc(pair.id)}" data-file="source" data-pair="${esc(pair.id)}">
             <div class="recon-sub" data-status="source" data-pair="${esc(pair.id)}">Not loaded</div>
           </div>
           <div class="field">
-            <label for="tgt-${esc(pair.id)}">New system extract (CSV)</label>
+            <label for="tgt-${esc(pair.id)}">File from ${esc(newName(project))} (CSV)</label>
             <input type="file" accept=".csv,text/csv" id="tgt-${esc(pair.id)}" data-file="target" data-pair="${esc(pair.id)}">
             <div class="recon-sub" data-status="target" data-pair="${esc(pair.id)}">Not loaded</div>
           </div>
@@ -215,7 +216,7 @@ export function renderReconcile({ id }, ui) {
         <details class="recon-fields" ${guess.length ? '' : 'open'}>
           <summary>Fields and settings ${guess.length ? '' : '<span class="recon-warn">· choose a key field</span>'}</summary>
           <table class="recon-table">
-            <thead><tr><th>Mapped field</th><th class="recon-c">Identifies a record</th><th class="recon-c">Add up as total</th><th class="recon-c">Mask values in report</th></tr></thead>
+            <thead><tr><th>Matched field</th><th class="recon-c">Identifies a record</th><th class="recon-c">Add up as total</th><th class="recon-c">Mask values in report</th></tr></thead>
             <tbody>${pair.mappings.map(m => fieldRow(pair, m, guess)).join('')}</tbody>
           </table>
         </details>
@@ -241,8 +242,8 @@ export function renderReconcile({ id }, ui) {
 
   ui.mount(`
     ${ui.projectSteps(project, 'reconcile')}
-    <div class="page-head"><div><h1>Reconcile a trial load</h1>
-      <p>Check that what landed in the new system matches the old system, using the agreed mappings as the rule book.</p></div>
+    <div class="page-head"><div><h1>Check a load</h1>
+      <p>Check that what landed in ${esc(newName(project))} matches ${esc(oldName(project))}. The agreed matches are the rule book.</p></div>
       <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Overview and sign-off</a></div>
 
     ${project.demo === FINANCE_DEMO ? `
@@ -298,8 +299,8 @@ export function renderReconcile({ id }, ui) {
         const pair = pairs.find(p => p.id === pairId);
         const wanted = pair.mappings.map(m => (side === 'source' ? m.sourceColumn : m.targetColumn));
         const missing = wanted.filter(c => !columns.includes(c));
-        status.innerHTML = `${num(rows.length)} rows · ${columns.length} columns`
-          + (missing.length ? ` <span class="recon-warn">· mapped column${missing.length === 1 ? '' : 's'} not in file: ${esc(missing.join(', '))}</span>` : '');
+        status.innerHTML = `${num(rows.length)} rows · ${columns.length} headings`
+          + (missing.length ? ` <span class="recon-warn">· matched field${missing.length === 1 ? '' : 's'} not in file: ${esc(missing.join(', '))}</span>` : '');
       } catch (err) {
         delete loaded[pairId][`${side}Rows`];
         status.innerHTML = `<span class="recon-warn">${esc(err.message)}</span>`;
@@ -536,10 +537,10 @@ export async function renderReport({ id, runId }, ui) {
 
     <article class="recon-report" id="recon-view-detail" role="tabpanel" aria-labelledby="recon-tab-detail" hidden>
       <header class="recon-report-head">
-        <div class="recon-eyebrow">Trial load reconciliation report</div>
+        <div class="recon-eyebrow">Load check report</div>
         <h1>${esc(run.label)}</h1>
         <p class="recon-meta">${esc(run.project.name)} · ${esc(run.project.sourceSystem)} → ${esc(run.project.targetSystem)}</p>
-        <p class="recon-meta">Checked ${esc(fmtDate(run.at))} by ${esc(run.by)} · ${num(run.mappingCount)} agreed mappings ·
+        <p class="recon-meta">Checked ${esc(fmtDate(run.at))} by ${esc(run.by)} · ${num(run.mappingCount)} agreed matches ·
           Fingerprint <span class="recon-mono">${esc(run.fingerprint.slice(0, 12))}</span>
           ${verified ? '<span class="recon-chip recon-ok">unchanged since run</span>' : '<span class="recon-chip recon-high">results changed since run</span>'}</p>
       </header>
@@ -591,15 +592,15 @@ export async function renderReport({ id, runId }, ui) {
             <td class="recon-mono">${esc(p.key.source.join(' + '))} = ${esc(p.key.target.join(' + '))}</td></tr>`).join('')}</tbody>
         </table>
         <ul class="recon-method">
-          <li>Every record in the old extract is paired with the record in the new extract that has the same key. Each mapped field is then compared.</li>
-          <li>Where a mapping has a translation rule, the old value is translated first and the result compared. A value with no rule is always reported.</li>
+          <li>Every record in the old system's file is paired with the record in the new system's file that has the same key. Each matched field is then compared.</li>
+          <li>Where a match has a rule to turn one value into another, the old value is turned first and the result compared. A value with no rule is always reported.</li>
           <li>Values that are the same but written differently count as matched: spacing at either end, numbers such as 100 and 100.00, and dates in a different layout (day-first dates are read as DD/MM/YYYY). Blank and NULL are treated as the same.</li>
-          <li>Control totals add up every row in each extract, including records that could not be paired.</li>
+          <li>Control totals add up every row in each file, including records that could not be paired.</li>
           <li>Match and mismatch are decided by fixed rules. No AI is used in this report.</li>
           <li>Values in fields marked as masked are replaced with dots and a length. Record keys are shown so exceptions can be traced.</li>
         </ul>
         <h4>Not covered</h4>
-        ${run.notCovered.length ? `<ul class="recon-method">${run.notCovered.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '<p class="recon-sub">Nothing excluded: every mapped table had extracts and every new-system field in those tables is mapped.</p>'}
+        ${run.notCovered.length ? `<ul class="recon-method">${run.notCovered.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '<p class="recon-sub">Nothing left out: every matched table had files, and every new-system field in those tables is matched.</p>'}
         <p class="recon-sub">This is a comparison of two extract files. It does not check screens, reports, calculated fields or interfaces in the new system.</p>
       </section>
 
@@ -890,10 +891,10 @@ export function renderOverview({ id }, ui) {
       <section>
         <h2>What this overview does not tell you</h2>
         <ul class="recon-method">
-          <li>It covers tables that have mapped fields. A table nobody has mapped does not appear here at all.</li>
+          <li>It covers tables that have matched fields. A table with no matches does not appear here at all.</li>
           <li>Each table is checked on its own. Links between tables, and figures that should match across tables, are not checked.</li>
           <li>An area’s status is that of its worst table. A table that has not been checked keeps its area and the project from showing as all clear.</li>
-          ${olderChecks ? '<li>Some checks were run before mapping changes were tracked, so a later change to those mappings cannot be detected.</li>' : ''}
+          ${olderChecks ? '<li>Some checks were run before MapBridge kept track of changed matches, so a later change to those matches cannot be spotted.</li>' : ''}
           <li>This is evidence for a go-live decision. The decision itself belongs to the people who sign.</li>
         </ul>
       </section>
