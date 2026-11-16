@@ -783,14 +783,14 @@ test('screenshots: nothing is added unless ticked, and fields are marked label o
   assert.equal(rows.length, 7);
   assert.ok(rows.every(r => r.ticked === false));
   assert.equal(rows.find(r => r.label === 'Notes').already, true);
-  assert.equal(screenName(results[1]), 'Screen: Order screen');
+  assert.equal(screenName(results[1], 2), 'Screen: Unnamed screen 2');
 
   assert.deepEqual(screenshotSchema(rows).tables, []);
 
   rows.forEach(r => { r.ticked = !['Credit Limit'].includes(r.label); });
   rows.find(r => r.label === 'Date Opened').label = 'Date account opened';
   const schema = screenshotSchema(rows);
-  assert.deepEqual(schema.tables.map(t => t.name), ['Screen: Supplier Details', 'Screen: Order screen']);
+  assert.deepEqual(schema.tables.map(t => t.name), ['Screen: Supplier Details', 'Screen: Unnamed screen 2']);
   const cols = schema.tables[0].columns;
   assert.deepEqual(cols.map(c => c.name), ['Supplier Name', 'Date account opened', 'On Hold', 'Payment Terms']);
   assert.ok(cols.every(c => c.origin === 'screenshot' && c.description === SHOT_TEXT.labelOnly));
@@ -893,4 +893,47 @@ test('screenshots: Ollama cloud models are flagged, local ones are not', () => {
   for (const m of ['glm-5.3:cloud', 'gpt-oss:120b-cloud', ' Kimi:CLOUD ']) assert.ok(isCloudModel(m), m);
   for (const m of ['gemma4:12b', 'qwen2.5vl:7b', 'cloudy-model', '']) assert.equal(isCloudModel(m), false, m);
   assert.match(SHOT_TEXT.cloudModel, /leave this computer/);
+});
+
+import { scrubPersonal, cleanScreenName } from '../js/screenshot-dictionary.js';
+
+test('screenshots: personal details are kept out of screen names, labels and choices', () => {
+  const reply = JSON.stringify({
+    screen: 'Pupil details - Jane Smith (UPN 123456789)',
+    fields: [
+      { label: 'Surname', kind: 'text' },
+      { label: 'jane.smith@example.com', kind: 'text' },
+      { label: 'Date of Birth', kind: 'date' },
+      { label: '12/03/2014', kind: 'date' },
+      { label: 'Mrs Patel', kind: 'text' },
+      { label: 'Tutor', kind: 'pick-list', options: ['Mr Jones', 'Ms Ali', 'Year 7', 'Year 8'] },
+      { label: 'Home phone', kind: 'text', options: [] },
+      { label: '07700 900123', kind: 'text' },
+      { label: 'Postcode', kind: 'text' },
+      { label: 'SW1A 1AA', kind: 'text' },
+      { label: 'NI Number', kind: 'text' },
+      { label: 'AB 12 34 56 C', kind: 'text' },
+    ],
+  });
+  const r = parseScreenReply(reply);
+  assert.equal(r.screen, 'Pupil details');
+  assert.deepEqual(r.fields.map(f => f.label), ['Surname', 'Date of Birth', 'Tutor', 'Home phone', 'Postcode', 'NI Number']);
+  assert.deepEqual(r.fields.find(f => f.label === 'Tutor').options, ['Year 7', 'Year 8']);
+  assert.equal(r.removed, 9); // 6 labels, 2 tutor choices and the screen title
+
+  for (const [title, want] of [['Details for Jane Smith', 'Details'], ['Edit pupil | ID 445566', 'Edit pupil'], ['Supplier: Acme Ltd', 'Supplier'],
+    ['Contact record', 'Contact record'], ['Application for admission', 'Application for admission'], ['Mrs Patel', '']]) {
+    assert.equal(cleanScreenName(title).text, want, title);
+  }
+  for (const ok of ['Surname', 'Date of birth', 'Phone number', 'NI Number', 'Postcode', 'Year 7', 'Address line 1']) assert.equal(scrubPersonal(ok).removed, false, ok);
+});
+
+test('screenshots: the file name is never used for a screen, and the AI is told not to name people', () => {
+  const rows = reviewRows([{ file: 'Jane Smith record.png', screen: '', fields: [{ label: 'Surname', kind: 'text', options: [], required: false }] }], null);
+  assert.equal(rows[0].table, 'Screen: Unnamed screen 1');
+  assert.doesNotMatch(JSON.stringify(rows), /Jane/);
+  assert.match(PROMPT, /Never put a person's name/);
+  assert.match(PROMPT, /pick-list choice is a person's name, leave it out/);
+  const s = shotSummary({ pictures: 1, duplicates: 0, failed: 0, found: 3, added: 3, already: 0, leftOut: 0, screens: 1, removed: 2 });
+  assert.ok(s.detail.includes("2 bits that looked like a real person's details were taken out."));
 });

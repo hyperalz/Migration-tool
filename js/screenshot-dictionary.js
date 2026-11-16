@@ -23,7 +23,8 @@ export const SHOT_TEXT = {
   cloudModel: 'This model runs in Ollama\'s cloud, not on this computer. The pictures will leave this computer. Pick a model without :cloud in its name to keep them here.',
   notStored: 'The pictures are made smaller in this browser and are not saved. Only the names that come back are kept.',
   labelOnly: 'From a screenshot, label only. This is the name shown on the screen. It is not the real name of the field.',
-  reviewHelp: 'Tick each name you want to keep. You can fix a name or its kind first. Nothing is added until you press Add.',
+  reviewHelp: 'Tick each name you want to keep. You can fix a name, its kind or the screen name first. Make sure no real person is named. Nothing is added until you press Add.',
+  removedNote: 'Some words looked like a real person\'s details, so MapBridge took them out. Check the rest by eye.',
   nextStep: 'Add the new system list if it is not in yet. Then match these names to it on the Match screen.',
 };
 
@@ -39,13 +40,57 @@ Reply with JSON only. No other text. Use this shape:
 {"screen": "name of the screen", "fields": [{"label": "label as shown", "kind": "text", "options": [], "required": false}]}
 
 Rules:
-- "screen" is the screen's title as shown. Use "" if there is none.
+- "screen" is the kind of screen, for example "Pupil details" or "Supplier record". Never put a person's name, a record number or any other value from the record in it. Use "" if you are not sure.
 - "label" is the text next to the field, copied exactly as shown.
 - "kind" is one of: "text", "date", "number", "yes/no", "pick-list". A tick box is "yes/no".
 - "options" lists the choices of a pick-list only when they can be seen. Otherwise [].
 - "required" is true only if the screen marks the field as required, for example with * or the word required.
 - Do not list buttons, menus, tabs, headings or links.
-- Never copy the values typed into fields. Never copy names, addresses, dates of birth or other personal details.`;
+- Never copy the values typed into fields. Never copy names, addresses, dates of birth or other personal details.
+- If a label or a pick-list choice is a person's name, leave it out.`;
+
+// ---------- keeping people's details out ----------
+// The AI is told not to copy personal details, but it can still slip. This
+// plain clean-up runs on every reply, with no AI involved. It cannot spot every
+// name, so the person reviewing is asked to check too.
+const PERSONAL = [
+  /[\w.+-]+@[\w-]+\.[\w.-]+/g,                                         // email
+  /(?:\+44\s?|\b0)\d(?:[\s-]?\d){8,10}\b/g,                              // UK phone
+  /\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/g,                                // date 01/02/2010
+  /\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{2,4}\b/gi, // 1 Feb 2010
+  /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/g,                             // postcode
+  /\b[A-CEGHJ-PR-TW-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b/gi,          // NI number
+  /\b(?:Mr|Mrs|Ms|Miss|Mx|Dr|Prof|Sir|Dame)\.?\s+[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,2}/g, // title and name
+  /\b\d{5,}\b/g,                                                       // long ID or number
+];
+
+/** Take out anything that looks like personal details. */
+export function scrubPersonal(text) {
+  let out = String(text ?? '');
+  let removed = false;
+  for (const re of PERSONAL) {
+    out = out.replace(re, () => { removed = true; return ' '; });
+  }
+  if (removed) out = out.replace(/\(\s*\)|\[\s*\]/g, ' ').replace(/\s+/g, ' ').replace(/^[\s,;:|/–—-]+|[\s,;:|/–—-]+$/g, '').trim();
+  return { text: out, removed };
+}
+
+/**
+ * The kind of screen, without the record it was showing. Titles such as
+ * "Pupil details - Jane Smith" or "Supplier (Acme Ltd)" usually name the
+ * record after a dash, colon, bar or bracket, or after "for", so that part
+ * is dropped.
+ */
+export function cleanScreenName(title) {
+  let s = String(title ?? '').replace(/\s+/g, ' ').trim();
+  const before = s;
+  s = s.split(/\s+[-–—|:]\s+|\s*[|:]\s+|\s+for\s+(?=[A-Z])/)[0];
+  s = s.replace(/\s*[(\[][^)\]]*[)\]]?/g, '');
+  const scrubbed = scrubPersonal(s);
+  const text = scrubbed.text.replace(/[\s,;:|/–—-]+$/, '').trim().slice(0, 80);
+  return { text, removed: scrubbed.removed || text !== before };
+}
+
 
 // Size to draw an image at so its long edge is at most maxEdge.
 export function fitSize(width, height, maxEdge = MAX_EDGE) {
@@ -201,23 +246,38 @@ export function parseScreenReply(text) {
 
   const fields = [];
   const seen = new Set();
+  let removed = 0;
   for (const f of list) {
-    const label = tidy(typeof f === 'string' ? f : f?.label);
+    // A label holding personal details is a value, not a label: drop it.
+    const raw = tidy(typeof f === 'string' ? f : f?.label);
+    const check = scrubPersonal(raw);
+    if (check.removed) { removed++; continue; }
+    const label = raw;
     if (!label) continue;
     const key = label.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     const kind = normaliseKind(f?.kind ?? f?.type);
-    const options = kind === 'pick-list' && Array.isArray(f?.options)
-      ? [...new Set(f.options.map(o => tidy(o, 60)).filter(Boolean))].slice(0, 50) : [];
+    let options = [];
+    if (kind === 'pick-list' && Array.isArray(f?.options)) {
+      for (const o of f.options) {
+        const t = tidy(o, 60);
+        if (!t) continue;
+        if (scrubPersonal(t).removed) { removed++; continue; }
+        if (!options.includes(t)) options.push(t);
+      }
+      options = options.slice(0, 50);
+    }
     fields.push({ label, kind, options, required: f?.required === true || f?.required === 'true' });
   }
-  return { screen: tidy(Array.isArray(data) ? '' : data.screen), fields };
+  const screen = cleanScreenName(tidy(Array.isArray(data) ? '' : data.screen));
+  if (screen.removed) removed++;
+  return { screen: screen.text, fields, removed };
 }
 
-export function screenName(result) {
-  const name = result.screen || String(result.file || '').replace(/\.[a-z0-9]+$/i, '') || 'Unnamed screen';
-  return SCREEN_PREFIX + name;
+// The picture's file name is never used: it can hold a person's name.
+export function screenName(result, n = 1) {
+  return SCREEN_PREFIX + (cleanScreenName(result.screen).text || `Unnamed screen ${n}`);
 }
 
 // Rows for the review table. Labels already in the old system list are marked.
@@ -225,9 +285,9 @@ export function reviewRows(results, sourceSchema) {
   const have = new Set((sourceSchema?.tables || []).flatMap(t => (t.columns || []).map(c => `${t.name}␟${c.name}`.toLowerCase())));
   const rows = [];
   results.forEach((r, i) => {
-    const table = screenName(r);
+    const table = screenName(r, i + 1);
     r.fields.forEach((f, j) => rows.push({
-      id: `${i}-${j}`, table, ...f,
+      id: `${i}-${j}`, table, screenKey: `s${i}`, ...f,
       already: have.has(`${table}␟${f.label}`.toLowerCase()),
       ticked: false,
     }));
@@ -276,6 +336,7 @@ export function shotSummary(c) {
   if (c.leftOut) left.push(`${num(c.leftOut)} ${plural(c.leftOut, 'name was', 'names were')} not ticked, so ${plural(c.leftOut, 'it was', 'they were')} left out.`);
   if (c.already) left.push(`${num(c.already)} ${plural(c.already, 'name was', 'names were')} in the list already.`);
   if (c.duplicates) left.push(`${num(c.duplicates)} ${plural(c.duplicates, 'picture was a copy', 'pictures were copies')}, so ${plural(c.duplicates, 'it was', 'they were')} not sent.`);
+  if (c.removed) left.push(`${num(c.removed)} ${plural(c.removed, 'bit', 'bits')} that looked like a real person's details ${plural(c.removed, 'was', 'were')} taken out.`);
   if (c.failed) left.push(`${num(c.failed)} ${plural(c.failed, 'picture', 'pictures')} could not be read. Try ${plural(c.failed, 'it', 'them')} again.`);
   return { title: lines[0], detail: [lines[1], ...left], next: SHOT_TEXT.nextStep };
 }
