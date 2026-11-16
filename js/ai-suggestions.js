@@ -222,7 +222,7 @@ export function generateHeuristicSuggestions(sourceSchema, targetSchema, existin
 
 export async function generateLLMSuggestions(sourceSchema, targetSchema, existingMappings, settings) {
   if (missingKey(settings)) {
-    throw new Error('API key not configured. Open Settings to add your OpenAI-compatible API key.');
+    throw new Error('There is no AI key yet. Add one in the AI settings.');
   }
   
   const existingKeys = new Set(
@@ -281,14 +281,14 @@ Return ONLY a JSON array of mapping objects. No other text. Example format:
   
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`LLM API error (${response.status}): ${error}`);
+    throw new Error(`The AI service said no (code ${response.status}): ${error}`);
   }
   
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   
   if (!content) {
-    throw new Error('No response from LLM');
+    throw new Error('The AI service sent back nothing.');
   }
   
   let suggestions;
@@ -296,7 +296,7 @@ Return ONLY a JSON array of mapping objects. No other text. Example format:
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     suggestions = JSON.parse(jsonMatch ? jsonMatch[0] : content);
   } catch (e) {
-    throw new Error('LLM returned invalid JSON. Try again or use heuristic mode.');
+    throw new Error('The AI reply was not in the right form. Try again, or use the built-in rules.');
   }
   
   const filtered = suggestions

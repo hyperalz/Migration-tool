@@ -1,5 +1,5 @@
 export const VERIFICATION_STATUSES = {
-  mapped: { label: 'Mapped', phase: 'mapping', color: '#64748b' },
+  mapped: { label: 'Matched', phase: 'mapping', color: '#64748b' },
   sql_sent: { label: 'SQL sent', phase: 'delivery', color: '#2563eb' },
   test_uploaded: { label: 'In test', phase: 'test', color: '#d97706' },
   test_passed: { label: 'Test passed', phase: 'test', color: '#059669' },
@@ -19,7 +19,7 @@ export const NEXT_ACTIONS = {
   ],
   test_failed: [
     { status: 'sql_sent', label: 'Resend SQL / data' },
-    { status: 'mapped', label: 'Mapping adjusted — resend SQL' },
+    { status: 'mapped', label: 'Match changed — resend SQL' },
   ],
   test_passed: [{ status: 'live_uploaded', label: 'Record pushed to live' }],
   live_uploaded: [
@@ -30,12 +30,12 @@ export const NEXT_ACTIONS = {
     { status: 'sql_sent', label: 'Resend from test cycle' },
     { status: 'live_uploaded', label: 'Re-pushed to live' },
   ],
-  live_passed: [{ status: 'signed_off', label: 'Sign off column' }],
+  live_passed: [{ status: 'signed_off', label: 'Sign off field' }],
   signed_off: [],
 };
 
 export const TRACE_STEPS = [
-  { key: 'mapped', action: 'Mapped', label: 'Mapped by', statuses: ['mapped'], recordStatus: null },
+  { key: 'mapped', action: 'Matched', label: 'Matched by', statuses: ['mapped'], recordStatus: null },
   { key: 'sql_sent', action: 'SQL sent', label: 'SQL sent by', statuses: ['sql_sent'], recordStatus: 'sql_sent' },
   { key: 'test_uploaded', action: 'Uploaded', label: 'Uploaded by', statuses: ['test_uploaded'], recordStatus: 'test_uploaded' },
   { key: 'test_checked', action: 'Checked in test', label: 'Tested in test by', statuses: ['test_passed', 'test_failed'], recordStatus: 'test_passed', failStatus: 'test_failed', checkStep: true },
@@ -44,7 +44,7 @@ export const TRACE_STEPS = [
   { key: 'done', action: 'Done', label: 'Signed off by', statuses: ['signed_off'], recordStatus: 'signed_off' },
 ];
 
-export function defaultVerification(note = 'Mapping created', by = 'system') {
+export function defaultVerification(note = 'Match made', by = 'system') {
   return {
     status: 'mapped',
     history: [{
@@ -90,7 +90,7 @@ export function recordTransition(mapping, { status, by, note = '', reference = '
 }
 
 export const PHASE_GROUPS = {
-  mapping: { label: 'Mapped', statuses: ['mapped'] },
+  mapping: { label: 'Matched', statuses: ['mapped'] },
   delivery: { label: 'SQL sent', statuses: ['sql_sent'] },
   test: { label: 'Test cycle', statuses: ['test_uploaded', 'test_passed', 'test_failed'] },
   live: { label: 'Live cycle', statuses: ['live_uploaded', 'live_passed', 'live_failed'] },
@@ -365,7 +365,7 @@ export function ensureProjectParties(project) {
   if (!project.parties) {
     project.parties = {
       la: { name: '', email: '', label: 'LA business owner' },
-      supplier: { name: '', email: '', label: 'Supplier / target system' },
+      supplier: { name: '', email: '', label: 'Supplier / new system' },
       consultant: { name: '', email: '', label: 'Delivery consultant' },
     };
   }

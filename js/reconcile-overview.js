@@ -103,10 +103,10 @@ export function projectOverview(project, runs = [], { finalRunId = null, signoff
     // Older runs carry no stamp, so a change cannot be detected for them.
     if (result.mappingStamp && result.mappingStamp !== mappingStamp(pair)) {
       t.mappingsChanged = true;
-      t.notes.push('Mappings changed since this check, so it needs re-checking');
+      t.notes.push('Its matches changed since this check, so it needs checking again');
     }
     const skipped = result.fields.filter(f => f.skipped).length;
-    if (skipped) t.notes.push(`${skipped} mapped ${plural(skipped, 'field')} could not be checked`);
+    if (skipped) t.notes.push(`${skipped} matched ${plural(skipped, 'field')} could not be checked`);
 
     t.state = t.mappingsChanged ? 'recheck' : 'checked';
     if (t.issues.high) t.status = 'attention';
@@ -151,14 +151,14 @@ export function projectOverview(project, runs = [], { finalRunId = null, signoff
       ? `${num(unchecked)} ${plural(unchecked, 'table was', 'tables were')} not in the final load.`
       : `${num(unchecked)} ${plural(unchecked, 'table has', 'tables have')} not been checked yet.`);
   }
-  if (recheck) gaps.push(`${num(recheck)} ${plural(recheck, 'table needs', 'tables need')} re-checking because ${plural(recheck, 'its', 'their')} mappings changed.`);
+  if (recheck) gaps.push(`${num(recheck)} ${plural(recheck, 'table needs', 'tables need')} checking again because ${plural(recheck, 'its', 'their')} matches changed.`);
 
   let headline;
-  if (!tables.length) headline = 'No fields have been mapped yet, so there is nothing to check.';
+  if (!tables.length) headline = 'No fields have been matched yet, so there is nothing to check.';
   else if (level === 'attention') headline = [`${num(high)} serious ${plural(high, 'issue')} open across ${num(areasWithHigh)} ${plural(areasWithHigh, 'area')}.`, ...gaps].join(' ');
   else if (level === 'incomplete') headline = gaps.join(' ');
   else if (level === 'nearly') headline = `No serious issues. ${num(other)} smaller ${plural(other, 'issue')} open.`;
-  else headline = finalRun ? 'Every mapped table passed on the final load.' : 'Every mapped table passed its latest check.';
+  else headline = finalRun ? 'Every matched table passed on the final load.' : 'Every matched table passed its latest check.';
 
   return {
     tables, areas,

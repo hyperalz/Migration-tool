@@ -99,7 +99,7 @@ export function createProject({ name, sourceSystem, targetSystem, ownerId }) {
     ownerId,
     parties: {
       la: { name: '', email: '', label: 'LA business owner' },
-      supplier: { name: '', email: '', label: 'Supplier / target system' },
+      supplier: { name: '', email: '', label: 'Supplier / new system' },
       consultant: { name: '', email: '', label: 'Delivery consultant' },
     },
     members: [{ userId: ownerId, role: 'owner', status: 'active' }],

@@ -66,13 +66,13 @@ export function fieldCheckIndex(project, runs = [], { finalRunId = null } = {}) 
       let reason = '';
       if (!f) {
         state = 'not_checked';
-        reason = 'This field was mapped after the last check';
+        reason = 'This field was matched after the last check';
       } else if (f.skipped) {
         state = 'not_checked';
         reason = f.skipped;
       } else if (changed) {
         state = 'recheck';
-        reason = 'The mappings for this table changed after the last check';
+        reason = 'The matches for this table changed after the last check';
       } else if (f.mismatched > 0 || findings.length) {
         state = 'fail';
       } else {
@@ -100,6 +100,6 @@ export function checkNote(check) {
   if (!check || !check.run) return '';
   if (check.state === 'pass') return `Latest load check matched (${check.run.label}).`;
   if (check.state === 'fail') return `Latest load check found differences (${check.run.label}).`;
-  if (check.state === 'recheck') return `Latest load check (${check.run.label}) is out of date: mappings changed since.`;
+  if (check.state === 'recheck') return `Latest load check (${check.run.label}) is out of date: the matches changed since.`;
   return '';
 }

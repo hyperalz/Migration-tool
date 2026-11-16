@@ -27,7 +27,7 @@ export function parseCSVTemplate(text, tableName = 'Uploaded_Template') {
   if (rows.length < 1) throw new Error('CSV file is empty.');
 
   const headers = rows[0].map(h => String(h || '').trim());
-  if (!headers.filter(Boolean).length) throw new Error('CSV has no column headers in first row.');
+  if (!headers.filter(Boolean).length) throw new Error('The CSV file has no headings in its first row.');
 
   const typeRow = rows[1]?.map(c => String(c || '').trim());
   let descRow = null;
@@ -67,7 +67,7 @@ export function parseCSVTemplate(text, tableName = 'Uploaded_Template') {
   });
 
   if (skippedRows.length) {
-    schema._warnings = [`${skippedRows.length} row(s) had mismatched column counts and were skipped: ${skippedRows.slice(0, 3).map(r => `row ${r.rowIndex} had ${r.columnCount} columns instead of ${r.expected}`).join('; ')}${skippedRows.length > 3 ? ` and ${skippedRows.length - 3} more` : ''}`];
+    schema._warnings = [`${skippedRows.length} row(s) had the wrong number of values and were left out: ${skippedRows.slice(0, 3).map(r => `row ${r.rowIndex} had ${r.columnCount} columns instead of ${r.expected}`).join('; ')}${skippedRows.length > 3 ? ` and ${skippedRows.length - 3} more` : ''}`];
   }
 
   return schema;
@@ -97,9 +97,9 @@ function normalizeSchema(schema) {
     columns: (t.columns || []).map(normalizeColumn),
   }));
 
-  if (!tables.length) throw new Error('No tables found in schema.');
+  if (!tables.length) throw new Error('No tables were found in this field list.');
   tables.forEach(t => {
-    if (!t.columns.length) throw new Error(`Table "${t.name}" has no columns.`);
+    if (!t.columns.length) throw new Error(`Table "${t.name}" has no fields.`);
   });
 
   return {

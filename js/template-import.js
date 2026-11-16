@@ -63,7 +63,7 @@ export function parseMappingTemplate(rows, { targetSystem = '', sourceSystem = '
   const header = rows[0];
   const c = detectColumns(header);
   if (c.table === undefined || c.column === undefined) {
-    throw new Error('This does not look like a mapping template. It needs columns for the new system table and field, such as "csv_name" and "column_name".');
+    throw new Error('This does not look like a mapping template. It needs headings for the new system table and field, such as "csv_name" and "column_name".');
   }
   const cell = (r, role) => (c[role] === undefined ? '' : clean(r[c[role]]));
   const hasSource = c.sourceTable !== undefined;

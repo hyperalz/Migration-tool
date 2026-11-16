@@ -16,13 +16,13 @@ import { SCREEN_PREFIX } from './screenshot-dictionary.js';
 
 export const TRACE_TEXT = {
   title: 'Link the screen names to the real fields',
-  lead: 'Find which table and column holds each name from the screenshots. You do this by looking up one record you know.',
+  lead: 'Find which table and field in the database holds each name from the screenshots. You do this by looking up one record you know.',
   step1: 'Pick a screen and download its search script.',
   step2: 'Open the script on the computer that can reach the old database. Type the values from the screenshot of one record between the quotes.',
   step3: 'Run the script on a copy of the database, or out of hours. Save the results as a CSV file.',
   step4: 'Add the results file here. Check each link, tick it and press Link.',
   empty: 'Add names from pictures of the old system first, in the box above. Then you can link them to the real fields here.',
-  privacy: 'The values you type stay on your computer. The results file holds only table names, column names and counts. Delete the filled-in script when you are done.',
+  privacy: 'The values you type stay on your computer. The results file holds only table names, field names and counts. Delete the filled-in script when you are done.',
   severalHelp: 'Some names were found in more than one place. Run the script again with a second record. MapBridge keeps only the places that match every time.',
   nextStep: 'Run the script again with another record for the names that are not linked yet. Then match the linked fields on the Match screen.',
 };
@@ -237,7 +237,7 @@ export function parseTraceResults(rows) {
   if (/^screen$/i.test(clean[0][0]) && /^label$/i.test(clean[0][1])) body = clean.slice(1);
   const out = [];
   for (const r of body) {
-    if (r.length < 5) throw new Error('This does not look like a MapBridge results file. It needs five columns: screen, label, table, column and rows.');
+    if (r.length < 5) throw new Error('This does not look like a MapBridge results file. It needs five values on each line: screen, label, table, field and a count of rows.');
     const n = Number(String(r[4]).replace(/,/g, ''));
     if (!Number.isFinite(n) || n < 0) throw new Error(`This does not look like a MapBridge results file. "${r[4]}" is not a count of rows.`);
     const table = r[2] === 'NULL' ? '' : r[2];

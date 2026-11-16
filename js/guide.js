@@ -89,7 +89,7 @@ export const SCREEN_GUIDE = {
   verify: [
     'Each row is one field. The dots show how far it has got.',
     'Click the plus sign on a row when the next job is done. Say who did it.',
-    'The Latest load check column shows if the field matched in the last check.',
+    'The Latest load check part of each row shows if the field matched in the last check.',
     'A red row means it was marked as passed but the last check found a problem.',
   ],
   overview: [

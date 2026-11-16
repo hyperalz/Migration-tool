@@ -13,11 +13,11 @@ const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
 export const STEPS = [
   { key: 'setup', label: 'Set up', path: 'setup',
     screens: [{ key: 'setup', label: 'Field lists', path: 'setup' }, { key: 'invite', label: 'Team', path: 'invite' }] },
-  { key: 'map', label: 'Map and agree', path: 'map', screens: [{ key: 'map', label: 'Mapping', path: 'map' }] },
+  { key: 'map', label: 'Match', path: 'map', screens: [{ key: 'map', label: 'Match fields', path: 'map' }] },
   { key: 'check', label: 'Load and check', path: 'reconcile',
     screens: [{ key: 'reconcile', label: 'Check a load', path: 'reconcile' }, { key: 'verify', label: 'Field tracker', path: 'verify' }] },
   { key: 'signoff', label: 'Sign off', path: 'reconcile/overview', screens: [{ key: 'overview', label: 'Overview', path: 'reconcile/overview' }] },
-  { key: 'handover', label: 'Hand over', path: 'export', screens: [{ key: 'export', label: 'Export and close', path: 'export' }] },
+  { key: 'handover', label: 'Hand over', path: 'export', screens: [{ key: 'export', label: 'Downloads and close', path: 'export' }] },
 ];
 
 export const STATE_LABEL = { done: 'Done', progress: 'In progress', todo: 'Not started', blocked: 'Not yet possible' };
@@ -90,23 +90,23 @@ export function projectProgress(project) {
   if (!haveBoth) {
     out.map = { state: 'blocked', summary: 'Needs both field lists first.' };
   } else if (!mappings.length) {
-    out.map = { state: 'todo', summary: 'No fields mapped yet.', next: 'Start mapping fields', nextPath: 'map' };
+    out.map = { state: 'todo', summary: 'No fields matched yet.', next: 'Start matching fields', nextPath: 'map' };
   } else if (!missing && !anyRequiredKnown(project) && openFields(project) > 0) {
     // The field list does not say which fields are required, so "done" cannot
     // be judged from that. Go by fields that are neither matched nor ruled out.
     const open = openFields(project);
     out.map = {
       state: 'progress',
-      summary: `${num(mappings.length)} ${plural(mappings.length, 'field')} mapped. ${num(open)} ${plural(open, 'field')} in the new system ${plural(open, 'has', 'have')} no match and ${plural(open, 'has', 'have')} not been ruled out.`,
+      summary: `${num(mappings.length)} ${plural(mappings.length, 'field')} matched. ${num(open)} ${plural(open, 'field')} in the new system ${plural(open, 'has', 'have')} no match and ${plural(open, 'has', 'have')} not been ruled out.`,
       next: `Match or rule out the ${num(open)} ${plural(open, 'field')} with no match yet`,
       nextPath: 'map',
     };
   } else {
     out.map = {
       state: missing ? 'progress' : 'done',
-      summary: `${num(mappings.length)} ${plural(mappings.length, 'field')} mapped.`
-        + (missing ? ` ${num(missing)} required ${plural(missing, 'field')} in the new system still ${plural(missing, 'has', 'have')} no source.` : ' Every required field in the new system has a source.'),
-      next: `Map the ${num(missing)} required ${plural(missing, 'field')} that still ${plural(missing, 'has', 'have')} no source`,
+      summary: `${num(mappings.length)} ${plural(mappings.length, 'field')} matched.`
+        + (missing ? ` ${num(missing)} ${plural(missing, 'field')} the new system must have still ${plural(missing, 'has', 'have')} no match.` : ' Every field the new system must have is matched.'),
+      next: `Match the ${num(missing)} ${plural(missing, 'field')} the new system must have`,
       nextPath: 'map',
     };
   }
@@ -117,7 +117,7 @@ export function projectProgress(project) {
   const trackerLine = (mappings.length ? ` Field tracker: ${num(tracked)} of ${num(mappings.length)} signed off.` : '')
     + (conflicts ? ` ${num(conflicts)} ${plural(conflicts, 'field is', 'fields are')} marked as passed but failing ${plural(conflicts, 'its', 'their')} latest check.` : '');
   if (!mappings.length) {
-    out.check = { state: 'blocked', summary: 'Needs mapped fields first.' };
+    out.check = { state: 'blocked', summary: 'Needs matched fields first.' };
   } else if (o.checked === 0) {
     out.check = { state: 'todo', summary: `No loads checked yet.${trackerLine}`, next: 'Check the first trial load', nextPath: 'reconcile' };
   } else {
