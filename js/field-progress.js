@@ -11,20 +11,24 @@ import { fieldCheckIndex } from './field-checks.js';
 import { tablePairs } from './reconcile.js';
 import { recordTransition } from './verification.js';
 
-export const FIELD_STAGES = ['matched', 'sent', 'testing', 'failed', 'passed', 'signed'];
+// Data goes into the test system first, then into live. Each has its own
+// UAT, and a field only counts as done once UAT in live has passed.
+export const FIELD_STAGES = ['matched', 'sent', 'inTest', 'testFailed', 'testPassed', 'inLive', 'liveFailed', 'livePassed', 'signed'];
 
 const FROM_STATUS = {
   mapped: 'matched',
   sql_sent: 'sent',
-  test_uploaded: 'testing',
-  live_uploaded: 'testing',
-  test_failed: 'failed',
-  live_failed: 'failed',
-  test_passed: 'passed',
-  live_passed: 'passed',
+  test_uploaded: 'inTest',
+  test_failed: 'testFailed',
+  test_passed: 'testPassed',
+  live_uploaded: 'inLive',
+  live_failed: 'liveFailed',
+  live_passed: 'livePassed',
   signed_off: 'signed',
 };
-const ORDER = { matched: 0, sent: 1, testing: 2, failed: 3, passed: 4, signed: 5 };
+const ORDER = Object.fromEntries(FIELD_STAGES.map((s, i) => [s, i]));
+const IN_LIVE = new Set(['inLive', 'liveFailed', 'livePassed', 'signed']);
+const PASSED = new Set(['testPassed', 'livePassed', 'signed']);
 
 /**
  * The stage of one field.
@@ -33,9 +37,13 @@ const ORDER = { matched: 0, sent: 1, testing: 2, failed: 3, passed: 4, signed: 5
  */
 export function fieldStage(mapping, check) {
   const tracked = FROM_STATUS[mapping?.verification?.status] || 'matched';
-  if (check?.state === 'fail') return 'failed';               // a problem found by a file check
-  if (check?.state === 'recheck' && ORDER[tracked] >= ORDER.passed) return 'testing'; // matches changed since
-  if (check?.state === 'pass' && ORDER[tracked] < ORDER.passed && tracked !== 'failed') return 'passed';
+  const live = IN_LIVE.has(tracked);
+  // A problem found by a file check fails the field where it now is.
+  if (check?.state === 'fail') return live ? 'liveFailed' : 'testFailed';
+  // Matches changed since a pass: it needs checking again.
+  if (check?.state === 'recheck' && PASSED.has(tracked)) return live ? 'inLive' : 'inTest';
+  // A file check that passes counts as passing test, unless a failure was recorded.
+  if (check?.state === 'pass' && ORDER[tracked] < ORDER.testPassed && tracked !== 'testFailed') return 'testPassed';
   return tracked;
 }
 
@@ -45,12 +53,16 @@ export function fieldStages(project) {
   return new Map((project?.mappings || []).map(m => [m.id, fieldStage(m, index.get(m.id))]));
 }
 
-/** Counts of each stage for a set of fields. */
+/** Counts of each stage for a set of fields, plus the totals people ask about. */
 export function stageCounts(mappings, stages) {
   const c = Object.fromEntries(FIELD_STAGES.map(s => [s, 0]));
   for (const m of mappings) c[stages.get(m.id) || 'matched']++;
   c.total = mappings.length;
-  c.done = c.passed + c.signed;
+  c.failed = c.testFailed + c.liveFailed;
+  c.waiting = c.inTest + c.inLive;                          // loaded, not checked yet
+  c.passedTest = c.testPassed + c.inLive + c.liveFailed + c.livePassed + c.signed;
+  c.reachedLive = c.inLive + c.liveFailed + c.livePassed + c.signed;
+  c.done = c.livePassed + c.signed;                         // correct in live
   return c;
 }
 

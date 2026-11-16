@@ -126,17 +126,19 @@ export function projectProgress(project) {
   // Checks recorded in the field tracker (in the new system's own screens)
   // count as much as file checks.
   const fc = stageCounts(mappings, fieldStages(project));
-  const trackerActive = fc.testing + fc.failed + fc.done > 0;
+  const trackerActive = fc.total - fc.matched - fc.sent > 0;
   if (!mappings.length) {
     out.check = { state: 'blocked', summary: 'Needs matched fields first.' };
   } else if (o.checked === 0 && trackerActive) {
     out.check = {
       state: fc.done === fc.total ? 'done' : 'progress',
-      summary: `${num(fc.done)} of ${num(fc.total)} ${plural(fc.total, 'field')} passed ${plural(fc.total, 'its', 'their')} check.`
-        + (fc.failed ? ` ${num(fc.failed)} failed.` : '') + (fc.testing ? ` ${num(fc.testing)} in test, waiting for a check.` : ''),
-      next: fc.failed ? `Fix the ${num(fc.failed)} ${plural(fc.failed, 'field')} that failed, then send again`
-        : fc.testing ? `Check the ${num(fc.testing)} ${plural(fc.testing, 'field')} in test`
-          : `Send the SQL for the ${num(fc.matched + fc.sent)} ${plural(fc.matched + fc.sent, 'field')} still to test`,
+      summary: `${num(fc.done)} of ${num(fc.total)} ${plural(fc.total, 'field')} passed UAT in live. ${num(fc.passedTest)} passed UAT in test.`
+        + (fc.failed ? ` ${num(fc.failed)} failed.` : '') + (fc.waiting ? ` ${num(fc.waiting)} waiting for UAT.` : ''),
+      next: fc.liveFailed ? `Fix the ${num(fc.liveFailed)} ${plural(fc.liveFailed, 'field')} that failed UAT in live`
+        : fc.testFailed ? `Fix the ${num(fc.testFailed)} ${plural(fc.testFailed, 'field')} that failed UAT in test, then send again`
+          : fc.waiting ? `Do UAT on the ${num(fc.waiting)} ${plural(fc.waiting, 'field')} waiting for it`
+            : fc.testPassed ? `Load the ${num(fc.testPassed)} ${plural(fc.testPassed, 'field')} that passed UAT in test into live`
+              : `Send the SQL for the ${num(fc.matched + fc.sent)} ${plural(fc.matched + fc.sent, 'field')} still to test`,
       nextPath: 'verify',
     };
   } else if (o.checked === 0) {

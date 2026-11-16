@@ -18,12 +18,13 @@ const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
 const key = (t, c) => `${t}␟${c}`;
 
 // The real steps of a move, per area: list the fields, match them, send
-// the SQL, test it in the new system, and sign off.
+// the SQL, UAT in test, UAT in live, and sign off once live is correct.
 export const STAGES = [
   { key: 'list', label: 'List' },
   { key: 'match', label: 'Match' },
   { key: 'send', label: 'Send' },
   { key: 'test', label: 'Test' },
+  { key: 'live', label: 'Live' },
   { key: 'agree', label: 'Sign off' },
 ];
 
@@ -92,12 +93,23 @@ export function areaBoard(project, overview = null) {
     const send = !c.total ? { state: 'none', text: '—' }
       : c.matched ? { state: 'open', text: `${num(c.matched)} to send` }
         : { state: 'done', text: 'All sent' };
+    // UAT in test: everything from loaded into test up to passing it.
     let test;
-    if (!c.total || c.matched === c.total) test = { state: 'none', text: '—' };
-    else if (c.failed) test = { state: 'open', text: `${num(c.failed)} failed` };
-    else if (c.testing) test = { state: 'open', text: `${num(c.testing)} to check` };
-    else if (c.done === c.total) test = { state: 'done', text: 'All passed' };
-    else test = { state: 'open', text: `${num(c.done)} of ${num(c.total)} passed` };
+    const loadedTest = c.total - c.matched - c.sent;
+    if (!c.total || !loadedTest) test = { state: 'none', text: '—' };
+    else if (c.testFailed) test = { state: 'open', text: `${num(c.testFailed)} failed` };
+    else if (c.inTest) test = { state: 'open', text: `${num(c.inTest)} to check` };
+    else if (c.passedTest === c.total) test = { state: 'done', text: 'All passed' };
+    else test = { state: 'open', text: `${num(c.passedTest)} of ${num(c.total)} passed` };
+    // UAT in live: fields move into live once they have passed UAT in test.
+    let live;
+    const toLoad = c.testPassed;
+    if (!c.total || (!c.reachedLive && !toLoad)) live = { state: 'none', text: '—' };
+    else if (c.liveFailed) live = { state: 'open', text: `${num(c.liveFailed)} failed` };
+    else if (c.inLive) live = { state: 'open', text: `${num(c.inLive)} to check` };
+    else if (c.done === c.total) live = { state: 'done', text: 'All passed' };
+    else if (toLoad) live = { state: 'open', text: `${num(toLoad)} to load` };
+    else live = { state: 'open', text: `${num(c.done)} of ${num(c.total)} passed` };
     const ready = c.total > 0 && c.done === c.total && !(area?.issues.high);
     const agree = area?.signedOff || (c.total && c.signed === c.total)
       ? { state: 'done', text: area?.signedOff ? `Signed by ${area.signoff.name}` : 'Signed off' }
@@ -105,7 +117,7 @@ export function areaBoard(project, overview = null) {
         : { state: 'none', text: '—' };
 
     // Where the area is now: the first stage that is not done.
-    const cells = { list, match, send, test, agree };
+    const cells = { list, match, send, test, live, agree };
     const now = STAGES.find(s => cells[s.key].state !== 'done')?.key || 'done';
     return { name, cells, now, ready, counts: { fields: fields.length, open: open.length, mustHave, toCheck, checked: checked.length, stages: c } };
   });
@@ -114,8 +126,8 @@ export function areaBoard(project, overview = null) {
 
 // The order jobs are listed in. Lower comes first: it holds up more.
 const TIER = {
-  lists: 1, areaList: 2, mustHave: 3, serious: 4, failed: 5, recheck: 6, testing: 7,
-  match: 8, send: 9, unchecked: 10, questions: 11, screens: 12, sign: 13, final: 14, evidence: 15,
+  lists: 1, areaList: 2, mustHave: 3, serious: 4, liveFailed: 5, failed: 6, recheck: 7, inLive: 8, testing: 9,
+  toLive: 10, match: 11, send: 12, unchecked: 13, questions: 14, screens: 15, sign: 16, final: 17, evidence: 18,
 };
 
 /**
@@ -144,15 +156,18 @@ export function todoList(project) {
     const recheck = a ? a.tables.filter(t => t.state === 'recheck').length : 0;
     if (recheck) add(`recheck-${r.name}`, TIER.recheck, `${num(recheck)} ${plural(recheck, 'table has', 'tables have')} changed since the last check. Check ${plural(recheck, 'it', 'them')} again.`, 'reconcile', 'check', where);
     const st = r.counts.stages;
-    if (st.failed) add(`failed-${r.name}`, TIER.failed, `${num(st.failed)} ${plural(st.failed, 'field')} failed ${plural(st.failed, 'its', 'their')} check. Fix the SQL or the data, then send again.`, 'verify', 'check', where);
-    if (st.testing) add(`testing-${r.name}`, TIER.testing, `${num(st.testing)} ${plural(st.testing, 'field is', 'fields are')} in test. Check ${plural(st.testing, 'it', 'them')} in the new system and record what you find.`, 'verify', 'check', where);
+    if (st.liveFailed) add(`live-failed-${r.name}`, TIER.liveFailed, `${num(st.liveFailed)} ${plural(st.liveFailed, 'field')} failed UAT in live. Fix ${plural(st.liveFailed, 'it', 'them')}, then load into live again.`, 'verify', 'check', where);
+    if (st.testFailed) add(`failed-${r.name}`, TIER.failed, `${num(st.testFailed)} ${plural(st.testFailed, 'field')} failed UAT in test. Fix the SQL or the data, then send again.`, 'verify', 'check', where);
+    if (st.inLive) add(`in-live-${r.name}`, TIER.inLive, `${num(st.inLive)} ${plural(st.inLive, 'field is', 'fields are')} in live. Do UAT in live and record what you find.`, 'verify', 'check', where);
+    if (st.inTest) add(`testing-${r.name}`, TIER.testing, `${num(st.inTest)} ${plural(st.inTest, 'field is', 'fields are')} in test. Do UAT in test and record what you find.`, 'verify', 'check', where);
+    if (st.testPassed) add(`to-live-${r.name}`, TIER.toLive, `${num(st.testPassed)} ${plural(st.testPassed, 'field')} passed UAT in test. Load ${plural(st.testPassed, 'it', 'them')} into live.`, 'verify', 'check', where);
     if (st.matched) add(`send-${r.name}`, TIER.send, `${num(st.matched)} matched ${plural(st.matched, 'field has', 'fields have')} no SQL sent yet.`, 'verify', 'check', where);
     // Tables with no file check: only listed when this move uses file checks.
     const unchecked = runs.length && a ? a.tables.filter(t => t.state === 'not_checked').length : 0;
     if (unchecked) add(`unchecked-${r.name}`, TIER.unchecked, `${num(unchecked)} ${plural(unchecked, 'table has', 'tables have')} not been checked yet.`, 'reconcile', 'check', where);
     const others = r.counts.open - r.counts.mustHave;
     if (others > 0) add(`match-${r.name}`, TIER.match, `${num(others)} ${plural(others, 'field')} in the new system ${plural(others, 'has', 'have')} no match yet. Match ${plural(others, 'it', 'them')} or mark ${plural(others, 'it', 'them')} as not used.`, 'map', 'map', where);
-    if (r.ready && r.cells.agree.state !== 'done') add(`sign-${r.name}`, TIER.sign, 'Every field has passed. The service area manager can now sign it off.', 'reconcile/overview', 'signoff', where);
+    if (r.ready && r.cells.agree.state !== 'done') add(`sign-${r.name}`, TIER.sign, 'Every field is correct in live. The service area manager can now sign it off.', 'reconcile/overview', 'signoff', where);
   }
 
   // A field marked as passed that a file check found a problem with now

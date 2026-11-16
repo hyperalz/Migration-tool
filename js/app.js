@@ -1018,7 +1018,7 @@ function renderVerify({ id }) {
                 <button class="verification-pill ${!filterQuick && !filterStep ? 'active' : ''}" data-filter-type="all">All <span class="count">${project.mappings.length}</span></button>
                 <button class="verification-pill ${filterQuick === 'active' ? 'active' : ''}" data-filter-type="quick" data-filter="active">In progress <span class="count">${quickCounts.active}</span></button>
                 <button class="verification-pill verify-pill-warn ${filterQuick === 'issues' ? 'active' : ''}" data-filter-type="quick" data-filter="issues"${quickCounts.issues ? '' : ' disabled'}>Issues <span class="count">${quickCounts.issues}</span></button>
-                <button class="verification-pill ${filterQuick === 'done' ? 'active' : ''}" data-filter-type="quick" data-filter="done">Done <span class="count">${quickCounts.done}</span></button>
+                <button class="verification-pill ${filterQuick === 'done' ? 'active' : ''}" data-filter-type="quick" data-filter="done">Signed off <span class="count">${quickCounts.done}</span></button>
                 <button class="verification-pill verify-pill-warn ${filterQuick === 'failing' || filterQuick === 'conflict' ? 'active' : ''}" data-filter-type="quick" data-filter="failing"${failingCount ? '' : ' disabled'}>Failing load check <span class="count">${failingCount}</span></button>
               </div>
             </div>
