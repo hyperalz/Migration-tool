@@ -1,5 +1,7 @@
 // Run with: node --test tests/reconcile.test.mjs
 import { test } from 'node:test';
+import { fieldProblems, projectProblems, problemCounts, filterProblems, problemsCsv, PROBLEMS_TEXT } from '../js/problems.js';
+import { recordTraceStep as recordStep, revertToTraceStep as revertStep } from '../js/verification.js';
 import { GOVUK_TEXT, errorSummaryHtml, errorMessageHtml, panelHtml, summaryListHtml, passQuestionHtml, readPassAnswer, requiredErrors } from '../js/govuk.js';
 import assert from 'node:assert/strict';
 import {
@@ -1522,5 +1524,78 @@ test('GOV.UK patterns: required boxes and the "check your answers" list', () => 
 test('GOV.UK patterns: the new words read at about age eleven', () => {
   const text = Object.values(GOVUK_TEXT);
   assert.ok(readingGrade(text.join('. ')) <= 6, readingGrade(text.join('. ')).toFixed(1));
+  for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
+});
+
+// Walks one field through the tracker the way the buttons do.
+function walk(m, steps) {
+  for (const [key, opts = {}] of steps) {
+    const done = key.startsWith('revert:') ? revertStep(m, key.slice(7), { by: 'Alex' }) : recordStep(m, key, { by: opts.by || 'Alex', ...opts });
+    assert.ok(done, `step ${key} recorded`);
+    // the nth step after matching happens on the nth of November
+    m.verification.history.at(-1).at = `2026-11-${String(m.verification.history.length - 1).padStart(2, '0')}T10:00:00Z`;
+  }
+  return m;
+}
+const freshField = (id, area = 'Payroll') => ({ id, sourceTable: 'emp', sourceColumn: `c_${id}`, targetTable: 'Employee', targetColumn: `F_${id}`, serviceArea: area, verification: { status: 'mapped', history: [{ status: 'mapped', by: 'Alex', at: '2026-10-31T10:00:00Z', note: 'Matched' }] } });
+
+test('problems: each failed UAT is a problem, and later steps say where it has got', () => {
+  const m = walk(freshField('a'), [
+    ['sql_sent'], ['test_uploaded'],
+    ['test_checked', { pass: false, note: 'Dates one day out', reference: ' INC-101 ' }],
+    ['sql_sent'], ['test_uploaded'],
+  ]);
+  let p = fieldProblems(m);
+  assert.equal(p.length, 1);
+  assert.deepEqual([p[0].where, p[0].round, p[0].note, p[0].reference, p[0].status], ['test', 1, 'Dates one day out', 'INC-101', 'reloaded']);
+  walk(m, [['test_checked'], ['live_uploaded'],
+    ['live_checked', { pass: false, note: 'Missing leavers' }], ['live_uploaded'],
+    ['live_checked', { pass: false, note: 'Still missing two leavers', by: 'Priya' }]]);
+  p = fieldProblems(m);
+  assert.deepEqual(p.map(x => [x.where, x.round, x.status]), [['test', 1, 'fixed'], ['live', 1, 'open'], ['live', 2, 'open']]);
+  assert.equal(p[0].closedAt.slice(0, 10), '2026-11-06');
+  // a reload marks open live problems as waiting for UAT again; a pass fixes them
+  walk(m, [['live_uploaded']]);
+  assert.deepEqual(fieldProblems(m).map(x => x.status), ['fixed', 'reloaded', 'reloaded']);
+  walk(m, [['live_checked']]);
+  assert.deepEqual(fieldProblems(m).map(x => x.status), ['fixed', 'fixed', 'fixed']);
+});
+
+test('problems: a fail taken straight back is not counted, and sign-off closes what is left', () => {
+  const m = walk(freshField('b'), [['sql_sent'], ['test_uploaded'],
+    ['test_checked', { pass: false, note: 'Clicked the wrong one' }], ['revert:test_checked'],
+    ['test_checked', { pass: false, note: 'Real problem' }]]);
+  const p = fieldProblems(m);
+  assert.deepEqual(p.map(x => [x.status, x.round]), [['withdrawn', 1], ['open', 1]], 'the real problem is round 1');
+  m.verification.history.push({ status: 'signed_off', by: 'Sam Manager', at: '2026-11-20T10:00:00Z', note: 'Signed off with the Payroll area' });
+  m.verification.status = 'signed_off';
+  assert.equal(fieldProblems(m)[1].status, 'signed');
+  // a pass never carries a reference
+  const n = walk(freshField('c'), [['sql_sent'], ['test_uploaded'], ['test_checked', { reference: 'X-1' }]]);
+  assert.equal(n.verification.history.at(-1).reference, '');
+});
+
+test('problems: the log for the whole move, its counts, filters and download', () => {
+  const project = { id: 'p', name: 'Move', sourceSystem: 'Agresso', targetSystem: 'Unit4', reconRuns: [],
+    mappings: [
+      walk(freshField('a'), [['sql_sent'], ['test_uploaded'], ['test_checked', { pass: false, note: '=SUM(A1) looks odd, "quoted"' }]]),
+      walk({ ...freshField('b', 'Finance'), targetTable: 'Ledger' }, [['sql_sent'], ['test_uploaded'], ['test_checked'], ['live_uploaded'], ['live_checked', { pass: false, note: 'Wrong totals' }]]),
+      freshField('c'),
+    ] };
+  // newest first: the live problem was raised later
+  const rows = projectProblems(project);
+  assert.deepEqual(rows.map(r => [r.field, r.area, r.where]), [['F_b', 'Finance', 'live'], ['F_a', 'Payroll', 'test']]);
+  assert.deepEqual(problemCounts(rows), { total: 2, open: 2, openTest: 1, openLive: 1, fixed: 0 });
+  assert.equal(filterProblems(rows, { where: 'live' }).length, 1);
+  assert.equal(filterProblems(rows, { area: 'Payroll' })[0].field, 'F_a');
+  const csv = problemsCsv(rows, { oldName: 'Agresso', newName: 'Unit4' }).split('\r\n');
+  assert.equal(csv[0], 'Area,Unit4 table,Unit4 field,From Agresso,Found in,Round,What went wrong,Supplier reference,Raised by,Raised on,Status,Closed by,Closed on');
+  assert.match(csv[2], /,"'=SUM\(A1\) looks odd, ""quoted""",/, 'formulas are made safe and quotes doubled');
+  assert.match(csv[1], /^Finance,Ledger,F_b,emp\.c_b,Live,1,Wrong totals,,Alex,2026-11-05,Open,,$/);
+});
+
+test('problems: the words read at about age eleven', () => {
+  const text = [...Object.values(PROBLEMS_TEXT), ...SCREEN_GUIDE.problems];
+  assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
   for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
 });

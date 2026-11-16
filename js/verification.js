@@ -286,7 +286,7 @@ export function traceStepVisualState(mapping, stepKey) {
   return 'pending';
 }
 
-export function recordTraceStep(mapping, stepKey, { by, participants, pass = true, note = '' }) {
+export function recordTraceStep(mapping, stepKey, { by, participants, pass = true, note = '', reference = '' }) {
   const step = TRACE_STEPS.find(s => s.key === stepKey);
   if (!step?.recordStatus) return null;
 
@@ -302,6 +302,7 @@ export function recordTraceStep(mapping, stepKey, { by, participants, pass = tru
     by: names[0],
     participants: names,
     note: note || (pass ? step.action : `${step.action} — failed`),
+    reference: pass ? '' : String(reference || '').trim(),
   });
   return mapping;
 }

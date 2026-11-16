@@ -8,6 +8,7 @@
 import { projectOverview, NO_AREA } from './reconcile-overview.js';
 import { fieldStages, areaFields } from './field-progress.js';
 import { areaBoard, todoList, STAGES } from './work-queue.js';
+import { projectProblems, isOpen } from './problems.js';
 
 export const STAGE_LABEL = {
   matched: 'Matched, SQL not sent',
@@ -74,5 +75,6 @@ export function areaPageData(project, name) {
     signedOff: Boolean(area?.signedOff) || row.cells.agree.state === 'done',
     signoffs: (project.reconAreaSignoffs || []).filter(s => s.area === name).slice().reverse(),
     usesFileChecks: runs.length > 0,
+    problems: projectProblems(project).filter(p => p.area === name && isOpen(p)),
   };
 }

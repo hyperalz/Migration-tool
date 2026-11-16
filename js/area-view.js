@@ -9,6 +9,8 @@ import { areaPageData, AREA_TEXT } from './area-page.js';
 import { areaManager } from './settings.js';
 import { GOVUK_TEXT, panelHtml, requiredErrors } from './govuk.js';
 import { showErrors } from './govuk-view.js';
+import { problemsTable } from './problems-view.js';
+import { PROBLEMS_TEXT } from './problems.js';
 
 const fmt = iso => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 const num = n => Number(n).toLocaleString('en-GB');
@@ -57,6 +59,11 @@ export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
       <h2 class="home-heading">What needs doing here</h2>
       <section class="card home-todo"><ol>${d.todo.map(t => `<li><span class="home-todo-text">${esc(t.text)}</span>
         <a class="btn btn-ghost btn-sm" href="#/projects/${id}/${t.path}">Open</a></li>`).join('')}</ol></section>` : ''}
+
+    ${d.problems.length ? `
+      <h2 class="home-heading">${esc(PROBLEMS_TEXT.areaHeading)} <span class="recon-sub">· ${num(d.problems.length)}</span></h2>
+      <section class="card area-table">${problemsTable(id, d.problems, esc, { showArea: false })}
+        <p class="recon-sub" style="margin:0.5rem 0 0"><a href="#/projects/${id}/problems">See every problem</a></p></section>` : ''}
 
     <h2 class="home-heading">Fields</h2>
     ${d.tables.length ? d.tables.map(t => `
