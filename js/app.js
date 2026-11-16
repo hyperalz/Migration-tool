@@ -33,6 +33,7 @@ import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './fie
 import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
 import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
+import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -325,6 +326,7 @@ function renderSetup({ id }) {
     ${projectSteps(project, 'setup')}
     <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates with column definitions and value formats — so both sides know what each field means.</p></div></div>
     ${templateImportCard(project, esc)}
+    ${screenshotCard(project, esc)}
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Source · ${esc(project.sourceSystem)}</h3>
@@ -361,6 +363,7 @@ function renderSetup({ id }) {
     </div>
   `);
   bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
+  bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }));
   attachLogout();
   setupUpload('source', id, project);
   setupUpload('target', id, project);
@@ -1646,7 +1649,8 @@ function openConnectorImportModal(side, projectId) {
   };
 }
 
-function openAISettingsModal() {
+// showKey: open with the key box visible (the screenshot reader needs a key in any mode).
+function openAISettingsModal(onSave, { showKey = false } = {}) {
   const settings = getAISettings();
   const backdrop = document.createElement('div');
   backdrop.className = 'record-modal-backdrop';
@@ -1663,10 +1667,11 @@ function openAISettingsModal() {
         </select>
       </div>
       
-      <div id="llm-settings" style="display:${settings.mode === 'llm' ? 'block' : 'none'}">
+      <div id="llm-settings" style="display:${settings.mode === 'llm' || showKey ? 'block' : 'none'}">
         <div class="alert alert-info" style="font-size:0.82rem;margin:0.75rem 0">
-          <strong>Privacy:</strong> Only schema metadata (column names, types, definitions, allowed values) is sent to the LLM endpoint. 
-          No row data. Your API key is stored in browser localStorage only and never sent anywhere except the endpoint you configure.
+          <strong>Privacy:</strong> Mapping suggestions send only field lists (names, types, definitions, allowed values). No row data.
+          If you use the screenshot reader, the pictures you choose are sent too, and they may show personal data.
+          Your API key is stored in this browser only and is sent only to the address you set here.
         </div>
         
         <div class="field">
@@ -1697,7 +1702,7 @@ function openAISettingsModal() {
   const llmSettings = backdrop.querySelector('#llm-settings');
   
   modeSelect.addEventListener('change', () => {
-    llmSettings.style.display = modeSelect.value === 'llm' ? 'block' : 'none';
+    llmSettings.style.display = modeSelect.value === 'llm' || showKey ? 'block' : 'none';
   });
   
   backdrop.querySelector('#ai-settings-cancel').onclick = () => backdrop.remove();
@@ -1713,6 +1718,7 @@ function openAISettingsModal() {
     saveAISettings(newSettings);
     toast('AI settings saved');
     backdrop.remove();
+    onSave?.();
   };
 }
 

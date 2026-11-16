@@ -68,6 +68,7 @@ export const SCREEN_GUIDE = {
     'A field is one piece of information, like a name or a date of birth.',
     'Each system has a list of its fields. Add the list for the old system on the left. Add the list for the new system on the right.',
     'You only need the lists. Do not add real records about people.',
+    'Can you no longer open the old system? Add pictures of its screens. The AI reads the names on them and you check each one.',
   ],
   invite: [
     'Add the people who are working on this move.',
