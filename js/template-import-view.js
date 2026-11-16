@@ -53,6 +53,7 @@ export function templateImportCard(project, escapeHtml) {
       <p class="recon-sub" style="margin:0.75rem 0">One row per field, with headings such as <code>csv_name</code>, <code>column_name</code> and <code>data_type</code>.
         If the old system's table and field are noted alongside (for example <code>SynergyTable</code>, <code>SynergyField</code>), those matches are imported too.
         The file is read in this browser and is not sent anywhere.</p>
+      ${project?.templateImport?.hidden ? '<p style="margin:0 0 0.6rem"><button class="btn-link" id="template-result-show">Show the last result</button></p>' : ''}
       <input type="file" id="template-file" accept=".csv,text/csv">
       <div id="template-preview"></div>
     </details>`;
@@ -63,6 +64,12 @@ export function bindTemplateImport(projectId, ui, rerender) {
   const preview = document.getElementById('template-preview');
   if (!input) return;
   // Hiding keeps the stored result: its "not used" list still counts towards progress.
+  document.getElementById('template-result-show')?.addEventListener('click', () => {
+    const p = getProject(projectId);
+    if (p.templateImport) { delete p.templateImport.hidden; saveProject(p); }
+    rerender();
+    document.getElementById('template-result')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
   document.getElementById('template-result-hide')?.addEventListener('click', () => {
     const p = getProject(projectId);
     if (p.templateImport) { p.templateImport.hidden = true; saveProject(p); }

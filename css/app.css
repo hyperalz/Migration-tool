@@ -2072,3 +2072,12 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .trace-likely .trace-status { color: #0f766e; }
 .trace-several .trace-status, .trace-conflict .trace-status { color: #92400e; }
 .trace-none .trace-status { color: var(--muted); }
+
+/* Faster review of screenshot names */
+.shot-bar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0.6rem 0; }
+.shot-only { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+.shot-group td { background: var(--bg); border-top: 2px solid var(--line); }
+.shot-table .shot-group .shot-screen { width: 22rem; max-width: 60%; min-width: 0; font-weight: 600; margin-right: 0.6rem; }
+.shot-odd td { background: #fffbeb; }
+.shot-look { font-size: 0.84rem; color: #92400e; }
+.btn-link { background: none; border: none; color: var(--brand); text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }

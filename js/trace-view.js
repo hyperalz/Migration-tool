@@ -52,7 +52,14 @@ function lastResult(project) {
 export function traceCard(project, escapeHtml) {
   if (escapeHtml) esc = escapeHtml;
   const screens = screenTables(project.sourceSchema);
-  if (!screens.length) return '';
+  if (!screens.length) {
+    return `
+    <details class="card template-import trace-card" id="trace-card">
+      <summary><strong>${esc(TRACE_TEXT.title)}</strong>
+        <span class="recon-sub" style="display:inline"> Uses a record you know and the old database.</span></summary>
+      <p class="recon-sub" style="margin:0.75rem 0 0">${esc(TRACE_TEXT.empty)}</p>
+    </details>`;
+  }
   const runs = project.traceRuns || [];
   const options = screens.map((t, i) => {
     const left = t.columns.filter(c => !c.link).length;
@@ -80,6 +87,7 @@ export function traceCard(project, escapeHtml) {
       ${runs.length ? `<ul class="trace-runs">${runs.map(r => `
         <li>${esc(r.file)} · ${num(r.rows.length)} lines · ${esc(new Date(r.at).toLocaleDateString('en-GB'))}
           <button class="btn-link trace-remove" data-id="${esc(r.id)}" aria-label="Remove ${esc(r.file)}">Remove</button></li>`).join('')}</ul>` : ''}
+      ${project.traceResult?.hidden ? '<p style="margin-top:0.6rem"><button class="btn-link" id="trace-result-show">Show the last result</button></p>' : ''}
       <div id="trace-msg" aria-live="polite"></div>
       <div id="trace-review"></div>
     </details>`;
@@ -87,12 +95,18 @@ export function traceCard(project, escapeHtml) {
 
 export function bindTrace(projectId, ui, rerender) {
   const card = document.getElementById('trace-card');
+  document.getElementById('trace-result-show')?.addEventListener('click', () => {
+    const p = getProject(projectId);
+    if (p.traceResult) { delete p.traceResult.hidden; saveProject(p); }
+    rerender();
+    document.getElementById('trace-result')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
   document.getElementById('trace-result-hide')?.addEventListener('click', () => {
     const p = getProject(projectId);
     if (p.traceResult) { p.traceResult.hidden = true; saveProject(p); }
     rerender();
   });
-  if (!card) return;
+  if (!card || !document.getElementById('trace-script')) return; // empty card: nothing to bind
   const msg = document.getElementById('trace-msg');
   const reviewEl = document.getElementById('trace-review');
   const say = (text, bad = false) => { msg.innerHTML = text ? `<p class="${bad ? 'recon-error' : 'recon-sub'}" style="margin-top:0.6rem">${esc(text)}</p>` : ''; };

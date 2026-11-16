@@ -23,9 +23,10 @@ export const SHOT_TEXT = {
   cloudModel: 'This model runs in Ollama\'s cloud, not on this computer. The pictures will leave this computer. Pick a model without :cloud in its name to keep them here.',
   notStored: 'The pictures are made smaller in this browser and are not saved. Only the names that come back are kept.',
   labelOnly: 'From a screenshot, label only. This is the name shown on the screen. It is not the real name of the field.',
-  reviewHelp: 'Tick each name you want to keep. You can fix a name, its kind or the screen name first. Make sure no real person is named. Nothing is added until you press Add.',
+  reviewHelp: 'Tick the names you want to keep. Use the box at the top to tick them all, or the box by a screen to tick that screen. You can fix a name, its kind or the screen name first. Make sure no real person is named. Nothing is added until you press Add.',
+  lookHelp: 'MapBridge has marked the names that look odd. Check those first. The rest are most likely fine.',
   removedNote: 'Some words looked like a real person\'s details, so MapBridge took them out. Check the rest by eye.',
-  nextStep: 'Add the new system list if it is not in yet. Then match these names to it on the Match screen.',
+  nextStep: 'Link these names to the real fields in the old database, in the box below. If you cannot reach the old database, match them on the Match screen instead.',
 };
 
 export const KINDS = ['text', 'date', 'number', 'yes/no', 'pick-list'];
@@ -278,6 +279,29 @@ export function parseScreenReply(text) {
 // The picture's file name is never used: it can hold a person's name.
 export function screenName(result, n = 1) {
   return SCREEN_PREFIX + (cleanScreenName(result.screen).text || `Unnamed screen ${n}`);
+}
+
+// Plain checks, with no AI, that pick out names worth a second look, so a
+// person does not have to read every one with the same care.
+export const LOOK = {
+  long: 'Long for a name. Is it help text?',
+  sentence: 'Looks like a sentence, not a name.',
+  digits: 'Has a number in it. Is it a value?',
+  short: 'Very short. Is the whole name there?',
+  noChoices: 'A pick-list, but no choices were seen.',
+  twice: 'The same name is on this screen twice.',
+};
+
+export function worthALook(row, sameScreen = []) {
+  const label = String(row.label || '').trim();
+  const reasons = [];
+  if (label.length > 40) reasons.push(LOOK.long);
+  if (/[.?!]$/.test(label) || label.split(/\s+/).length > 6) reasons.push(LOOK.sentence);
+  if (/\d/.test(label)) reasons.push(LOOK.digits);
+  if (label.replace(/[^a-z0-9]/gi, '').length <= 2) reasons.push(LOOK.short);
+  if (row.kind === 'pick-list' && !(row.options || []).length) reasons.push(LOOK.noChoices);
+  if (sameScreen.filter(r => r !== row && String(r.label || '').trim().toLowerCase() === label.toLowerCase()).length) reasons.push(LOOK.twice);
+  return reasons;
 }
 
 // Rows for the review table. Labels already in the old system list are marked.

@@ -1074,3 +1074,23 @@ test('trace: results hold no record values, and the words on screen read at abou
     for (const sentence of line.split(/[.!?]+/).filter(x => x.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22, `sentence too long: ${sentence.trim()}`);
   }
 });
+
+import { worthALook, LOOK } from '../js/screenshot-dictionary.js';
+
+test('screenshots: plain checks pick out names worth a second look, and leave normal ones alone', () => {
+  const r = (label, extra = {}) => ({ label, kind: 'text', options: [], ...extra });
+  for (const ok of ['Surname', 'Date of Birth', 'Tutor group', 'NI Number', 'Postcode', 'Home phone']) assert.deepEqual(worthALook(r(ok)), [], ok);
+  assert.deepEqual(worthALook(r('Please enter the full legal name as shown on the birth certificate.')), [LOOK.long, LOOK.sentence]);
+  assert.deepEqual(worthALook(r('Address line 1')), [LOOK.digits]);
+  assert.deepEqual(worthALook(r('ID')), [LOOK.short]);
+  assert.deepEqual(worthALook(r('Ethnicity', { kind: 'pick-list' })), [LOOK.noChoices]);
+  assert.deepEqual(worthALook(r('Ethnicity', { kind: 'pick-list', options: ['A', 'B'] })), []);
+  const a = r('Email'); const b = r('email '); const c = r('Phone');
+  assert.deepEqual(worthALook(a, [a, b, c]), [LOOK.twice]);
+  assert.deepEqual(worthALook(c, [a, b, c]), []);
+  // the reasons shown on screen read at about age eleven
+  for (const line of Object.values(LOOK)) {
+    for (const sentence of line.split(/[.!?]+/).filter(x => x.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22);
+  }
+  assert.ok(readingGrade(Object.values(LOOK).join(' ')) <= 6);
+});
