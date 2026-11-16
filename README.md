@@ -172,6 +172,14 @@ Full detail contains: summary, exceptions (worst first), change since each table
 
 Each run carries a SHA-256 fingerprint of its results. The report recalculates it on opening and says whether the results are unchanged since the run.
 
+### Field tracker and load checks
+
+The **Field tracker** (the step-by-step record of each field through delivery, test and live) shows each field's latest load check beside its status: matches, how many differences, needs re-checking, or not checked, with a link to the report.
+
+- Fields marked as passed whose latest check found differences are highlighted and counted in a banner, on the project home, and under a **Failing load check** filter.
+- Recording a pass on a field that is failing its latest check is allowed, but a reason is required and is written into the field's history.
+- Recording a pass on a field whose check matched notes that in the history too, so the sign-off points at its evidence.
+
 ### Project overview
 
 **Project overview** (on the Reconcile screen) rolls the table-by-table checks up to service areas and to the whole project. It shows, for every mapped table, its latest check, records, match rate, totals, open issues and how the issue count has moved.

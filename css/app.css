@@ -1956,3 +1956,12 @@ a { color: inherit; text-decoration: none; }
 .home-step-title { font-weight: 700; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .home-step-links { display: flex; gap: 1rem; margin-top: 0.35rem; font-size: 0.82rem; }
 .home-step-links a { color: var(--brand); font-weight: 600; }
+
+/* ---------- Field tracker linked to load checks ---------- */
+.tracker-conflict { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.col-check { white-space: nowrap; }
+.col-check .check-run { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 0.2rem; text-decoration: underline; text-underline-offset: 2px; }
+.col-check .check-conflict { display: block; font-size: 0.72rem; font-weight: 700; color: var(--danger); margin-top: 0.15rem; }
+.verification-table tr.row-conflict td { background: #fef2f2; }
+.check-warn-list { margin: 0.5rem 0 0 1.1rem; font-size: 0.88rem; }
+.check-warn-list li { margin-bottom: 0.3rem; }

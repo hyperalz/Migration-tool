@@ -509,3 +509,67 @@ test('progress: hand-over is done only while the downloaded pack matches the pro
   assert.equal(after.state, 'progress');
   assert.match(after.summary, /^The project has changed since the evidence pack was downloaded/);
 });
+
+// ---------- field tracker linked to load checks ----------
+import { fieldCheckIndex, trackerConflicts, checkNote } from '../js/field-checks.js';
+
+const byCol = (project, index, col) => index.get(project.mappings.find(m => m.sourceColumn === col).id);
+
+test('field checks: each field shows what the latest check of its table found', () => {
+  const project = demoProject();
+  const idx = fieldCheckIndex(project, [runDemo(1)]);
+  assert.equal(idx.size, 13);
+  assert.equal(byCol(project, idx, 'payment_terms').state, 'pass');
+  const status = byCol(project, idx, 'status');
+  assert.equal(status.state, 'fail');
+  assert.equal(status.mismatched, 3);
+  assert.equal(status.findings[0].severity, 'high');
+  assert.equal(status.run.label, 'Trial load 1');
+  // a field whose values all match but whose total differs is still failing
+  const bal = byCol(project, idx, 'balance_outstanding');
+  assert.equal(bal.state, 'fail');
+  assert.ok(bal.findings.some(f => f.kind === 'total_differs'));
+  // whole-record problems are carried as context for every field in the table
+  assert.ok(byCol(project, idx, 'payment_terms').tableFindings.some(f => /missing from the new system/.test(f.title)));
+  assert.equal(byCol(project, idx, 'balance').tableFindings.length, 0);
+  assert.equal(checkNote(status), 'Latest load check found differences (Trial load 1).');
+});
+
+test('field checks: unchecked tables, later loads and the final load', () => {
+  const project = demoProject();
+  const sup1 = runDemoPartial(1, [SUP], 'a', 'Suppliers load 1');
+  const sup2 = runDemoPartial(2, [SUP], 'b', 'Suppliers load 2');
+  let idx = fieldCheckIndex(project, [sup1]);
+  assert.equal(byCol(project, idx, 'balance').state, 'not_checked');
+  assert.equal(byCol(project, idx, 'supplier_name').state, 'fail');
+  idx = fieldCheckIndex(project, [sup1, sup2]);
+  assert.equal(byCol(project, idx, 'supplier_name').state, 'pass');
+  assert.equal(byCol(project, idx, 'supplier_name').run.label, 'Suppliers load 2');
+  // final load = load 1: judged on that, not on the later load
+  idx = fieldCheckIndex(project, [sup1, sup2], { finalRunId: 'a' });
+  assert.equal(byCol(project, idx, 'supplier_name').state, 'fail');
+  assert.equal(byCol(project, idx, 'balance').reason, 'This table was not in the final load');
+});
+
+test('field checks: a changed mapping needs re-checking; a new field is not checked', () => {
+  const project = demoProject();
+  const run = runDemo(2);
+  project.mappings.find(m => m.sourceColumn === 'vat_code').lookupRule = 'S -> STD, Z -> ZERO, E -> EXEMPT, R -> REV';
+  let idx = fieldCheckIndex(project, [run]);
+  assert.equal(byCol(project, idx, 'vat_code').state, 'recheck');
+  assert.equal(byCol(project, idx, 'balance').state, 'pass');
+  project.mappings.push({ id: 'new', sourceTable: 'gl_balance', sourceColumn: 'x', targetTable: 'GL_Opening_Balance', targetColumn: 'X' });
+  idx = fieldCheckIndex(project, [run]);
+  assert.equal(idx.get('new').state, 'not_checked');
+});
+
+test('field checks: conflicts are fields marked as passed that are failing', () => {
+  const project = demoProject();
+  const idx = fieldCheckIndex(project, [runDemo(1)]);
+  assert.equal(trackerConflicts(project, idx).length, 0);
+  project.mappings.find(m => m.sourceColumn === 'status').verification = { status: 'test_passed' };
+  project.mappings.find(m => m.sourceColumn === 'vat_code').verification = { status: 'signed_off' };
+  project.mappings.find(m => m.sourceColumn === 'payment_terms').verification = { status: 'signed_off' }; // passing: no conflict
+  project.mappings.find(m => m.sourceColumn === 'supplier_name').verification = { status: 'test_uploaded' }; // failing but not claimed
+  assert.deepEqual(trackerConflicts(project, idx).map(m => m.sourceColumn).sort(), ['status', 'vat_code']);
+});
