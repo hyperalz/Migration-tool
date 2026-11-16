@@ -2115,3 +2115,12 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .help-words { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; font-size: 0.92rem; }
 .help-words dt { font-weight: 600; }
 .home-help { margin: 0.5rem 0 1.5rem; }
+
+/* Start questions */
+.route-head { font-size: 1.05rem; margin: 1.2rem 0 0.25rem; }
+.route-q { border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.9rem; margin: 0 0 0.6rem; }
+.route-q legend { font-weight: 600; padding: 0 0.3rem; font-size: 0.95rem; }
+.route-opt { display: inline-flex; align-items: center; gap: 0.35rem; margin-right: 1.1rem; font-size: 0.92rem; cursor: pointer; }
+.route-card { margin-bottom: 1rem; }
+.route-card summary { cursor: pointer; }
+.route-hint { margin: 0.35rem 0 0; font-size: 0.82rem; color: var(--muted); }

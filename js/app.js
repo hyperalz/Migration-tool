@@ -37,6 +37,7 @@ import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionar
 import { traceCard, bindTrace } from './trace-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
 import { bindHelp } from './help-view.js';
+import { ROUTE_TEXT, routeQuestionsHtml, routeFromForm, fieldListsPlan, routeSummary, firstBox } from './route.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -294,6 +295,9 @@ function renderNewProject() {
           <input id="np-new" name="targetSystem" list="np-new-names" placeholder="e.g. Impulse">
           <datalist id="np-new-names"><option value="Impulse"><option value="Impulse Nexus"></datalist>
         </div>
+        <h2 class="route-head">What do you have?</h2>
+        <p class="recon-sub" style="margin:0 0 0.5rem">${esc(ROUTE_TEXT.lead)}</p>
+        ${routeQuestionsHtml(null, esc, 'np')}
         <button class="btn btn-primary" type="submit">Create project</button>
       </form>
     </div>
@@ -308,6 +312,8 @@ function renderNewProject() {
       targetSystem: fd.get('targetSystem'),
       ownerId: getCurrentUser().id,
     });
+    project.route = routeFromForm(k => fd.get(k));
+    saveProject(project);
     toast('Project created');
     location.hash = `#/projects/${project.id}/setup`;
   });
@@ -320,16 +326,18 @@ function renderSetup({ id }) {
   document.getElementById('app-shell').innerHTML = nav(project.name) + '<main class="app-main" id="app-main"></main>';
   const srcStats = schemaStats(project.sourceSchema);
   const tgtStats = schemaStats(project.targetSchema);
+  const plan = fieldListsPlan(project);
 
   mount(`
     ${projectSteps(project, 'setup')}
     <div class="page-head"><div><h1>Field lists</h1><p>Add the list of fields for each system, with what each field means and the values it holds.</p></div></div>
-    ${templateImportCard(project, esc)}
-    ${screenshotCard(project, esc)}
-    ${traceCard(project, esc)}
+    ${routeCard(project, plan)}
+    ${plan.order.map(k => ({ template: () => templateImportCard(project, esc), screenshots: () => screenshotCard(project, esc), trace: () => traceCard(project, esc) })[k]()).join('')}
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">${esc(oldLabel(project))}</h3>
+        ${plan.oldUpload ? '' : `<p class="recon-sub" style="margin:0 0 0.5rem">${esc(ROUTE_TEXT.oldFromScreens)}</p>
+        <details class="other-ways"><summary>Add a field list from a file anyway</summary>`}
         <div class="upload-zone" id="source-upload">
           <input type="file" id="source-file" accept=".json,.csv">
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
@@ -342,6 +350,7 @@ function renderSetup({ id }) {
             <button class="btn btn-ghost btn-sm" id="load-source-sample">Load a sample list (Synergy)</button>
           </div>
         </details>
+        ${plan.oldUpload ? '' : '</details>'}
         ${project.sourceSchema ? renderSchemaPreview(project.sourceSchema, srcStats) : ''}
       </div>
       <div class="card">
@@ -367,6 +376,10 @@ function renderSetup({ id }) {
         <a href="#/projects/${id}/map" class="btn btn-primary">Start matching →</a>` : ''}
     </div>
   `);
+  bindRouteCard(id);
+  // Open the box the answers point to first, so the next step is in view.
+  const first = { template: 'template-import', screenshots: 'shot-dict' }[firstBox(project)];
+  if (first && document.getElementById(first)) document.getElementById(first).open = true;
   bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
   bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }));
   bindTrace(id, reconcileUI(), () => renderSetup({ id }));
@@ -393,6 +406,33 @@ function renderSetup({ id }) {
   });
   document.getElementById('import-target-connector').addEventListener('click', () => {
     openConnectorImportModal('target', id);
+  });
+}
+
+// "What you have": the start answers in plain words, with a way to change them.
+function routeCard(project, plan) {
+  const said = routeSummary(project);
+  return `
+    <details class="card route-card" id="route-card" ${plan.answered ? '' : 'open'}>
+      <summary><strong>${esc(ROUTE_TEXT.summary)}</strong>
+        <span class="recon-sub" style="display:inline"> ${plan.answered ? esc(said.join(' ')) : esc(ROUTE_TEXT.unanswered)}</span></summary>
+      <form id="route-form" style="margin-top:0.75rem">
+        <p class="recon-sub" style="margin:0 0 0.5rem">${esc(ROUTE_TEXT.lead)}</p>
+        ${routeQuestionsHtml(project.route, esc, 'fl')}
+        <button class="btn btn-primary btn-sm" type="submit">Save answers</button>
+      </form>
+    </details>`;
+}
+
+function bindRouteCard(projectId) {
+  document.getElementById('route-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const p = getProject(projectId);
+    p.route = routeFromForm(k => fd.get(k));
+    saveProject(p);
+    toast('Answers saved');
+    renderSetup({ id: projectId });
   });
 }
 

@@ -1262,3 +1262,52 @@ test('help: the five steps and the word list live in Help, not on the home page'
   assert.match(home, /data-open-help/);
   assert.match(readFileSync(new URL('../js/app.js', import.meta.url), 'utf8'), /data-open-help/);
 });
+
+// ---------- start questions ----------
+import { QUESTIONS, ROUTE_TEXT, firstBox, fieldListsPlan, routeFromForm, routeSummary, routeQuestionsHtml, readAnswer } from '../js/route.js';
+
+test('route: the answers decide which boxes Field lists shows', () => {
+  assert.deepEqual(fieldListsPlan({}), { order: ['template', 'screenshots', 'trace'], oldUpload: true, answered: false });
+  // old system gone, database reachable, spreadsheet in hand
+  assert.deepEqual(fieldListsPlan({ route: { oldSystemOpen: false, oldDatabase: true, supplierSheet: true } }),
+    { order: ['template', 'screenshots', 'trace'], oldUpload: false, answered: true });
+  // old system gone, no database, no spreadsheet: screenshots only, first
+  assert.deepEqual(fieldListsPlan({ route: { oldSystemOpen: false, oldDatabase: false, supplierSheet: false } }).order, ['screenshots']);
+  // old system open, no spreadsheet: just the two field list boxes
+  assert.deepEqual(fieldListsPlan({ route: { oldSystemOpen: true, oldDatabase: true, supplierSheet: false } }).order, []);
+  // "not sure" shows everything for that question
+  assert.deepEqual(fieldListsPlan({ route: { oldSystemOpen: null, oldDatabase: null, supplierSheet: null } }).order, ['template', 'screenshots', 'trace']);
+});
+
+test('route: nothing already added is ever hidden by an answer', () => {
+  const p = {
+    route: { oldSystemOpen: true, oldDatabase: false, supplierSheet: false },
+    templateImport: { stats: {} },
+    traceRuns: [{ id: 'r', rows: [] }],
+    sourceSchema: { tables: [{ name: 'Screen: Pupil details', origin: 'screenshot', columns: [] }, { name: 'dbo.tblStud', columns: [] }] },
+  };
+  const plan = fieldListsPlan(p);
+  assert.deepEqual(plan.order.sort(), ['screenshots', 'template', 'trace']);
+  assert.equal(fieldListsPlan({ route: { oldSystemOpen: false }, sourceSchema: p.sourceSchema }).oldUpload, true);
+});
+
+test('route: answers are read from the form, shown in plain words, and read at about age eleven', () => {
+  const form = { oldSystemOpen: 'no', oldDatabase: 'yes', supplierSheet: '' };
+  const route = routeFromForm(k => form[k]);
+  assert.deepEqual(route, { oldSystemOpen: false, oldDatabase: true, supplierSheet: null });
+  assert.equal(readAnswer(undefined), null);
+  assert.deepEqual(routeSummary({ route }), ['The old system cannot be opened.', 'You can reach its database.']);
+  const html = routeQuestionsHtml(route, v => String(v));
+  assert.match(html, /name="oldSystemOpen" value="no" checked/);
+  assert.match(html, /name="supplierSheet" value="" checked/);
+  const text = [...QUESTIONS.flatMap(q => [q.text, q.yes, q.no, q.saidYes, q.saidNo]), ...Object.values(ROUTE_TEXT)];
+  assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
+  for (const line of text) assert.doesNotMatch(line.replace(/mapping spreadsheet/g, ''), OLD_WORDS);
+});
+
+test('route: the box the answers point to opens first', () => {
+  assert.equal(firstBox({ route: { supplierSheet: true } }), 'template');
+  assert.equal(firstBox({ route: { supplierSheet: true, oldSystemOpen: false }, templateImport: {} }), 'screenshots');
+  assert.equal(firstBox({ route: { oldSystemOpen: false }, sourceSchema: { tables: [{ name: 'Screen: A', origin: 'screenshot', columns: [] }] } }), null);
+  assert.equal(firstBox({}), null);
+});
