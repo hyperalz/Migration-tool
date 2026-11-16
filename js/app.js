@@ -30,7 +30,7 @@ import {
 import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject } from './reconcile-view.js';
 import { renderHome } from './home-view.js';
 import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './field-checks.js';
-import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
+import { projectProgress, stepForScreen, STATE_LABEL, visibleScreens } from './progress.js';
 import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
@@ -130,8 +130,9 @@ function projectSteps(project, active) {
     const mark = s.state === 'done' ? '✓ ' : '';
     return `<a href="#/projects/${project.id}/${s.path}" class="${cls}" title="${esc(`${STATE_LABEL[s.state]}. ${s.summary}`)}"${isActive ? ' aria-current="step"' : ''}>${mark}${s.number}. ${esc(s.label)}</a>`;
   }).join('');
-  const sub = current && current.screens.length > 1
-    ? `<div class="steps-sub">${current.screens.map(sc =>
+  const shownScreens = visibleScreens(current);
+  const sub = shownScreens.length > 1
+    ? `<div class="steps-sub">${shownScreens.map(sc =>
       `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
     : '';
   return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}</div>${sub}${screenHelp(active)}`;
@@ -331,10 +332,13 @@ function renderSetup({ id }) {
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
           <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">A JSON or CSV file. See the examples below.</p>
         </div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.65rem">
-          <button class="btn btn-ghost btn-sm" id="load-source-sample">Load Synergy sample</button>
-          <button class="btn btn-ghost btn-sm" id="import-source-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
-        </div>
+        <details class="other-ways">
+          <summary>Other ways to add a list</summary>
+          <div class="other-ways-body">
+            <button class="btn btn-ghost btn-sm" id="import-source-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
+            <button class="btn btn-ghost btn-sm" id="load-source-sample">Load a sample list (Synergy)</button>
+          </div>
+        </details>
         ${project.sourceSchema ? renderSchemaPreview(project.sourceSchema, srcStats) : ''}
       </div>
       <div class="card">
@@ -344,16 +348,18 @@ function renderSetup({ id }) {
           <p><strong>Drop JSON or CSV</strong> or click to browse</p>
           <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Include the values each field allows, for example Y/N or 1/0</p>
         </div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.65rem">
-          <button class="btn btn-ghost btn-sm" id="load-target-sample">Load Impulse sample</button>
-          <button class="btn btn-ghost btn-sm" id="import-target-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
-        </div>
+        <details class="other-ways">
+          <summary>Other ways to add a list</summary>
+          <div class="other-ways-body">
+            <button class="btn btn-ghost btn-sm" id="import-target-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
+            <button class="btn btn-ghost btn-sm" id="load-target-sample">Load a sample list (Impulse)</button>
+          </div>
+        </details>
         ${project.targetSchema ? renderSchemaPreview(project.targetSchema, tgtStats) : ''}
       </div>
     </div>
     ${renderSchemaExamples()}
     <div style="margin-top:1.25rem;display:flex;gap:0.65rem">
-      <a href="#/projects/${id}/invite" class="btn btn-secondary">Next: Invite party →</a>
       ${project.sourceSchema && project.targetSchema ? `
         <a href="#/projects/${id}/map" class="btn btn-primary">Start matching →</a>` : ''}
     </div>
@@ -564,7 +570,6 @@ function renderInvite({ id }) {
     </div>
     <div style="margin-top:1.25rem">
       <a href="#/projects/${id}/map" class="btn btn-secondary">Continue to matching →</a>
-      <a href="#/projects/${id}/verify" class="btn btn-primary" style="margin-left:0.5rem">Test & live →</a>
     </div>
   `);
   attachLogout();
@@ -652,7 +657,6 @@ function renderMap({ id }) {
       <div style="display:flex;gap:0.5rem">
         <button class="btn btn-primary btn-sm" id="ai-suggest">Suggest matches</button>
         <button class="btn btn-ghost btn-sm" id="ai-settings">AI settings</button>
-        <a href="#/projects/${id}/verify" class="btn btn-secondary btn-sm">Test & live →</a>
         <a href="#/projects/${id}/export" class="btn btn-ghost btn-sm">Downloads</a>
       </div>
     </div>
@@ -1508,12 +1512,16 @@ function renderExport({ id }) {
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Downloads</h3>
-        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
-          <button class="btn btn-primary btn-sm" id="export-json">Download evidence pack (JSON)</button>
-          <button class="btn btn-secondary btn-sm" id="export-csv">Download CSV</button>
-          <button class="btn btn-secondary btn-sm" id="export-xlsx">Download Excel (matches and log)</button>
-          <button class="btn btn-ghost btn-sm" id="export-sql">Download SQL stubs</button>
-        </div>
+        <button class="btn btn-primary" id="export-json">Download the evidence pack</button>
+        <p class="recon-sub" style="margin:0.5rem 0 0">One file with the whole story of this move. Keep it safe.</p>
+        <details class="other-ways">
+          <summary>Other downloads</summary>
+          <div class="other-ways-body">
+            <button class="btn btn-ghost btn-sm" id="export-csv">Matches (CSV)</button>
+            <button class="btn btn-ghost btn-sm" id="export-xlsx">Matches and field log (Excel)</button>
+            <button class="btn btn-ghost btn-sm" id="export-sql">Starter SQL</button>
+          </div>
+        </details>
       </div>
       <div class="card">
         <h3 style="margin-bottom:0.75rem;color:var(--danger)">Close & delete project</h3>

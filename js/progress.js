@@ -12,7 +12,7 @@ const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
 // The five steps of a migration, and the screens that belong to each.
 export const STEPS = [
   { key: 'setup', label: 'Set up', path: 'setup',
-    screens: [{ key: 'setup', label: 'Field lists', path: 'setup' }, { key: 'invite', label: 'Team', path: 'invite' }] },
+    screens: [{ key: 'setup', label: 'Field lists', path: 'setup' }, { key: 'invite', label: 'Team', path: 'invite', hidden: true }] },
   { key: 'map', label: 'Match', path: 'map', screens: [{ key: 'map', label: 'Match fields', path: 'map' }] },
   { key: 'check', label: 'Load and check', path: 'reconcile',
     screens: [{ key: 'reconcile', label: 'Check a load', path: 'reconcile' }, { key: 'verify', label: 'Field tracker', path: 'verify' }] },
@@ -21,6 +21,12 @@ export const STEPS = [
 ];
 
 export const STATE_LABEL = { done: 'Done', progress: 'In progress', todo: 'Not started', blocked: 'Not yet possible' };
+
+// Screens shown in the step bar and on the home page. A hidden screen still
+// opens from its address, but nothing links to it (Team, for now).
+export function visibleScreens(step) {
+  return (step?.screens || []).filter(sc => !sc.hidden);
+}
 
 export function stepForScreen(screenKey) {
   return STEPS.find(s => s.screens.some(sc => sc.key === screenKey)) || null;

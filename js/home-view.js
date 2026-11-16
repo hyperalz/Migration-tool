@@ -2,7 +2,7 @@
 // Detail is one click away, so the page is not a wall of text.
 
 import { getProject } from './store.js';
-import { projectProgress, STATE_LABEL } from './progress.js';
+import { projectProgress, STATE_LABEL, visibleScreens } from './progress.js';
 import { INTRO, STEP_GUIDE, GLOSSARY, HOME_TEXT } from './guide.js';
 import { areaBoard, todoList, STAGES } from './work-queue.js';
 
@@ -77,7 +77,7 @@ export function renderHome({ id }, ui) {
         <p><strong>You are done when:</strong> ${esc(STEP_GUIDE[s.key].done)}</p>
         <p class="recon-sub">Where it stands: ${esc(s.summary)}</p>
         ${s.state === 'blocked' ? '' : `<div class="home-step-links">
-          ${s.screens.map(sc => `<a class="btn btn-secondary btn-sm" href="#/projects/${id}/${sc.path}">${esc(s.screens.length > 1 ? sc.label : `Open ${s.label}`)}</a>`).join('')}
+          ${visibleScreens(s).map((sc, _, shown) => `<a class="btn btn-secondary btn-sm" href="#/projects/${id}/${sc.path}">${esc(shown.length > 1 ? sc.label : `Open ${s.label}`)}</a>`).join('')}
         </div>`}
       </div>
     </details>`;

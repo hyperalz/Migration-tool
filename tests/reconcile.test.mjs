@@ -1222,3 +1222,25 @@ test('words: the systems\' own names are used, with plain words when none is giv
     assert.deepEqual([oldName(blank), newName(blank), oldLabel(blank), newLabel(blank)], ['the old system', 'the new system', 'Old system', 'New system']);
   }
 });
+
+// ---------- strays cleared out ----------
+import { visibleScreens, STEPS as ALL_STEPS } from '../js/progress.js';
+
+test('strays: Team is hidden but still opens; nothing links to it or to "Test & live"', () => {
+  const setupStep = ALL_STEPS.find(s => s.key === 'setup');
+  assert.deepEqual(visibleScreens(setupStep).map(s => s.key), ['setup']);
+  assert.equal(stepForScreen('invite').key, 'setup');
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(app, /Test &(amp;)? live/);
+  assert.doesNotMatch(app, /href="#\/projects\/\$\{[^}]+\}\/invite"/);
+  // the route itself still exists, for anyone with the address
+  assert.match(app, /'\/projects\/:id\/invite': renderInvite/);
+});
+
+test('strays: rare options sit one click deeper', () => {
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  const otherWays = [...app.matchAll(/<details class="other-ways">([\s\S]*?)<\/details>/g)].map(m => m[1]);
+  const inside = id => otherWays.some(block => block.includes(`id="${id}"`));
+  for (const id of ['load-source-sample', 'load-target-sample', 'import-source-connector', 'import-target-connector', 'export-csv', 'export-xlsx', 'export-sql']) assert.ok(inside(id), id);
+  assert.ok(!inside('export-json'), 'the evidence pack stays in front');
+});
