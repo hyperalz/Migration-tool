@@ -1985,3 +1985,42 @@ a { color: inherit; text-decoration: none; }
 .step-help li { margin-bottom: 0.3rem; }
 @media (max-width: 900px) { .home-glossary dl { grid-template-columns: 1fr; gap: 0.1rem 0; } .home-glossary dd { margin-bottom: 0.5rem; } }
 @media print { .step-help, .steps-sub { display: none !important; } }
+
+/* ---------- Project home, second layout: one task, then steps at a glance ---------- */
+.home-next { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.25rem 2rem; align-items: start; padding: 1.4rem 1.5rem; margin-bottom: 1.5rem; }
+.home-next-main .btn { margin-top: 0.9rem; }
+h2.home-next-text { font-size: 1.45rem; line-height: 1.25; margin-top: 0.3rem; }
+.home-next-list { margin: 0; padding: 0.9rem 1rem 0.9rem 2.2rem; background: var(--bg); border-radius: 10px; font-size: 0.95rem; }
+.home-next-list li { margin-bottom: 0.4rem; }
+.home-next-list li:last-child { margin-bottom: 0; }
+.home-next-status { grid-column: 1 / -1; font-size: 0.88rem; padding: 0.55rem 0.8rem; border-radius: 8px; margin: 0; }
+.home-next-status-attention { background: #fef2f2; color: #991b1b; }
+.home-next-status-incomplete { background: #f1f5f9; color: #334155; }
+.home-next-status-nearly { background: #fffbeb; color: #92400e; }
+.home-next-status-clear { background: #ecfdf5; color: #065f46; }
+
+.home-heading { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.5rem 0.25rem; }
+.home-steps { padding: 0.25rem 1.1rem; }
+details.home-step { display: block; padding: 0; border-top: 1px solid var(--line); }
+details.home-step:first-child { border-top: none; }
+details.home-step > summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0; cursor: pointer; list-style: none; }
+details.home-step > summary::-webkit-details-marker { display: none; }
+details.home-step > summary::after { content: '▸'; margin-left: auto; color: var(--muted); font-size: 0.85rem; }
+details.home-step[open] > summary::after { content: '▾'; }
+details.home-step > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+details.home-step .home-step-title { flex: none; font-weight: 700; display: inline; }
+.home-step-sum { color: var(--muted); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+details.home-step[open] .home-step-sum { white-space: normal; }
+.home-step-current .home-step-num { box-shadow: 0 0 0 3px rgba(13,92,99,0.18); }
+details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
+.home-step-body ol { margin: 0 0 0.5rem 1.2rem; font-size: 0.93rem; max-width: 62ch; }
+.home-step-body li { margin-bottom: 0.3rem; }
+.home-step-body p { font-size: 0.9rem; margin-bottom: 0.3rem; }
+.home-step-body .home-step-links { margin-top: 0.6rem; gap: 0.5rem; }
+
+@media (max-width: 800px) {
+  .home-next { grid-template-columns: 1fr; }
+  .home-step-sum { display: none; }
+  details.home-step[open] .home-step-sum { display: block; flex-basis: 100%; }
+  details.home-step > summary { flex-wrap: wrap; }
+}
