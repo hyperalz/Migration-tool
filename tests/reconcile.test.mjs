@@ -680,3 +680,159 @@ test('progress: after a template import, unmatched fields keep mapping in progre
   assert.match(step.summary, /^5 fields mapped\. 3 fields in the new system have no match/);
   assert.equal(projectProgress(p).next.text, 'Match or rule out the 3 fields with no match yet');
 });
+
+// ---------- screenshot dictionary ----------
+import {
+  SHOT_TEXT, PROMPT, fitSize, dropDuplicates, missingKey, buildRequest, askAI, explainError,
+  normaliseKind, parseScreenReply, reviewRows, screenshotSchema, shotSummary, screenName,
+} from '../js/screenshot-dictionary.js';
+
+// A canned reply in the shape the AI is asked for, wrapped the way models often wrap it.
+const CANNED_REPLY = '```json\n' + JSON.stringify({
+  screen: 'Supplier Details',
+  fields: [
+    { label: 'Supplier Name *', kind: 'text', options: [], required: true },
+    { label: 'Date Opened:', kind: 'datetime', options: [], required: false },
+    { label: 'Credit Limit', kind: 'currency' },
+    { label: 'On Hold', kind: 'checkbox', required: 'true' },
+    { label: 'Payment Terms', kind: 'dropdown', options: ['30 days', '60 days', '30 days', ''] },
+    { label: 'Notes', kind: 'text', options: ['should be dropped'] },
+    { label: 'supplier name', kind: 'text' },
+    { label: '   ', kind: 'text' },
+  ],
+}) + '\n```';
+
+function fakeFetch(reply, { status = 200, calls = [] } = {}) {
+  const fn = async (url, init) => {
+    calls.push({ url, init });
+    return { ok: status < 400, status, json: async () => ({ choices: [{ message: { content: reply } }] }) };
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+const SETTINGS = { baseURL: 'https://ai.example/v1/', model: 'vision-model', apiKey: ' key-123 ' };
+
+test('screenshots: shrink to a long edge of 1,500 and never enlarge', () => {
+  assert.deepEqual(fitSize(3000, 2000), { width: 1500, height: 1000, scale: 0.5 });
+  assert.deepEqual(fitSize(1200, 4000).height, 1500);
+  assert.deepEqual(fitSize(800, 600), { width: 800, height: 600, scale: 1 });
+});
+
+test('screenshots: exact copies are sent once, including ones sent earlier', () => {
+  const items = [{ hash: 'a', n: 1 }, { hash: 'b', n: 2 }, { hash: 'a', n: 3 }, { hash: 'c', n: 4 }];
+  const { keep, duplicates } = dropDuplicates(items, new Set(['c']));
+  assert.deepEqual(keep.map(i => i.n), [1, 2]);
+  assert.deepEqual(duplicates.map(i => i.n), [3, 4]);
+});
+
+test('screenshots: no key means no call, with a plain message', async () => {
+  assert.equal(missingKey({ apiKey: '  ' }), true);
+  assert.equal(missingKey(SETTINGS), false);
+  const calls = [];
+  await assert.rejects(askAI('data:image/jpeg;base64,AAA', { ...SETTINGS, apiKey: '' }, fakeFetch('{}', { calls })), /no AI key yet/);
+  assert.equal(calls.length, 0);
+});
+
+test('screenshots: the request uses the saved settings and asks for JSON only', async () => {
+  const fetch = fakeFetch(CANNED_REPLY);
+  const reply = await askAI('data:image/jpeg;base64,AAA', SETTINGS, fetch);
+  assert.equal(reply, CANNED_REPLY);
+  const { url, init } = fetch.calls[0];
+  assert.equal(url, 'https://ai.example/v1/chat/completions');
+  assert.equal(init.headers.Authorization, 'Bearer key-123');
+  const body = JSON.parse(init.body);
+  assert.equal(body.model, 'vision-model');
+  assert.equal(body.messages[1].content[1].image_url.url, 'data:image/jpeg;base64,AAA');
+  assert.match(body.messages[1].content[0].text, /JSON only/);
+  for (const word of ['label', 'kind', 'options', 'required', 'screen', 'pick-list', 'yes/no']) assert.ok(PROMPT.includes(word), word);
+  assert.match(PROMPT, /Never copy the values/);
+  assert.deepEqual(buildRequest('x', {}).model, 'gpt-4o-mini');
+});
+
+test('screenshots: service errors become plain reasons', async () => {
+  await assert.rejects(askAI('x', SETTINGS, fakeFetch('', { status: 401 })), /did not accept your key/);
+  await assert.rejects(askAI('x', SETTINGS, fakeFetch('', { status: 429 })), /busy or your account is out of credit/);
+  await assert.rejects(askAI('x', SETTINGS, async () => { throw new TypeError('Failed to fetch'); }), /Could not reach/);
+  await assert.rejects(askAI('x', SETTINGS, fakeFetch('')), /sent back nothing/);
+  assert.match(explainError(503), /had a problem/);
+});
+
+test('screenshots: the reply is cleaned into labels, kinds, choices and required', () => {
+  const r = parseScreenReply(CANNED_REPLY);
+  assert.equal(r.screen, 'Supplier Details');
+  assert.deepEqual(r.fields, [
+    { label: 'Supplier Name', kind: 'text', options: [], required: true },
+    { label: 'Date Opened', kind: 'date', options: [], required: false },
+    { label: 'Credit Limit', kind: 'number', options: [], required: false },
+    { label: 'On Hold', kind: 'yes/no', options: [], required: true },
+    { label: 'Payment Terms', kind: 'pick-list', options: ['30 days', '60 days'], required: false },
+    { label: 'Notes', kind: 'text', options: [], required: false },
+  ]);
+  assert.equal(normaliseKind('something odd'), 'text');
+  assert.equal(normaliseKind('Pick list'), 'pick-list');
+  assert.throws(() => parseScreenReply('Sorry, I cannot help with that.'), /not in the right form/);
+  assert.throws(() => parseScreenReply('{"screen":"X"}'), /no list of fields/);
+  assert.deepEqual(parseScreenReply('Here you go: {"screen":"","fields":[{"label":"Ref"}]} thanks').fields[0].label, 'Ref');
+});
+
+test('screenshots: nothing is added unless ticked, and fields are marked label only', () => {
+  const results = [{ file: 'supplier.png', ...parseScreenReply(CANNED_REPLY) }, { file: 'Order screen.PNG', screen: '', fields: [{ label: 'Order Ref', kind: 'text', options: [], required: false }] }];
+  const existing = { system: 'Old', tables: [{ name: 'Screen: Supplier Details', columns: [{ name: 'Notes', type: 'text' }] }] };
+  const rows = reviewRows(results, existing);
+  assert.equal(rows.length, 7);
+  assert.ok(rows.every(r => r.ticked === false));
+  assert.equal(rows.find(r => r.label === 'Notes').already, true);
+  assert.equal(screenName(results[1]), 'Screen: Order screen');
+
+  assert.deepEqual(screenshotSchema(rows).tables, []);
+
+  rows.forEach(r => { r.ticked = !['Credit Limit'].includes(r.label); });
+  rows.find(r => r.label === 'Date Opened').label = 'Date account opened';
+  const schema = screenshotSchema(rows);
+  assert.deepEqual(schema.tables.map(t => t.name), ['Screen: Supplier Details', 'Screen: Order screen']);
+  const cols = schema.tables[0].columns;
+  assert.deepEqual(cols.map(c => c.name), ['Supplier Name', 'Date account opened', 'On Hold', 'Payment Terms']);
+  assert.ok(cols.every(c => c.origin === 'screenshot' && c.description === SHOT_TEXT.labelOnly));
+  assert.match(SHOT_TEXT.labelOnly, /label only/);
+  assert.equal(cols[3].values, '30 days, 60 days');
+  assert.equal(cols[0].required, true);
+
+  const merged = mergeSchema(existing, schema);
+  assert.equal(merged.added, 5);
+  assert.equal(merged.schema.tables[0].columns[0].name, 'Notes');
+});
+
+test('screenshots: only text is kept, never the picture', () => {
+  const rows = reviewRows([{ file: 'a.png', ...parseScreenReply(CANNED_REPLY) }], null);
+  rows.forEach(r => { r.ticked = true; });
+  const stored = JSON.stringify(screenshotSchema(rows));
+  assert.doesNotMatch(stored, /data:image|base64/);
+});
+
+test('screenshots: the summary says what was added, what is left and what to do next', () => {
+  const s = shotSummary({ pictures: 3, duplicates: 1, failed: 1, found: 12, added: 9, already: 1, leftOut: 2, screens: 2 });
+  assert.equal(s.title, 'Added 9 names from 2 screens to the old system list.');
+  assert.deepEqual(s.detail, [
+    'The AI read 3 pictures and found 12 names.',
+    '2 names were not ticked, so they were left out.',
+    '1 name was in the list already.',
+    '1 picture was a copy, so it was not sent.',
+    '1 picture could not be read. Try it again.',
+  ]);
+  assert.match(s.next, /Match screen/);
+  assert.equal(shotSummary({ pictures: 1, duplicates: 0, failed: 0, found: 0, added: 0, already: 0, leftOut: 0, screens: 0 }).title, 'Nothing was added.');
+});
+
+test('screenshots: the words on screen read at about age eleven', () => {
+  const summary = shotSummary({ pictures: 3, duplicates: 1, failed: 1, found: 12, added: 9, already: 1, leftOut: 2, screens: 2 });
+  const text = [...Object.values(SHOT_TEXT), summary.title, ...summary.detail];
+  const overall = readingGrade(text.join(' '));
+  assert.ok(overall <= 6, `overall reading grade ${overall.toFixed(1)} is above 6`);
+  const banned = /\b(schema|reconcil\w*|extract|metadata|source|target|verif\w*|migrat\w*|lookup|transform\w*|upload\w*|LLM|API)\b/i;
+  for (const line of text) {
+    assert.doesNotMatch(line, banned);
+    if (line.split(/\s+/).length >= 12) assert.ok(readingGrade(line) <= 8.5, `too hard (${readingGrade(line).toFixed(1)}): ${line}`);
+    for (const sentence of line.split(/[.!?]+/).filter(s => s.trim())) assert.ok(sentence.trim().split(/\s+/).length <= 22, `sentence too long: ${sentence.trim()}`);
+  }
+});

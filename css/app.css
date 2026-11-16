@@ -2041,3 +2041,15 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .template-result-grid span { font-size: 0.78rem; color: var(--muted); }
 .template-result-next { font-size: 0.93rem; margin-bottom: 0.8rem; max-width: 70ch; }
 @media (max-width: 800px) { .template-result-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* Screenshot dictionary */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.shot-warning { font-size: 0.9rem; margin: 0.25rem 0; }
+.shot-agree { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.75rem; font-size: 0.9rem; }
+.shot-agree input { margin-top: 0.2rem; }
+.shot-notes { margin: 0.75rem 0 0 1.2rem; font-size: 0.88rem; }
+.shot-notes.recon-error { margin-left: 0; padding-left: 2rem; }
+.shot-detail { margin: 0 0 0.75rem 1.2rem; font-size: 0.92rem; }
+.shot-table input[type="text"] { width: 100%; min-width: 10rem; padding: 0.25rem 0.4rem; font: inherit; }
+.shot-table select { font: inherit; padding: 0.2rem; }
+.shot-already td { color: var(--muted); }
