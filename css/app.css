@@ -1965,3 +1965,23 @@ a { color: inherit; text-decoration: none; }
 .verification-table tr.row-conflict td { background: #fef2f2; }
 .check-warn-list { margin: 0.5rem 0 0 1.1rem; font-size: 0.88rem; }
 .check-warn-list li { margin-bottom: 0.3rem; }
+
+/* ---------- Plain-English guidance ---------- */
+.home-intro { font-size: 1.02rem; max-width: 66ch; margin: -0.5rem 0 1.1rem; color: var(--ink-soft); }
+.home-next-why { font-size: 0.92rem; color: var(--ink-soft); margin-top: 0.25rem; max-width: 60ch; }
+.home-step-what { font-size: 0.97rem; margin: 0.2rem 0 0.35rem; max-width: 62ch; }
+.home-step-guide { margin: 0.2rem 0 0.45rem; }
+.home-step-guide summary, .step-help summary, .home-glossary summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; color: var(--brand); }
+.home-step-guide ol { margin: 0.5rem 0 0.5rem 1.3rem; font-size: 0.95rem; max-width: 62ch; }
+.home-step-guide li { margin-bottom: 0.35rem; }
+.home-step-guide p { font-size: 0.92rem; }
+.home-glossary { margin-top: 1rem; }
+.home-glossary dl { margin-top: 0.75rem; display: grid; grid-template-columns: 7rem 1fr; gap: 0.45rem 1rem; font-size: 0.93rem; }
+.home-glossary dt { font-weight: 700; }
+.home-glossary dd { margin: 0; max-width: 60ch; }
+
+.step-help { background: var(--brand-light); border: 1px solid rgba(13,92,99,0.2); border-radius: 10px; padding: 0.6rem 0.9rem; margin: 0 0 1.1rem; }
+.step-help ul { margin: 0.5rem 0 0.2rem 1.2rem; font-size: 0.95rem; max-width: 70ch; }
+.step-help li { margin-bottom: 0.3rem; }
+@media (max-width: 900px) { .home-glossary dl { grid-template-columns: 1fr; gap: 0.1rem 0; } .home-glossary dd { margin-bottom: 0.5rem; } }
+@media print { .step-help, .steps-sub { display: none !important; } }

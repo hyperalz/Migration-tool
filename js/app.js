@@ -31,6 +31,7 @@ import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject
 import { renderHome } from './home-view.js';
 import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './field-checks.js';
 import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
+import { SCREEN_GUIDE } from './guide.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -129,8 +130,30 @@ function projectSteps(project, active) {
     ? `<div class="steps-sub">${current.screens.map(sc =>
       `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
     : '';
-  return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}</div>${sub}`;
+  return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}</div>${sub}${screenHelp(active)}`;
 }
+
+// "What do I do here?" for the screen being shown. Open until the reader
+// closes it; after that it stays closed on that screen.
+function helpClosed(screen) {
+  try { return localStorage.getItem(`mapbridge_help_closed_${screen}`) === '1'; } catch { return false; }
+}
+
+function screenHelp(screen) {
+  const lines = SCREEN_GUIDE[screen];
+  if (!lines || screen === 'home') return '';
+  return `<details class="step-help" data-help-screen="${screen}"${helpClosed(screen) ? '' : ' open'}>
+    <summary>What do I do here?</summary>
+    <ul>${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+  </details>`;
+}
+
+// The toggle event does not bubble, so listen in the capture phase.
+document.addEventListener('toggle', e => {
+  const screen = e.target?.dataset?.helpScreen;
+  if (!screen) return;
+  try { localStorage.setItem(`mapbridge_help_closed_${screen}`, e.target.open ? '0' : '1'); } catch { /* storage unavailable */ }
+}, true);
 
 function attachLogout() {
   document.getElementById('logout-btn')?.addEventListener('click', () => {
