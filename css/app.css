@@ -2099,3 +2099,19 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .other-ways { margin-top: 0.65rem; font-size: 0.9rem; }
 .other-ways summary { cursor: pointer; color: var(--muted); }
 .other-ways-body { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+
+/* Help panel */
+.help-modal { width: min(720px, calc(100% - 2rem)); max-height: calc(100vh - 4rem); overflow: auto; outline: none; }
+.help-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.help-head h2 { font-size: 1.3rem; margin: 0; }
+.help-modal h3 { font-size: 1.05rem; margin: 1.1rem 0 0.4rem; }
+.help-step { border-top: 1px solid var(--line); padding: 0.55rem 0; }
+.help-step summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.help-step-num { display: inline-flex; width: 1.6rem; height: 1.6rem; border-radius: 50%; align-items: center; justify-content: center; background: var(--bg); font-weight: 600; font-size: 0.85rem; }
+.help-step-title { font-weight: 600; }
+.help-step-what { flex-basis: 100%; color: var(--muted); font-size: 0.9rem; padding-left: 2.1rem; }
+.help-step-body { padding: 0.4rem 0 0 2.1rem; font-size: 0.92rem; }
+.help-step-body ol { margin: 0 0 0.5rem 1.1rem; }
+.help-words { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; font-size: 0.92rem; }
+.help-words dt { font-weight: 600; }
+.home-help { margin: 0.5rem 0 1.5rem; }
