@@ -19,7 +19,7 @@ export const SHOT_TEXT = {
   lead: 'Add pictures of its screens. The AI will read the names of the boxes on each screen. You check each one before it is added.',
   warning: 'Take care. The pictures are sent to the AI service you chose in the AI settings. If a picture shows a real person, their details go too. Use a blank screen or a test record where you can.',
   agree: 'I have checked the pictures. They show no real person, or I am allowed to send them.',
-  noKey: 'There is no AI key yet. Add your own key in the AI settings, then come back here.',
+  noKey: 'There is no AI key yet. Add your own key in the AI settings, then come back here. If you run Ollama on this computer, you do not need a key. Just set the address.',
   notStored: 'The pictures are made smaller in this browser and are not saved. Only the names that come back are kept.',
   labelOnly: 'From a screenshot, label only. This is the name shown on the screen. It is not the real name of the field.',
   reviewHelp: 'Tick each name you want to keep. You can fix a name or its kind first. Nothing is added until you press Add.',
@@ -67,8 +67,25 @@ export function dropDuplicates(items, alreadySeen = new Set()) {
   return { keep, duplicates };
 }
 
+// True when the AI address is on this computer (for example Ollama), so
+// the pictures never leave it and no key is needed.
+export function isLocalAddress(baseURL) {
+  try {
+    const host = new URL(String(baseURL || '')).hostname.replace(/^\[|\]$/g, '');
+    return host === 'localhost' || host.endsWith('.localhost') || host === '::1' || /^127\.\d+\.\d+\.\d+$/.test(host);
+  } catch {
+    return false;
+  }
+}
+
 export function missingKey(settings) {
-  return !String(settings?.apiKey || '').trim();
+  return !isLocalAddress(settings?.baseURL) && !String(settings?.apiKey || '').trim();
+}
+
+// When the AI on this computer cannot be reached. A browser cannot tell a
+// stopped Ollama from one that blocks this website, so both are named.
+export function localUnreachable(origin) {
+  return `Could not reach the AI on this computer. Check that Ollama is running. Ollama must also allow this website. Set OLLAMA_ORIGINS to ${origin || 'this website'} and restart Ollama.`;
 }
 
 // The body sent to an OpenAI-compatible chat endpoint for one image.
@@ -103,18 +120,22 @@ export function explainError(status) {
  * @param {{baseURL:string, model:string, apiKey:string}} settings
  * @param {typeof fetch} [fetchImpl]
  */
-export async function askAI(dataUrl, settings, fetchImpl = globalThis.fetch) {
+export async function askAI(dataUrl, settings, fetchImpl = globalThis.fetch, origin = globalThis.location?.origin) {
   if (missingKey(settings)) throw new Error(SHOT_TEXT.noKey);
   const base = String(settings.baseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const key = String(settings.apiKey || '').trim();
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) headers.Authorization = `Bearer ${key}`;
   let response;
   try {
     response = await fetchImpl(`${base}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.apiKey.trim()}` },
+      headers,
       body: JSON.stringify(buildRequest(dataUrl, settings)),
     });
   } catch {
-    throw new Error('Could not reach the AI service. Check your connection and the address in the AI settings.');
+    throw new Error(isLocalAddress(base) ? localUnreachable(origin)
+      : 'Could not reach the AI service. Check your connection and the address in the AI settings.');
   }
   if (!response.ok) throw new Error(explainError(response.status));
   const data = await response.json();

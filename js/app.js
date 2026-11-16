@@ -1682,6 +1682,7 @@ function openAISettingsModal(onSave, { showKey = false } = {}) {
         <div class="field">
           <label>API Base URL</label>
           <input type="text" id="ai-base-url" value="${esc(settings.baseURL)}" placeholder="https://api.openai.com/v1">
+          <small style="display:block;color:var(--muted);margin-top:0.3rem">Using Ollama on this computer? Use <code>http://localhost:11434/v1</code> and a vision model. No key is needed, and nothing leaves this computer.</small>
         </div>
         
         <div class="field">
@@ -1691,7 +1692,7 @@ function openAISettingsModal(onSave, { showKey = false } = {}) {
         
         <div class="field">
           <label>API Key</label>
-          <input type="password" id="ai-api-key" value="${esc(settings.apiKey)}" placeholder="sk-...">
+          <input type="password" id="ai-api-key" value="${esc(settings.apiKey)}" placeholder="sk-... (leave empty for Ollama)">
         </div>
       </div>
       
