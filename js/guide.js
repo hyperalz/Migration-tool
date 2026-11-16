@@ -92,6 +92,12 @@ export const SCREEN_GUIDE = {
     'The Latest load check part of each row shows if the field matched in the last check.',
     'A red row means it was marked as passed but the last check found a problem.',
   ],
+  area: [
+    'This page is for one area of the move.',
+    'The boxes at the top show how far each step has got.',
+    'Each field shows where it is now and the latest note.',
+    'When live is correct, the service area manager signs off here.',
+  ],
   overview: [
     'This page shows the whole move on one screen.',
     'Each area has a colour. Green means clear. Red means there is something to fix. Grey means not checked yet.',

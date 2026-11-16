@@ -2128,3 +2128,25 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .home-board td.home-cell-done { color: #047857; }
 .home-board td.home-cell-open { color: #92400e; font-weight: 600; }
 .home-board td.home-cell-none { color: var(--muted); }
+
+/* Area page */
+.area-cells { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; padding: 0.75rem; margin-bottom: 1.25rem; }
+.area-cell { border: 1px solid var(--line); border-radius: 10px; padding: 0.55rem 0.7rem; background: white; }
+.area-cell-label { display: block; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.area-cell-text { font-weight: 600; font-size: 0.95rem; }
+.area-cell-done .area-cell-text { color: #047857; }
+.area-cell-open { border-color: #fcd34d; background: #fffbeb; }
+.area-cell-open .area-cell-text { color: #92400e; }
+.area-cell-none .area-cell-text { color: var(--muted); font-weight: 400; }
+.area-table { margin-bottom: 1rem; }
+.area-table h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+.area-table .schema-preview td { font-size: 0.88rem; max-width: none; }
+.area-stage { font-weight: 600; }
+.area-stage-liveFailed .area-stage, .area-stage-testFailed .area-stage { color: var(--danger); }
+.area-stage-inLive .area-stage, .area-stage-inTest .area-stage, .area-stage-testPassed .area-stage { color: #92400e; }
+.area-field-done .area-stage { color: #047857; }
+.area-signoffs { margin: 0.5rem 0 0.75rem 1.2rem; font-size: 0.9rem; }
+a.home-area { text-decoration: none; }
+@media (max-width: 760px) { .area-cells { grid-template-columns: repeat(2, 1fr); } }
+.area-table .schema-preview { max-height: none; overflow: visible; }
+.area-table h3 .recon-sub { display: inline; font-weight: 400; }
