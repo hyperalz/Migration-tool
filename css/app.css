@@ -2094,3 +2094,8 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .home-cell-open { color: #92400e; font-weight: 600; }
 .home-cell-none { color: var(--muted); }
 .home-todo, .home-board { margin-bottom: 1.25rem; }
+
+/* Rarely used options, one click deeper */
+.other-ways { margin-top: 0.65rem; font-size: 0.9rem; }
+.other-ways summary { cursor: pointer; color: var(--muted); }
+.other-ways-body { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
