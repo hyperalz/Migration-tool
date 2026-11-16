@@ -627,3 +627,56 @@ test('guide: avoids specialist words', () => {
   const banned = /\b(schema|reconcil\w*|extract|metadata|mapping stamp|source|target|verif\w*|traceab\w*|migrat\w*|lookup|transform\w*)\b/i;
   for (const line of allGuideText()) assert.doesNotMatch(line, banned);
 });
+
+// ---------- supplier mapping template import ----------
+import { readFileSync } from 'node:fs';
+import { parseMappingTemplate, mergeSchema, questionRows, detectColumns } from '../js/template-import.js';
+
+function exampleRows() {
+  const text = readFileSync(new URL('../samples/mapping-template-example.csv', import.meta.url), 'utf8');
+  return text.trim().split('\n').map(l => l.split(','));
+}
+
+test('template import: reads the new system fields, matches and work lists', () => {
+  const p = parseMappingTemplate(exampleRows(), { targetSystem: 'New' });
+  assert.deepEqual(p.stats, { tables: 2, fields: 9, described: 5, sourceTables: 2, sourceFields: 5, matched: 5, notUsed: 1, questions: 2, unmatched: 1, checked: 0, duplicates: 0 });
+  assert.equal(p.sourceSchema.system, 'Legacy');
+  assert.deepEqual(p.areas, ['Customer', 'Order']);
+  const name = p.targetSchema.tables[0].columns[1];
+  assert.deepEqual([name.name, name.type], ['full_name', 'character varying(120)']);
+  assert.equal(p.targetSchema.tables[0].columns[2].values, 'Lookup code type 101');
+  assert.deepEqual(p.mappings[0], { sourceTable: 'tblCustomer', sourceColumn: 'CUS_ID', targetTable: 'load_customer', targetColumn: 'load_id',
+    transformNotes: '', lookupRule: '', defaultValue: '', serviceArea: 'Customer', needsReview: false });
+  assert.equal(p.mappings.find(m => m.targetColumn === 'customer_load_id').serviceArea, 'Order');
+  assert.deepEqual(p.notUsed.map(x => x.column), ['marketing_opt_in']);
+  assert.deepEqual(p.questions.map(x => x.column).sort(), ['order_total', 'preferred_contact']);
+  assert.deepEqual(p.unmatched.map(x => x.column), ['delivery_notes']);
+  assert.equal(questionRows(p).length, 3);
+});
+
+test('template import: every field lands in exactly one outcome', () => {
+  const p = parseMappingTemplate(exampleRows());
+  const matched = new Set(p.mappings.map(m => m.targetColumn + m.targetTable));
+  const questionOnly = p.questions.filter(q => !matched.has(q.column + q.table)).length;
+  assert.equal(p.stats.matched + p.stats.notUsed + p.stats.unmatched + questionOnly, p.stats.fields);
+});
+
+test('template import: rejects other files and merges without overwriting', () => {
+  assert.throws(() => parseMappingTemplate([['a', 'b'], ['1', '2']]), /does not look like a mapping template/);
+  assert.equal(detectColumns(['Template', 'csv_name', 'column_name', 'SynergyTable', 'SynergyField']).sourceSystem, 'Synergy');
+  const existing = { system: 'X', tables: [{ name: 'load_customer', columns: [{ name: 'load_id', type: 'kept' }] }] };
+  const { schema, added } = mergeSchema(existing, parseMappingTemplate(exampleRows()).targetSchema);
+  assert.equal(added, 8);
+  assert.equal(schema.tables[0].columns[0].type, 'kept');
+  assert.equal(schema.tables.length, 2);
+});
+
+test('progress: after a template import, unmatched fields keep mapping in progress', () => {
+  const parsed = parseMappingTemplate(exampleRows(), { targetSystem: 'New' });
+  const p = { name: 'P', sourceSystem: 'Legacy', targetSystem: 'New', sourceSchema: parsed.sourceSchema, targetSchema: parsed.targetSchema,
+    mappings: parsed.mappings.map((m, i) => ({ id: `i${i}`, ...m })), templateImport: { notUsed: parsed.notUsed } };
+  const step = projectProgress(p).steps[1];
+  assert.equal(step.state, 'progress');
+  assert.match(step.summary, /^5 fields mapped\. 3 fields in the new system have no match/);
+  assert.equal(projectProgress(p).next.text, 'Match or rule out the 3 fields with no match yet');
+});

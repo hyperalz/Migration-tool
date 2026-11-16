@@ -1,0 +1,13 @@
+Template,csv_name,column_name,data_type,max_characters,max_digits,lookup_code_type,addition_comments,LegacyTable,LegacyField,Note
+CUSTOMER,,,,,,,,,,
+1,load_customer,load_id,integer,,16,,Unique Identifier,tblCustomer,CUS_ID,
+2,load_customer,full_name,character varying,120,,,,tblCustomer,CUS_NAME,
+3,load_customer,status,character,1,,101,Values : Active/Closed (A/C),tblCustomer,CUS_STATUS,check codes
+4,load_customer,preferred_contact,character varying,20,,102,,,,??
+5,load_customer,marketing_opt_in,character,1,,,Values : Yes/No (Y/N),NOT USED IN LEGACY,,
+ORDER,,,,,,,,,,
+Template,csv_name,column_name,data_type,max_characters,max_digits,lookup_code_type,addition_comments,LegacyTable,LegacyField,Note
+6,load_order,load_id,integer,,16,,Unique Identifier,tblOrder,ORD_ID,
+7,load_order,customer_load_id,integer,,16,,Unique Identifier for: customer,tblOrder,ORD_CUS_ID,
+8,load_order,order_total,numeric,,12,,,tblOrder,,which field holds the total?
+9,load_order,delivery_notes,character varying,500,,,,,,

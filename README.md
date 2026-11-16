@@ -23,6 +23,14 @@ A production version with secure backend, real authentication, invite-based acce
 - **Export**: Download mappings + traceability log as JSON, CSV, or Excel. Export starter SQL stubs with CASE expressions for value translations and COALESCE for defaults.
 - **Browser-only storage**: Everything lives in `localStorage`. No credentials, no DPA concerns in this version—because there's no server to worry about.
 
+## Importing a supplier's mapping template
+
+On the **Field lists** screen, "Have a mapping spreadsheet from the supplier?" imports a CSV with one row per field in the new system's load templates (headings such as `csv_name`, `column_name`, `data_type`, `max_characters`, `lookup_code_type`, `addition_comments`). If the old system's table and field are noted alongside in columns headed `<System>Table` and `<System>Field`, those matches are imported too.
+
+One import gives you the new system's field list, the old-system fields that were named, the matches already made, the template sections as service areas, and a downloadable question list of every field with a query or no match. Rows marked "not used" are recorded as ruled out. Importing only adds; it never removes or overwrites.
+
+`samples/mapping-template-example.csv` is an invented example. The file is read in the browser and is not sent anywhere.
+
 ## How the app is organised
 
 Opening a project lands on its **home page**, which shows where the project stands and the single most useful thing to do next. A step bar across every project screen shows five steps and the state of each (done, in progress, not started, not yet possible), worked out from the project's data.

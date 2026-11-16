@@ -32,6 +32,7 @@ import { renderHome } from './home-view.js';
 import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './field-checks.js';
 import { projectProgress, stepForScreen, STATE_LABEL } from './progress.js';
 import { SCREEN_GUIDE } from './guide.js';
+import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 
 let canvasInstance = null;
 let toastTimer = null;
@@ -323,6 +324,7 @@ function renderSetup({ id }) {
   mount(`
     ${projectSteps(project, 'setup')}
     <div class="page-head"><div><h1>Connect schemas</h1><p>Upload JSON or CSV templates with column definitions and value formats — so both sides know what each field means.</p></div></div>
+    ${templateImportCard()}
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Source · ${esc(project.sourceSystem)}</h3>
@@ -358,6 +360,7 @@ function renderSetup({ id }) {
         <a href="#/projects/${id}/map" class="btn btn-primary">Start mapping →</a>` : ''}
     </div>
   `);
+  bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
   attachLogout();
   setupUpload('source', id, project);
   setupUpload('target', id, project);
