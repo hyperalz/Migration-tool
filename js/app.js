@@ -39,6 +39,7 @@ import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
+import { renderExecutive } from './executive-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
 import { bindHelp } from './help-view.js';
 import { renderArea } from './area-view.js';
@@ -62,6 +63,7 @@ const routes = {
   '/projects/:id/reconcile/overview': params => renderOverview(params, reconcileUI()),
   '/projects/:id/areas/:area': params => renderArea(params, reconcileUI()),
   '/projects/:id/problems': params => renderProblems(params, reconcileUI()),
+  '/projects/:id/executive': params => renderExecutive(params, reconcileUI()),
   '/projects/:id/settings': params => renderSettings(params, { ...reconcileUI(), openAISettings: openAISettingsModal }),
   '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
@@ -151,7 +153,7 @@ function projectSteps(project, active) {
       `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
     : '';
   return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}
-    ${problemsChip(project, active)}<a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${screenHelp(active)}`;
+    ${problemsChip(project, active)}<a href="#/projects/${project.id}/executive" class="step-chip step-exec ${active === 'executive' ? 'active' : ''}"${active === 'executive' ? ' aria-current="page"' : ''}>Executive overview</a><a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${screenHelp(active)}`;
 }
 
 // "What do I do here?" for the screen being shown. Open until the reader
