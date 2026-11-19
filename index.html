@@ -61,7 +61,7 @@
         "name": "Do you need access to our personal data?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. MapBridge only needs the list of field names and types. It does not need to see any employee names, salaries, or other personal data."
+          "text": "Not to match fields: that uses field names and types only. To check a trial load, MapBridge reads extract files that contain real records, but only in your own browser. The rows are never saved or sent to us or any server, and fields marked as personal are masked in reports."
         }
       },
       {
@@ -143,6 +143,7 @@
             <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-primary">Book a 30-minute call</a>
             <a href="assets/sample-data-check-summary.pdf" class="btn btn-secondary">See a sample report</a>
           </div>
+          <p class="hero-demo-link"><a href="#mapbridge">Watch the 70-second demo →</a></p>
           <div class="experience-strip">
             <span class="experience-label">Experience from</span>
             <div class="experience-items">
@@ -163,8 +164,8 @@
   <section class="section-grey">
     <div class="wrap">
       <div class="section-head">
-        <h2>You are asked to approve go-live on someone else's word</h2>
-        <p>If the data is wrong, it is your accounts, your service and your audit committee.</p>
+        <h2>You own the service. The supplier moves the data. You sign it off.</h2>
+        <p>Will people still get paid, billed and helped on day one? Has anything gone missing on the way? Are you being asked to approve go-live on someone else's word?</p>
       </div>
       <div class="problem-grid">
         <div class="problem-card">
@@ -377,34 +378,37 @@
   </section>
 
   <!-- MapBridge -->
-  <section class="section-grey">
+  <section class="section-grey" id="mapbridge">
     <div class="wrap">
       <div class="section-head">
-        <h2>MapBridge: how we make sure nothing is lost</h2>
-        <p>Our tool for matching every old field to the new system, with a record of who checked what.</p>
+        <h2>MapBridge: the independent check on any data migration</h2>
+        <p>Finance, HR, revenues, housing, care, schools: any system, moving to any other. It is how we run every project, and you keep the evidence.</p>
       </div>
       <div class="mapbridge-grid">
-        <div class="mapbridge-screenshot">
-          <img loading="lazy" src="assets/mapbridge-suggestions.webp" width="1184" height="653" alt="MapBridge interface showing AI suggestions, confidence scores, and approval workflow">
+        <div class="mapbridge-screenshot mapbridge-video">
+          <video controls preload="none" playsinline poster="assets/mapbridge-demo-poster.jpg" width="1080" height="1350" style="width:100%;height:auto;display:block;background:#0b4a50">
+            <source src="assets/mapbridge-demo.mp4" type="video/mp4">
+            <a href="assets/mapbridge-demo.mp4">Watch the MapBridge demo (MP4, 70 seconds)</a>
+          </video>
         </div>
         <div class="feature-cards">
           <div class="feature-card">
-            <h3>① AI suggests, people decide</h3>
+            <h3>① Match</h3>
+            <p>Agree where every old field goes and what it becomes. Start from your supplier's mapping template, or rebuild the old system's field list from screenshots if access has ended. AI suggests; people decide.</p>
           </div>
           <div class="feature-card">
-            <h3>② Code translations</h3>
+            <h3>② Check</h3>
+            <p>Test every trial load against the old system: every record, every total and every mapped field. Each problem in plain English, with how serious it is and who owns it, and whether it is getting better load by load.</p>
           </div>
           <div class="feature-card">
-            <h3>③ Sign-off tracking</h3>
-          </div>
-          <div class="feature-card">
-            <h3>④ Starter SQL for your supplier</h3>
+            <h3>③ Prove</h3>
+            <p>Each area's manager signs off, with a warning if anything is still open. A one-page executive overview for the board, and an evidence pack for audit.</p>
           </div>
         </div>
       </div>
       <div class="feature-status">
-        <p><strong>Works today</strong> · matching, translations, sign-off, starter SQL, read-only connector, trial load reconciliation</p>
-        <p><span><strong>Coming next</strong> · shared workspace, data quality checks, screen spot checks</span></p>
+        <p><strong>Works today</strong> · AI-suggested matching, code translations, supplier template import, field lists from screenshots, read-only connector, trial load checks, plain-English reports, problems log, area sign-off, executive overview, evidence pack</p>
+        <p><span><strong>Coming next</strong> · matching on what the data contains, not just field names; a shared workspace</span></p>
       </div>
       <div class="feature-links">
         <a href="mapbridge.html">Explore MapBridge →</a>
@@ -452,7 +456,7 @@
     <div class="wrap">
       <div class="section-head">
         <h2>For IT and data protection officers</h2>
-        <p>We only ever see field names and types. Never people's records.</p>
+        <p>Matching uses field names and types only. Load checks read records in your own browser, and never store or send them.</p>
       </div>
       <div class="data-flow">
         <div class="flow-box">
@@ -472,8 +476,9 @@
         </div>
       </div>
       <div class="flow-checks">
-        <span>No personal data</span>
-        <span>Runs once, read-only</span>
+        <span>Records never leave your computer</span>
+        <span>Connector runs read-only</span>
+        <span>Personal details masked in reports</span>
         <span>AI optional, your own key</span>
       </div>
       <div class="flow-link">
@@ -514,7 +519,7 @@
         </details>
         <details>
           <summary>Do you need access to our personal data?</summary>
-          <p>No. MapBridge only needs the list of field names and types. It does not need to see any employee names, salaries, or other personal data.</p>
+          <p>Not to match fields: that uses field names and types only. To check a trial load, MapBridge reads extract files that contain real records, but only in your own browser. The rows are never saved or sent to us or any server, and fields marked as personal are masked in reports.</p>
         </details>
         <details>
           <summary>Where is the data stored?</summary>
