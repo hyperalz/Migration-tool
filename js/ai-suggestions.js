@@ -32,7 +32,13 @@ function similarity(a, b) {
   if (longer.includes(shorter)) return 0.7 + (shorter.length / longer.length) * 0.3;
   
   const distance = levenshteinDistance(normA, normB);
-  return Math.max(0, 1 - distance / longer.length);
+  const editSim = Math.max(0, 1 - distance / longer.length);
+  // Shared words count too: payment_terms and TERMS_DAYS share "terms".
+  const words = t => new Set(String(t || '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2));
+  const wa = words(a); const wb = words(b);
+  const shared = [...wa].filter(w => wb.has(w)).length;
+  const wordSim = shared && Math.min(wa.size, wb.size) ? 0.6 * shared / Math.min(wa.size, wb.size) : 0;
+  return Math.max(editSim, wordSim);
 }
 
 function levenshteinDistance(a, b) {
@@ -192,7 +198,8 @@ export function generateHeuristicSuggestions(sourceSchema, targetSchema, existin
           
           if (score >= 0.4) {
             const reasons = [];
-            if (nameSim > 0.7) reasons.push('column names match');
+            if (nameSim >= 0.95) reasons.push('column names match');
+            else if (nameSim > 0.7) reasons.push('similar column names');
             if (typeSim > 0.8) reasons.push('compatible types');
             if (descSim > 0.3) reasons.push('similar definitions');
             if (valSim > 0.5) reasons.push('overlapping value formats');
@@ -215,9 +222,63 @@ export function generateHeuristicSuggestions(sourceSchema, targetSchema, existin
     }
   }
   
-  suggestions.sort((a, b) => b.confidence - a.confidence);
-  
-  return suggestions;
+  return refineSuggestions(suggestions, sourceSchema, targetSchema, existingMappings);
+}
+
+// A strong suggestion can be accepted in one go only above this confidence.
+export const STRONG_SUGGESTION = 0.9;
+
+/**
+ * Turns raw candidate pairs into a list a person can safely work through:
+ * - each table is paired with the one other table its fields fit best, so a
+ *   supplier field is not offered against a ledger table;
+ * - each old field and each new field appears at most once, best first;
+ * - fields that already have a match are left out.
+ * A cross-table pair survives only if it is near certain (95% or more).
+ */
+export function refineSuggestions(suggestions, sourceSchema, targetSchema, existingMappings = []) {
+  const usedSource = new Set(existingMappings.map(m => `${m.sourceTable}.${m.sourceColumn}`));
+  const usedTarget = new Set(existingMappings.map(m => `${m.targetTable}.${m.targetColumn}`));
+
+  // How well each old table fits each new table: the sum of each old field's best score there.
+  const fit = new Map();
+  for (const s of suggestions) {
+    const k = `${s.sourceTable}::${s.targetTable}`;
+    const byField = fit.get(k) || new Map();
+    const f = `${s.sourceColumn}`;
+    byField.set(f, Math.max(byField.get(f) || 0, s.confidence));
+    fit.set(k, byField);
+  }
+  // Tables already paired by existing matches count strongly.
+  for (const m of existingMappings) {
+    const k = `${m.sourceTable}::${m.targetTable}`;
+    const byField = fit.get(k) || new Map();
+    byField.set(`__existing_${m.sourceColumn}`, 1);
+    fit.set(k, byField);
+  }
+  const score = k => [...(fit.get(k)?.values() || [])].reduce((a, b) => a + b, 0);
+  const bestTarget = new Map();
+  for (const st of sourceSchema?.tables || []) {
+    let best = null; let bestScore = 0;
+    for (const tt of targetSchema?.tables || []) {
+      const sc = score(`${st.name}::${tt.name}`);
+      if (sc > bestScore) { bestScore = sc; best = tt.name; }
+    }
+    if (best) bestTarget.set(st.name, best);
+  }
+
+  const out = [];
+  const sorted = [...suggestions].sort((a, b) => b.confidence - a.confidence);
+  for (const s of sorted) {
+    const sk = `${s.sourceTable}.${s.sourceColumn}`;
+    const tk = `${s.targetTable}.${s.targetColumn}`;
+    if (usedSource.has(sk) || usedTarget.has(tk)) continue;
+    const pairedTable = bestTarget.get(s.sourceTable);
+    if (pairedTable && pairedTable !== s.targetTable && s.confidence < 0.95) continue;
+    usedSource.add(sk); usedTarget.add(tk);
+    out.push(s);
+  }
+  return out;
 }
 
 export async function generateLLMSuggestions(sourceSchema, targetSchema, existingMappings, settings) {
@@ -311,5 +372,5 @@ Return ONLY a JSON array of mapping objects. No other text. Example format:
       valueTranslations: Array.isArray(s.valueTranslations) ? s.valueTranslations : [],
     }));
   
-  return filtered;
+  return refineSuggestions(filtered, sourceSchema, targetSchema, existingMappings);
 }
