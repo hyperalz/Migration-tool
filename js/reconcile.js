@@ -81,7 +81,7 @@ function looksLikeIdentifier(name) {
   return /(^|_)(id|ref|key|code|no|number|num)$/i.test(str(name)) || /(_id|_ref|_code)$/i.test(str(name));
 }
 
-const PERSONAL_RE = /(fore|sur|first|last|given|family|full|contact|guardian|person|employee|pupil|staff)[ _]?name|(^|_)name($|_)|contact|dob|birth|address|addr|postcode|post_code|email|phone|mobile|tel(?:ephone)?|(^|_)ni(no|_number)?($|_)|national[ _]insurance|bank|sort[ _]?code|account[ _]?(no|num|number)|iban|upn|nhs|salary|gender|ethnic|disab|medical|health/i;
+const PERSONAL_RE = /(fore|sur|first|last|given|family|full|contact|guardian|person|employee|pupil|staff)[ _]?name|(^|_)name($|_)|contact|dob|birth|address|addr|postcode|post_code|email|phone|mobile|tel(?:ephone)?|(^|_)ni(no|_number)?($|_)|national[ _]insurance|bank|sort[ _]?code|account[ _]?(no|num|number)|iban|upn|nhs|salary|gender|ethnic|disab|medical|health|(^|_)title($|_)|salutation|honorific|marital|religio|faith|belief|sexual|orientation|(^|_)sen($|_)|special[ _]?(educational[ _]?)?needs|ehcp|(^|_)fsm($|_)|free[ _]?school[ _]?meal|pupil[ _]?premium|safeguard|child[ _]?protection|(^|_)cp[ _]?(flag|status|plan)|looked[ _]?after|(^|_)lac($|_)|care[ _]?leaver|criminal|offen[cd]|conviction|immigration|nationality|trade[ _]?union|biometric|pregnan|maternity/i;
 
 const AMOUNT_NAME_RE = /amount|balance|total|value|price|cost|net|gross|vat|tax|debit|credit|paid|due|budget|spend|salary|pay$|hours|qty|quantity|units|fte|headcount|volume|weight|sessions|attendances|absences/i;
 
@@ -97,7 +97,9 @@ export function isLikelyAmount(mapping, sCol, tCol) {
 }
 
 // A first guess at whether a field holds personal data, from its name and
-// description. A person confirms or overrides this before each run.
+// description. It includes the special categories under UK GDPR (health,
+// religion, sexual orientation and so on) and sensitive schools data such as
+// SEN, free school meals and safeguarding. A person confirms or overrides this before each run.
 export function isLikelyPersonal(col) {
   if (!col) return false;
   return PERSONAL_RE.test(str(col.name)) || PERSONAL_RE.test(str(col.description));
