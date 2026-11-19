@@ -202,6 +202,19 @@ The roll-up follows fixed rules so it cannot look better than the detail:
 
 It does not check links between tables or figures that should match across tables.
 
+### Executive overview
+
+One page for a finance director or programme board, linked from every project screen. It answers:
+
+- **Are we ready?** Not ready, in progress, or ready for the go-live decision, with the reasons in plain words.
+- **The key figures:** fields correct in live, details matched in the latest check, serious problems open, and areas signed off.
+- **Is it getting better?** Serious and smaller problems for each checked load, oldest first.
+- **Top risks:** the serious problems from the latest check, with their owners, plus any fields that failed UAT.
+- **Where each area is:** its status, how many fields are correct in live, and what is next or who signed it.
+- **Can we prove it?** Loads checked, the final load, UAT problems logged and fixed, and whether the evidence pack is up to date.
+
+It prints on one A4 page. It shows the evidence but never decides go-live: that stays with the people who sign. No AI is used in any figure.
+
 ### Privacy
 
 - Extract files are read in the browser. Rows are never written to `localStorage` or sent anywhere.

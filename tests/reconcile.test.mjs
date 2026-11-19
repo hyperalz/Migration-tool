@@ -1599,3 +1599,47 @@ test('problems: the words read at about age eleven', () => {
   assert.ok(readingGrade(text.join(' ')) <= 6, readingGrade(text.join(' ')).toFixed(1));
   for (const line of text) assert.doesNotMatch(line, OLD_WORDS);
 });
+
+// ---------- executive overview ----------
+import { executiveSummary, READINESS, EXEC_TEXT } from '../js/executive.js';
+
+function execProject(loads = [1, 2]) {
+  const p = demoProject();
+  p.sourceSchema = JSON.parse(JSON.stringify(legacyFinanceSchema));
+  p.targetSchema = JSON.parse(JSON.stringify(newFinanceSchema));
+  p.reconRuns = loads.map(runDemo);
+  return p;
+}
+
+test('executive: serious problems make it not ready, and say why in plain words', () => {
+  const e = executiveSummary(execProject());
+  assert.equal(e.readiness.level, 'blocked');
+  assert.equal(e.readiness.label, READINESS.blocked.label);
+  assert.match(e.readiness.reason, /^2 serious data problems open\./);
+  assert.deepEqual(e.trend.map(t => t.serious), [5, 2]);
+  assert.equal(e.trendLine, 'Serious problems down from 5 to 2 since Trial load 1.');
+  assert.equal(e.tiles.serious.open, 2);
+  assert.equal(e.tiles.signed.done, 0);
+  const ap = e.areas.find(a => a.name === 'Accounts payable');
+  assert.equal(ap.rag, 'red');
+  assert.equal(ap.serious, 2);
+  assert.ok(ap.next, 'an area that is not signed off says what is next');
+  assert.ok(e.risks.length >= 2 && e.risks[0].area === 'Accounts payable');
+  assert.equal(e.proof.checks, 2);
+});
+
+test('executive: one load gives no trend yet; an empty project is not started', () => {
+  const e = executiveSummary(execProject([1]));
+  assert.match(e.trendLine, /^One load checked so far/);
+  assert.equal(executiveSummary({ name: 'E', mappings: [] }).readiness.level, 'empty');
+});
+
+test('executive: every field correct in live and every area signed off is ready, but never says go', () => {
+  const p = execProject([]);
+  p.mappings.forEach(m => { m.verification = { status: 'signed_off', history: [] }; });
+  const e = executiveSummary(p);
+  assert.equal(e.readiness.level, 'ready');
+  assert.ok(e.areas.every(a => a.rag === 'green'));
+  assert.doesNotMatch(e.readiness.label + e.readiness.reason, /go ahead|approved|safe to go/i);
+  assert.match(EXEC_TEXT.notDecide, /does not decide go-live/);
+});
