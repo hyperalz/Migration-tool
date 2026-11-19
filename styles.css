@@ -1108,3 +1108,22 @@
         padding: 1.5rem;
       }
     }
+
+    /* Demo link under the hero buttons, and feature card body text */
+    .hero-demo-link { margin-top: 0.9rem; }
+    .hero-demo-link a { color: var(--blue); font-weight: 600; }
+    .hero-demo-link a:hover { text-decoration: underline; }
+    .feature-card p { margin-top: 0.4rem; font-size: 0.95rem; color: var(--muted); }
+    .mapbridge-video { max-width: 420px; width: 100%; justify-self: center; }
+
+    /* Phones: the hidden slide-in menu sat off the right edge and made every page scroll sideways.
+       Keep it out of the layout until it is opened. */
+    @media (max-width: 900px) {
+      .nav-links { right: 0; display: none; }
+      .nav-links.active { display: flex; }
+    }
+    .footer-links { flex-wrap: wrap; }
+    .dpo-two { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+    @media (max-width: 900px) { .dpo-two { grid-template-columns: 1fr; gap: 1.5rem; } }
+    .dpo-three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 2.5rem; }
+    @media (max-width: 900px) { .dpo-three { grid-template-columns: 1fr; gap: 1.25rem; } }
