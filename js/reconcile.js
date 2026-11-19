@@ -32,13 +32,23 @@ const NUMERIC_RE = /^[-+]?(?:£|\$|€)?\s*(?:\d{1,3}(?:,\d{3})+|\d+)?(?:\.\d+)?
 export function parseNumber(v) {
   const s = str(v).trim();
   if (s === '' || !/\d/.test(s)) return null;
+  let neg = false;
+  let body = s;
   // Accounting negatives: (123.45)
-  const paren = /^\((.+)\)$/.exec(s);
-  const body = paren ? paren[1].trim() : s;
+  const paren = /^\((.+)\)$/.exec(body);
+  if (paren) { neg = true; body = paren[1].trim(); }
+  // Ledger suffixes: 123.45 CR is a credit (negative), 123.45 DR a debit.
+  const crdr = /^(.*?)\s*(CR|DR)$/i.exec(body);
+  if (crdr) { if (crdr[2].toUpperCase() === 'CR') neg = !neg; body = crdr[1].trim(); }
+  // Trailing minus: 123.45-
+  const trail = /^(.*\d)\s*-$/.exec(body);
+  if (trail && !/^[-+]/.test(body)) { neg = !neg; body = trail[1]; }
+  // Sign after the currency symbol: £-1,234.50
+  body = body.replace(/^([£$€])\s*([-+])/, '$2$1');
   if (!NUMERIC_RE.test(body)) return null;
   const n = Number(body.replace(/[£$€,\s]/g, ''));
   if (!Number.isFinite(n)) return null;
-  return paren ? -n : n;
+  return neg ? -n : n;
 }
 
 // Returns YYYY-MM-DD, or null if the text is not a recognised date.
@@ -147,6 +157,56 @@ export function guessKeyMappingIds(pair) {
     })
     .sort((a, b) => b.score - a.score || a.i - b.i);
   return byScore.length && byScore[0].score > 0 ? [byScore[0].m.id] : [];
+}
+
+/**
+ * When the guessed key repeats in the old extract, find the smallest set of
+ * matched fields (up to three) whose values pick out every record exactly once.
+ * Amounts are never used as keys. Returns mapping ids, or null if none works.
+ */
+export function suggestKeyMappingIds(pair, sourceRows, { maxFields = 3, maxCandidates = 10 } = {}) {
+  if (!sourceRows?.length) return null;
+  const cols = new Set(Object.keys(sourceRows[0]));
+  const guess = new Set(guessKeyMappingIds(pair));
+  const candidates = pair.mappings
+    .filter(m => cols.has(m.sourceColumn))
+    .map(m => {
+      const values = new Set();
+      let blanks = 0;
+      let money = 0;
+      for (const r of sourceRows) {
+        const v = str(r[m.sourceColumn]).trim();
+        if (v === '') { blanks++; continue; }
+        values.add(v);
+        if (/^[-+(]?[£$€]?[\d,]*\.\d{1,4}\)?$/.test(v)) money++;
+      }
+      const filled = sourceRows.length - blanks;
+      return { m, distinct: values.size, blanks, amount: filled > 0 && money / filled >= 0.8 };
+    })
+    // Amounts are never keys; neither are fields with blanks or only one value.
+    .filter(c => c.distinct > 1 && c.blanks === 0 && !c.amount)
+    .sort((a, b) => (guess.has(b.m.id) - guess.has(a.m.id)) || b.distinct - a.distinct)
+    .slice(0, maxCandidates);
+  const unique = combo => {
+    const seen = new Set();
+    for (const r of sourceRows) {
+      const k = combo.map(c => str(r[c.m.sourceColumn]).trim()).join('\u241f');
+      if (seen.has(k)) return false;
+      seen.add(k);
+    }
+    return true;
+  };
+  const combos = (arr, k, start = 0, acc = [], out = []) => {
+    if (acc.length === k) { out.push([...acc]); return out; }
+    for (let i = start; i < arr.length; i++) { acc.push(arr[i]); combos(arr, k, i + 1, acc, out); acc.pop(); }
+    return out;
+  };
+  for (let k = 1; k <= Math.min(maxFields, candidates.length); k++) {
+    const options = combos(candidates, k)
+      .sort((a, b) => b.filter(c => guess.has(c.m.id)).length - a.filter(c => guess.has(c.m.id)).length);
+    for (const combo of options) if (unique(combo)) return combo.map(c => c.m.id);
+  }
+  return null;
 }
 
 // A short stamp of a table pair's mapping rules. Stored with each check so a
@@ -460,7 +520,25 @@ export function reconcilePair({
     // missing or extra record shows up in the total as well.
     const wantTotal = totalMappingIds ? totalMappingIds.includes(m.id) : isLikelyAmount(m, sCol, tCol);
     const canTotal = allNumeric(sourceRows, m.sourceColumn) && allNumeric(targetRows, m.targetColumn);
-    if (wantTotal && !canTotal) f.totalSkipped = 'Not every value is a number, so no total was taken';
+    if (wantTotal && !canTotal) {
+      f.totalSkipped = 'Not every value is a number, so no total was taken';
+      // A money field with a few unreadable values must not lose its total quietly.
+      const su = unreadable(sourceRows, m.sourceColumn);
+      const tu = unreadable(targetRows, m.targetColumn);
+      if ((su.count || tu.count) && su.share >= 0.9 && tu.share >= 0.9) {
+        const example = isMasked ? '' : (tu.examples[0] ?? su.examples[0] ?? '');
+        f.totalUnreadable = { source: su.count, target: tu.count, example };
+        const n = su.count + tu.count;
+        f.totalSkipped = `No total taken: ${n} ${n === 1 ? 'value' : 'values'} could not be read as ${n === 1 ? 'an amount' : 'amounts'}`;
+        const g = groups.add({
+          signature: `${pair.id}::${m.id}::total_unreadable`, severity: 'high', kind: 'total_unreadable', field: fieldLabel,
+          serviceArea: f.serviceArea,
+          title: `No total taken: ${n} ${n === 1 ? 'value' : 'values'} could not be read as ${n === 1 ? 'an amount' : 'amounts'} (old file ${su.count}, new file ${tu.count})${example ? `, for example "${example}"` : ''}`,
+        });
+        g.count = n;
+        g.unreadable = { source: su.count, target: tu.count, example };
+      }
+    }
 
     if (wantTotal && canTotal && !isKey) {
       let s = 0;
@@ -499,6 +577,17 @@ export function reconcilePair({
     fields,
     groups: groups.list(),
   };
+}
+
+function unreadable(rows, column) {
+  let filled = 0; let count = 0; const examples = [];
+  for (const row of rows) {
+    const v = row[column];
+    if (isBlank(v)) continue;
+    filled++;
+    if (parseNumber(v) === null) { count++; if (examples.length < 3) examples.push(str(v).trim()); }
+  }
+  return { count, examples, share: filled ? (filled - count) / filled : 0 };
 }
 
 function allNumeric(rows, column) {

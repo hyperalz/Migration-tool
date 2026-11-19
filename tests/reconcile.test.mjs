@@ -1643,3 +1643,74 @@ test('executive: every field correct in live and every area signed off is ready,
   assert.doesNotMatch(e.readiness.label + e.readiness.reason, /go ahead|approved|safe to go/i);
   assert.match(EXEC_TEXT.notDecide, /does not decide go-live/);
 });
+
+// ---------- QA fixes: suggestions, unreadable totals, key choice ----------
+import { generateHeuristicSuggestions, refineSuggestions } from '../js/ai-suggestions.js';
+import { suggestKeyMappingIds } from '../js/reconcile.js';
+
+test('suggestions: one per field, within the best table pair', () => {
+  const s = generateHeuristicSuggestions(legacyFinanceSchema, newFinanceSchema, []);
+  const src = s.map(x => `${x.sourceTable}.${x.sourceColumn}`);
+  const tgt = s.map(x => `${x.targetTable}.${x.targetColumn}`);
+  assert.equal(new Set(src).size, src.length, 'an old field is suggested twice');
+  assert.equal(new Set(tgt).size, tgt.length, 'a new field is suggested twice');
+  const pairOf = { supplier: 'Supplier_Load', gl_balance: 'GL_Opening_Balance' };
+  for (const x of s) assert.equal(x.targetTable, pairOf[x.sourceTable], `${x.sourceTable}.${x.sourceColumn} offered against ${x.targetTable}`);
+  assert.ok(s.some(x => x.sourceColumn === 'balance_outstanding' && x.targetColumn === 'OPEN_BALANCE'));
+});
+
+test('suggestions: fields already matched are not offered again, and AI replies are cleaned the same way', () => {
+  const existing = [{ sourceTable: 'supplier', sourceColumn: 'status', targetTable: 'Supplier_Load', targetColumn: 'STATUS' }];
+  const s = generateHeuristicSuggestions(legacyFinanceSchema, newFinanceSchema, existing);
+  assert.ok(!s.some(x => x.sourceColumn === 'status' || x.targetColumn === 'STATUS'));
+  const raw = [
+    { sourceTable: 'supplier', sourceColumn: 'supplier_name', targetTable: 'Supplier_Load', targetColumn: 'SUPPLIER_NAME', confidence: 0.9 },
+    { sourceTable: 'supplier', sourceColumn: 'supplier_name', targetTable: 'Supplier_Load', targetColumn: 'SUPPLIER_REF', confidence: 0.6 },
+    { sourceTable: 'supplier', sourceColumn: 'contact_name', targetTable: 'GL_Opening_Balance', targetColumn: 'COST_CENTRE', confidence: 0.5 },
+  ];
+  const r = refineSuggestions(raw, legacyFinanceSchema, newFinanceSchema, []);
+  assert.deepEqual(r.map(x => x.targetColumn), ['SUPPLIER_NAME']);
+});
+
+test('amounts: ledger formats are read, not dropped', () => {
+  assert.equal(parseNumber('123.45 CR'), -123.45);
+  assert.equal(parseNumber('50.00 DR'), 50);
+  assert.equal(parseNumber('123.45-'), -123.45);
+  assert.equal(parseNumber('£-1,234.50'), -1234.5);
+  assert.equal(parseNumber('(£12.00)'), -12);
+  assert.equal(parseNumber('007'), 7);
+  assert.equal(parseNumber('abc'), null);
+});
+
+test('a money total with an unreadable value is a serious issue, said plainly in the summary', () => {
+  const project = demoProject();
+  const extracts = financeDemoExtracts(2);
+  const pair = tablePairs(project.mappings).find(p => p.sourceTable === 'supplier');
+  const ex = extracts[pair.id];
+  const targetRows = ex.targetRows.map((r, i) => (i === 3 ? { ...r, OPEN_BALANCE: `${r.OPEN_BALANCE} XYZ` } : r));
+  const keyIds = pair.mappings.filter(m => m.sourceColumn === 'supplier_id').map(m => m.id);
+  const res = reconcilePair({ pair, sourceRows: ex.sourceRows, targetRows, keyMappingIds: keyIds, sourceSchema: legacyFinanceSchema, targetSchema: newFinanceSchema });
+  const g = res.groups.find(x => x.kind === 'total_unreadable');
+  assert.ok(g, 'no unreadable-total issue raised');
+  assert.equal(g.severity, 'high');
+  assert.equal(g.count, 1);
+  const run = buildRun({ project, label: 'X', by: 't', pairResults: [res], at: '2026-11-19T10:00:00.000Z', id: 'rx' });
+  const plain = plainSummary(run, [run], project);
+  const m = plain.money.find(x => x.unreadable);
+  assert.ok(m && !m.ok);
+  assert.match(m.text, /could not be read as an amount/);
+  assert.ok(plain.inShort.some(l => /One total could not be taken/.test(l)));
+  assert.ok(plain.issues.some(i => i.severity === 'high' && /No total was taken/.test(i.text)));
+});
+
+test('key choice: when one field repeats, the fewest fields that identify each record are chosen', () => {
+  const project = demoProject();
+  const extracts = financeDemoExtracts(1);
+  const gl = tablePairs(project.mappings).find(p => p.sourceTable === 'gl_balance');
+  const ids = suggestKeyMappingIds(gl, extracts[gl.id].sourceRows);
+  const cols = gl.mappings.filter(m => ids.includes(m.id)).map(m => m.sourceColumn).sort();
+  assert.deepEqual(cols, ['account_code', 'cost_centre']); // period has one value in this file, so it adds nothing
+  const sup = tablePairs(project.mappings).find(p => p.sourceTable === 'supplier');
+  const sids = suggestKeyMappingIds(sup, extracts[sup.id].sourceRows);
+  assert.deepEqual(sup.mappings.filter(m => sids.includes(m.id)).map(m => m.sourceColumn), ['supplier_id']);
+});

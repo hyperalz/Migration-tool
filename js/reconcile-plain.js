@@ -55,6 +55,7 @@ const WHY = {
   value_differs: 'What people see in the new system would not match the old one.',
   case_only: 'Cosmetic only. No information is lost.',
   total_differs: 'The figures do not add up between the two systems.',
+  total_unreadable: 'Until every value can be read, nobody can say whether the money adds up.',
   not_checked: 'This part has not been checked at all, so it is neither right nor wrong yet.',
 };
 
@@ -99,6 +100,11 @@ function issueSentence(g, label, noun) {
       return `${field} differs only in capital letters on ${recs}.`;
     case 'total_differs':
       return `The total for ${lowerFirst(field)} does not agree between the two systems.`;
+    case 'total_unreadable': {
+      const u = g.unreadable || {};
+      const where = [u.source ? `${num(u.source)} in the old file` : '', u.target ? `${num(u.target)} in the new file` : ''].filter(Boolean).join(' and ');
+      return `No total was taken for ${lowerFirst(field)}: ${num(n)} ${plural(n, 'value')} (${where}) could not be read as ${plural(n, 'an amount', 'amounts')}${u.example ? `, for example ${quote(u.example)}` : ''}.`;
+    }
     case 'not_checked':
       return `${field} could not be checked because it was missing from one of the files.`;
     default:
@@ -179,6 +185,17 @@ export function plainSummary(run, history = [run], project = null) {
   const money = [];
   for (const p of run.pairs) {
     for (const f of p.fields) {
+      if (f.totalUnreadable) {
+        const u = f.totalUnreadable;
+        const n = u.source + u.target;
+        money.push({
+          ok: false, unreadable: true,
+          label: fieldLabel(project, p.sourceTable, f.sourceColumn, p.targetTable, f.targetColumn),
+          oldTotal: 'not taken', newTotal: 'not taken',
+          text: `No total taken: ${num(n)} ${plural(n, 'value')} could not be read as ${plural(n, 'an amount', 'amounts')}${u.example ? `, for example ${quote(u.example)}` : ''}.`,
+        });
+        continue;
+      }
       if (!f.total) continue;
       const label = fieldLabel(project, p.sourceTable, f.sourceColumn, p.targetTable, f.targetColumn);
       const ok = f.total.diff === 0;
@@ -201,6 +218,7 @@ export function plainSummary(run, history = [run], project = null) {
       ? 'Every detail matched.'
       : `${matched.toFixed(1)}% of those details matched. ${num(s.fieldsCompared - s.fieldsMatched)} did not.`,
     !money.length ? 'No totals were added up in this check.'
+      : money.some(m => m.unreadable) ? `${money.filter(m => m.unreadable).length === 1 ? 'One total' : `${money.filter(m => m.unreadable).length} totals`} could not be taken because some values could not be read as amounts.${money.some(m => !m.unreadable && !m.ok) ? ` ${money.filter(m => !m.unreadable && !m.ok).length} other ${plural(money.filter(m => !m.unreadable && !m.ok).length, 'total')} ${plural(money.filter(m => !m.unreadable && !m.ok).length, 'does', 'do')} not agree.` : ''}`
       : money.every(m => m.ok) ? `${money.length === 1 ? 'The total we added up agrees' : money.length === 2 ? 'Both totals we added up agree' : `All ${money.length} totals we added up agree`} between the two systems.`
         : `${money.filter(m => !m.ok).length} of ${money.length} ${plural(money.length, 'total')} we added up ${plural(money.filter(m => !m.ok).length, 'does', 'do')} not agree.`,
   ].filter(Boolean);

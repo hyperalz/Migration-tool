@@ -29,7 +29,7 @@ import {
   buildTraceDashboardData, renderTraceDashboardHTML, scheduleDashboardCharts, destroyDashboardCharts,
 } from './dashboard-charts.js';
 import {
-  getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions,
+  getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions, STRONG_SUGGESTION,
 } from './ai-suggestions.js';
 import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject } from './reconcile-view.js';
 import { renderHome } from './home-view.js';
@@ -1788,7 +1788,7 @@ async function openAISuggestModal(projectId) {
     openAISettingsModal();
   };
   
-  backdrop.querySelector('#ai-suggest-close').onclick = () => backdrop.remove();
+  backdrop.querySelector('#ai-suggest-close').onclick = () => { backdrop.remove(); if (location.hash.endsWith('/map')) renderMap({ id: projectId }); };
   backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
   
   let suggestions = [];
@@ -1814,15 +1814,18 @@ async function openAISuggestModal(projectId) {
       
       statusEl.innerHTML = `<p style="color:var(--ink)"><strong>${suggestions.length}</strong> suggestion${suggestions.length > 1 ? 's' : ''} found. Review and accept the ones you want:</p>`;
       
+      const strong = suggestions.filter(s => s.confidence >= STRONG_SUGGESTION).length;
       listEl.innerHTML = `
-        <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;justify-content:flex-end">
-          <button type="button" class="btn btn-ghost btn-sm" id="accept-all-suggestions">Accept all</button>
+        <p class="recon-sub" style="margin:0 0 0.5rem">Each field is suggested once, against the table it fits best. Check each one: a wrong match puts data in the wrong place.</p>
+        <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap">
+          ${strong ? `<button type="button" class="btn btn-ghost btn-sm" id="accept-all-suggestions">Accept the ${strong} strong ${strong === 1 ? 'one' : 'ones'} (${Math.round(STRONG_SUGGESTION * 100)}% or more)</button>` : ''}
           <button type="button" class="btn btn-ghost btn-sm" id="reject-all-suggestions">Reject all</button>
         </div>
         <div class="suggestions-grid">${suggestions.map((s, i) => renderSuggestion(s, i)).join('')}</div>`;
       
-      listEl.querySelector('#accept-all-suggestions').onclick = () => {
-        suggestions.forEach((_, i) => acceptSuggestion(projectId, suggestions, i, backdrop));
+      const acceptAll = listEl.querySelector('#accept-all-suggestions');
+      if (acceptAll) acceptAll.onclick = () => {
+        suggestions.forEach((s, i) => { if (s.confidence >= STRONG_SUGGESTION) acceptSuggestion(projectId, suggestions, i, backdrop); });
       };
       
       listEl.querySelector('#reject-all-suggestions').onclick = () => {
@@ -1879,6 +1882,14 @@ function acceptSuggestion(projectId, suggestions, index, backdrop) {
   
   const suggestion = suggestions[index];
   const p = getProject(projectId);
+  const clash = p.mappings.find(m =>
+    (m.sourceTable === suggestion.sourceTable && m.sourceColumn === suggestion.sourceColumn) ||
+    (m.targetTable === suggestion.targetTable && m.targetColumn === suggestion.targetColumn));
+  if (clash) {
+    card.classList.add('suggestion-rejected');
+    card.querySelector('.suggestion-actions').innerHTML = `<span style="color:var(--muted)">Not added: ${esc(clash.sourceColumn)} → ${esc(clash.targetColumn)} is already matched</span>`;
+    return;
+  }
   
   const lookupRule = suggestion.valueTranslations?.length 
     ? suggestion.valueTranslations.join('\n')

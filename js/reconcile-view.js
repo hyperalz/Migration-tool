@@ -10,6 +10,7 @@ import {
   tablePairs, guessKeyMappingIds, getColumn, isLikelyPersonal, isLikelyAmount,
   reconcilePair, buildRun, fingerprintRun, compareWithHistory, allGroups, exceptionRows,
   formatAmount, SEVERITY_LABEL,
+  suggestKeyMappingIds,
 } from './reconcile.js';
 import { plainSummary } from './reconcile-plain.js';
 import { projectOverview } from './reconcile-overview.js';
@@ -147,6 +148,7 @@ function demoInputs(project, load) {
 
 function parseExtract(text) {
   if (typeof Papa === 'undefined') throw new Error('CSV reader did not load. Check your connection and reload.');
+  if (!String(text).replace(/^\uFEFF/, '').trim()) throw new Error('This file is empty.');
   const parsed = Papa.parse(text.replace(/^﻿/, ''), {
     header: true,
     skipEmptyLines: 'greedy',
@@ -169,6 +171,7 @@ export function renderReconcile({ id }, ui) {
   const pairs = tablePairs(project.mappings);
   // Held in memory only, and dropped when you leave this screen.
   const loaded = {};
+  const keyTouched = {}; // pairs where the person chose the key themselves
 
   if (!pairs.length) {
     ui.mount(`
@@ -333,7 +336,25 @@ export function renderReconcile({ id }, ui) {
       }
       return n;
     };
-    const s = repeats(l.sourceRows, keyMappings.map(m => m.sourceColumn));
+    const missingIn = (rows, colsWanted) => rows?.length ? colsWanted.filter(c => !(c in rows[0])) : [];
+    const ms = missingIn(l.sourceRows, keyMappings.map(m => m.sourceColumn));
+    const mt = missingIn(l.targetRows, keyMappings.map(m => m.targetColumn));
+    if (ms.length || mt.length) {
+      box.innerHTML = `<span class="recon-warn">${ms.length ? `The old file has no ${esc(ms.join(', '))} column. ` : ''}${mt.length ? `The new file has no ${esc(mt.join(', '))} column. ` : ''}Records cannot be matched until the key is in both files. Check you chose the right files, or tick a different key under Fields and settings.</span>`;
+      return;
+    }
+    let s = repeats(l.sourceRows, keyMappings.map(m => m.sourceColumn));
+    let autoNote = '';
+    if (s > 0 && !keyTouched[pairId] && l.sourceRows) {
+      const better = suggestKeyMappingIds(pair, l.sourceRows);
+      if (better) {
+        const before = keyMappings.map(m => m.sourceColumn).join(' + ');
+        document.querySelectorAll(`input[data-role="key"][data-pair="${CSS.escape(pairId)}"]`).forEach(cb => { cb.checked = better.includes(cb.value); });
+        keyMappings.splice(0, keyMappings.length, ...pair.mappings.filter(m => better.includes(m.id)));
+        s = repeats(l.sourceRows, keyMappings.map(m => m.sourceColumn));
+        autoNote = ` ${before} on its own repeats, so MapBridge chose the fewest fields that pick out each record once. Change this under Fields and settings if it is wrong.`;
+      }
+    }
     const t = repeats(l.targetRows, keyMappings.map(m => m.targetColumn));
     const label = keyMappings.map(m => m.sourceColumn).join(' + ');
     if (s > 0) {
@@ -341,12 +362,12 @@ export function renderReconcile({ id }, ui) {
       const details = document.querySelector(`[data-pair-block="${CSS.escape(pairId)}"] details`);
       if (details) details.open = true;
     } else {
-      box.textContent = `Records matched on ${label}.` + (t > 0 ? ` ${num(t)} repeated key${t === 1 ? '' : 's'} in the new extract will be reported as duplicates.` : '');
+      box.textContent = `Records matched on ${label}.` + autoNote + (t > 0 ? ` ${num(t)} repeated key${t === 1 ? '' : 's'} in the new extract will be reported as duplicates.` : '');
     }
   }
 
   document.querySelectorAll('input[data-role="key"]').forEach(cb =>
-    cb.addEventListener('change', () => updateKeyCheck(cb.dataset.pair)));
+    cb.addEventListener('change', () => { keyTouched[cb.dataset.pair] = true; updateKeyCheck(cb.dataset.pair); }));
 
   document.getElementById('recon-run').addEventListener('click', async () => {
     errorBox.hidden = true;
