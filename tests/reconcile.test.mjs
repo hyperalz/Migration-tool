@@ -1714,3 +1714,13 @@ test('key choice: when one field repeats, the fewest fields that identify each r
   const sids = suggestKeyMappingIds(sup, extracts[sup.id].sourceRows);
   assert.deepEqual(sup.mappings.filter(m => sids.includes(m.id)).map(m => m.sourceColumn), ['supplier_id']);
 });
+
+test('masking: titles, special-category and sensitive schools fields are masked by default', () => {
+  const masked = ['title', 'TITLE', 'contact_title', 'salutation', 'marital_status', 'religion', 'faith_code', 'sexual_orientation',
+    'sen_stage', 'SEN_CODE', 'ehcp_flag', 'fsm', 'FSM_TYPE', 'free_school_meals', 'pupil_premium', 'safeguarding_flag',
+    'child_protection', 'cp_plan', 'looked_after', 'lac', 'criminal_record', 'offence_code', 'nationality', 'trade_union', 'maternity_start'];
+  for (const name of masked) assert.ok(isLikelyPersonal({ name }), `${name} should be masked`);
+  assert.ok(isLikelyPersonal({ name: 'need_code', description: 'Special educational needs stage' }));
+  const notMasked = ['status', 'supplier_ref', 'payment_terms', 'cost_centre', 'account_code', 'period', 'balance', 'tax_code', 'sentence_count', 'subtitle_code', 'scene', 'cpu'];
+  for (const name of notMasked) assert.ok(!isLikelyPersonal({ name }), `${name} should not be masked`);
+});
