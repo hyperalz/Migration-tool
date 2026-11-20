@@ -1,6 +1,7 @@
 // The problems log page. See problems.js for how problems are worked out.
 
 import { getProject } from './store.js';
+import { fieldTag } from './system-tags.js';
 import { projectProblems, problemCounts, filterProblems, problemsCsv, isOpen, PROBLEM_STATUS, WHERE_LABEL, PROBLEMS_TEXT } from './problems.js';
 import { areaPath } from './area-page.js';
 import { NO_AREA } from './reconcile-overview.js';
@@ -16,7 +17,7 @@ export function problemsTable(id, rows, esc, { showArea = true } = {}) {
     <thead><tr><th scope="col">Field</th>${showArea ? '<th scope="col">Area</th>' : ''}<th scope="col">Found in</th><th scope="col">What went wrong</th><th scope="col">Raised</th><th scope="col">Where it is</th></tr></thead>
     <tbody>${rows.map(r => `
       <tr class="problem-${r.status}">
-        <td><strong>${esc(r.table)}.${esc(r.field)}</strong><div class="recon-sub recon-mono">from ${esc(r.from)}</div></td>
+        <td>${fieldTag('new', `${r.table}.${r.field}`, esc)}<div class="recon-sub sys-from">from ${fieldTag('old', r.from, esc)}</div></td>
         ${showArea ? `<td><a href="${areaPath(id, r.area)}">${esc(r.area === NO_AREA ? 'No area' : r.area)}</a></td>` : ''}
         <td>${esc(WHERE_LABEL[r.where])}<div class="recon-sub">Round ${num(r.round)}</div></td>
         <td>${esc(r.note || '—')}${r.reference ? `<div class="recon-sub">Ref: ${esc(r.reference)}</div>` : ''}</td>
