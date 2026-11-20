@@ -16,6 +16,7 @@ import { plainSummary } from './reconcile-plain.js';
 import { projectOverview } from './reconcile-overview.js';
 import { areaBoard, STAGES } from './work-queue.js';
 import { areaPath } from './area-page.js';
+import { JOURNEY_TEXT, tableJourney, suggestedStage, runStage, BULK, bulkMark, supplierRows, fileRequestRows, fileRequestText } from './journey.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
 } from './demoFinance.js';
@@ -89,7 +90,7 @@ function unmappedTargetNotes(project, pairs) {
   return notes;
 }
 
-async function executeRun(project, { label, inputs }) {
+async function executeRun(project, { label, inputs, stage = 'test' }) {
   const user = getCurrentUser();
   const pairs = tablePairs(project.mappings);
   const results = [];
@@ -119,6 +120,7 @@ async function executeRun(project, { label, inputs }) {
   notCovered.push(...unmappedTargetNotes(project, pairs.filter(p => results.some(r => r.id === p.id))));
 
   const run = buildRun({ project, label, by: user?.name || user?.email || 'unknown', pairResults: results, notCovered });
+  run.stage = stage === 'live' ? 'live' : 'test';
   run.fingerprint = await fingerprintRun(run);
 
   const fresh = getProject(project.id);
@@ -230,11 +232,11 @@ export function renderReconcile({ id }, ui) {
 
   function renderRunsList() {
     const list = runs(getProject(id)).slice().reverse();
-    if (!list.length) return '<p class="recon-sub">No trial loads checked yet.</p>';
+    if (!list.length) return '<p class="recon-sub">No loads checked yet.</p>';
     return list.map(r => `
       <div class="recon-run">
         <div>
-          <strong>${esc(r.label)}</strong>
+          <strong>${esc(r.label)}</strong> <span class="jr-stage-pill jr-stage-${runStage(r)}">${runStage(r) === 'live' ? 'Live' : 'Test'}</span>
           <div class="recon-sub">${esc(fmtDate(r.at))} · ${esc(r.by)} · ${num(r.summary.recordsSource)} records · ${pct(r.summary.matchRate)} of field values matched</div>
         </div>
         <div class="recon-run-right">
@@ -245,11 +247,59 @@ export function renderReconcile({ id }, ui) {
       </div>`).join('');
   }
 
+  const journey = tableJourney(project);
+  const stageNow = suggestedStage(journey);
+  const runsIn = st => runs(project).filter(r => runStage(r) === st).length;
+  const when = iso => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const tick = (done, total) => done >= total ? '<span class="jr-ok">✓</span>' : done ? `<span class="jr-part">${num(done)} of ${num(total)}</span>` : '<span class="jr-todo">○</span>';
+  const checkLine = c => !c ? '' : c.serious
+    ? `<a class="jr-bad" href="#/projects/${id}/reconcile/${c.runId}">${num(c.serious)} serious ${c.serious === 1 ? 'problem' : 'problems'}</a>`
+    : `<a class="jr-ok-text" href="#/projects/${id}/reconcile/${c.runId}">Files check out</a>`;
+  const peopleLine = (s, total) => s.passed + s.failed === 0 ? '' :
+    `${s.failed ? `<span class="jr-bad">${num(s.failed)} failed</span> · ` : ''}${num(s.passed)} of ${num(total)} passed on screen`;
+  const stageCell = (s, total) => `
+    <div>${tick(s.loaded, total)} Loaded${s.loaded >= total && s.at ? ` ${esc(when(s.at))}` : ''}</div>
+    ${checkLine(s.check) ? `<div>${checkLine(s.check)}</div>` : ''}
+    ${peopleLine(s, total) ? `<div class="recon-sub">${peopleLine(s, total)}</div>` : ''}`;
+  const action = r => {
+    const b = (cls, text, extra = '') => `<button type="button" class="btn ${cls} btn-sm" data-journey="${extra}" data-pair="${esc(r.id)}">${esc(text)}</button>`;
+    switch (r.next) {
+      case 'send': return `${b('btn-secondary', 'Download the matches', 'download')} ${b('btn-primary', 'Mark as sent', 'send')}`;
+      case 'markTest': return `${b('btn-ghost', 'What files to ask for', 'request')} ${b('btn-primary', 'Mark as loaded into test', 'markTest')}`;
+      case 'checkTest': case 'fixTest': return b('btn-primary', r.next === 'fixTest' ? 'Check it again' : 'Check the files', 'check-test');
+      case 'uatTest': case 'uatLive': return `<a class="btn btn-secondary btn-sm" href="#/projects/${id}/verify">Record people's testing</a>`;
+      case 'markLive': return `${b('btn-ghost', 'What files to ask for', 'request')} ${b('btn-primary', 'Mark as loaded into live', 'markLive')}`;
+      case 'checkLive': case 'fixLive': return b('btn-primary', r.next === 'fixLive' ? 'Check it again' : 'Check the files', 'check-live');
+      default: return `<a class="btn btn-secondary btn-sm" href="#/projects/${id}/reconcile/overview">Go to sign off</a>`;
+    }
+  };
+  const board = `
+    <section class="card jr-board" aria-labelledby="jr-title">
+      <h2 class="recon-h2" id="jr-title">${esc(JOURNEY_TEXT.boardTitle)}</h2>
+      <ol class="jr-steps">${JOURNEY_TEXT.steps.map(s => `<li><strong>${esc(s.title)}</strong><span>${esc(s.text)}</span></li>`).join('')}</ol>
+      <div class="schema-preview"><table class="jr-table">
+        <thead><tr><th>Table</th><th>1. Sent</th><th>2. Test load</th><th>3. Live load</th><th>Next</th></tr></thead>
+        <tbody>${journey.map(r => `
+          <tr id="jr-${esc(r.id)}">
+            <td><strong>${esc(r.name)}</strong><div class="recon-sub">${num(r.total)} matched ${r.total === 1 ? 'field' : 'fields'}</div></td>
+            <td>${tick(r.send.done, r.total)}${r.send.done >= r.total && r.send.at ? ` ${esc(when(r.send.at))}` : ''}</td>
+            <td>${r.send.done ? stageCell(r.test, r.total) : ''}</td>
+            <td>${r.test.passed || r.live.loaded ? stageCell(r.live, r.total) : ''}</td>
+            <td class="jr-next"><div class="jr-next-text">${esc(r.nextText)}</div>${action(r)}</td>
+          </tr>
+          <tr class="jr-request" id="jr-request-${esc(r.id)}" hidden><td colspan="5"></td></tr>`).join('')}
+        </tbody>
+      </table></div>
+      <p class="recon-sub" style="margin:0.6rem 0 0">The <a href="#/projects/${id}/verify">field tracker</a> shows the same steps for every field.</p>
+    </section>`;
+
   ui.mount(`
     ${ui.projectSteps(project, 'reconcile')}
-    <div class="page-head"><div><h1>Check a load</h1>
-      <p>Check that what landed in ${esc(newName(project))} matches ${esc(oldName(project))}. The agreed matches are the rule book.</p></div>
-      <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Overview and sign-off</a></div>
+    <div class="page-head"><div><h1>${esc(JOURNEY_TEXT.title)}</h1>
+      <p>${esc(JOURNEY_TEXT.lead)}</p></div>
+      <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Sign off</a></div>
+
+    ${board}
 
     ${project.demo === FINANCE_DEMO ? `
       <div class="card recon-demo">
@@ -261,11 +311,17 @@ export function renderReconcile({ id }, ui) {
         </div>
       </div>` : ''}
 
-    <div class="card">
-      <h2 class="recon-h2">Check a trial load</h2>
+    <div class="card" id="recon-check">
+      <h2 class="recon-h2">${esc(JOURNEY_TEXT.checkTitle)}</h2>
+      <p class="recon-sub" style="margin:0 0 0.75rem">${esc(JOURNEY_TEXT.checkLead)}</p>
+      <fieldset class="jr-stage">
+        <legend>${esc(JOURNEY_TEXT.whichLoad)}</legend>
+        <label><input type="radio" name="recon-stage" value="test" ${stageNow === 'test' ? 'checked' : ''}> The test load</label>
+        <label><input type="radio" name="recon-stage" value="live" ${stageNow === 'live' ? 'checked' : ''}> The live load</label>
+      </fieldset>
       <div class="field" style="max-width:360px">
         <label for="recon-label">Name of this load</label>
-        <input id="recon-label" value="Trial load ${runs(project).length + 1}">
+        <input id="recon-label" value="${stageNow === 'live' ? 'Live' : 'Test'} load ${runsIn(stageNow) + 1}">
       </div>
       ${pairs.map(pairBlock).join('')}
       <p class="recon-privacy">Extract files are read in this browser only. Rows are not saved or sent anywhere.
@@ -275,11 +331,65 @@ export function renderReconcile({ id }, ui) {
     </div>
 
     <div class="card">
-      <h2 class="recon-h2">Trial loads checked</h2>
+      <h2 class="recon-h2">Loads checked</h2>
       <div id="recon-runs">${renderRunsList()}</div>
     </div>
   `);
   ui.attachLogout();
+
+  // Changing which load this is renames the load, unless the person typed a name.
+  const labelInput = document.getElementById('recon-label');
+  let labelEdited = false;
+  labelInput.addEventListener('input', () => { labelEdited = true; });
+  document.querySelectorAll('input[name="recon-stage"]').forEach(r => r.addEventListener('change', () => {
+    if (!labelEdited) labelInput.value = `${r.value === 'live' ? 'Live' : 'Test'} load ${runsIn(r.value) + 1}`;
+  }));
+
+  document.querySelector('.jr-board')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-journey]');
+    if (!btn) return;
+    const act = btn.dataset.journey;
+    const row = journey.find(r => r.id === btn.dataset.pair);
+    if (!row) return;
+    if (act === 'download') {
+      downloadCSV(supplierRows(row.pair), `matches-${row.targetTable}.csv`);
+      return;
+    }
+    if (act === 'request') {
+      const box = document.getElementById(`jr-request-${row.id}`);
+      const stage = row.next === 'markLive' ? 'live' : 'test';
+      const keyIdsFor = pair => guessKeyMappingIds(pair);
+      const text = fileRequestText([row], { oldName: oldName(project), newName: newName(project), stage, keyIdsFor });
+      box.querySelector('td').innerHTML = `
+        <p style="margin:0 0 0.4rem"><strong>What files to ask for</strong> after the ${stage} load. Copy this into an email, or download it as a checklist.</p>
+        <pre class="jr-request-text">${esc(text)}</pre>
+        <button type="button" class="btn btn-ghost btn-sm" data-copy-request>Copy</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-download-request>Download as a checklist (CSV)</button>`;
+      box.hidden = !box.hidden;
+      box.querySelector('[data-copy-request]').onclick = () => navigator.clipboard?.writeText(text).then(() => ui.toast('Copied'), () => ui.toast('Select the text and copy it'));
+      box.querySelector('[data-download-request]').onclick = () => downloadCSV(fileRequestRows([row], keyIdsFor), `files-to-ask-for-${row.targetTable}.csv`);
+      return;
+    }
+    if (act === 'check-test' || act === 'check-live') {
+      const stage = act === 'check-live' ? 'live' : 'test';
+      const radio = document.querySelector(`input[name="recon-stage"][value="${stage}"]`);
+      if (radio && !radio.checked) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
+      const block = document.querySelector(`[data-pair-block="${CSS.escape(row.id)}"]`);
+      (block || document.getElementById('recon-check')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      block?.classList.add('jr-focus');
+      setTimeout(() => block?.classList.remove('jr-focus'), 2000);
+      return;
+    }
+    if (BULK[act]) {
+      const p = getProject(id);
+      const pair = tablePairs(p.mappings).find(x => x.id === row.id);
+      const moved = bulkMark(pair.mappings, act, getCurrentUser()?.name || 'unknown');
+      saveProject(p);
+      ui.toast(`${row.name}: ${moved} ${moved === 1 ? 'field' : 'fields'} marked as ${act === 'send' ? 'sent' : act === 'markTest' ? 'loaded into test' : 'loaded into live'}`);
+      renderReconcile({ id }, ui);
+      document.getElementById(`jr-${row.id}`)?.scrollIntoView({ block: 'center' });
+    }
+  });
 
   const errorBox = document.getElementById('recon-error');
   const showError = msg => { errorBox.textContent = msg; errorBox.hidden = false; };
@@ -388,8 +498,9 @@ export function renderReconcile({ id }, ui) {
       };
     }
     try {
-      const label = document.getElementById('recon-label').value.trim() || 'Trial load';
-      const run = await executeRun(getProject(id), { label, inputs });
+      const stage = document.querySelector('input[name="recon-stage"]:checked')?.value || 'test';
+      const label = document.getElementById('recon-label').value.trim() || (stage === 'live' ? 'Live load' : 'Test load');
+      const run = await executeRun(getProject(id), { label, inputs, stage });
       ui.toast('Checks complete');
       location.hash = `#/projects/${id}/reconcile/${run.id}`;
     } catch (err) {
@@ -402,7 +513,7 @@ export function renderReconcile({ id }, ui) {
       const load = Number(btn.dataset.demoLoad);
       try {
         const p = getProject(id);
-        const run = await executeRun(p, { label: `Demo trial load ${load}`, inputs: demoInputs(p, load) });
+        const run = await executeRun(p, { label: `Demo trial load ${load}`, inputs: demoInputs(p, load), stage: 'test' });
         location.hash = `#/projects/${id}/reconcile/${run.id}`;
       } catch (err) {
         showError(err.message);

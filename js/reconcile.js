@@ -692,7 +692,11 @@ export function allGroups(run) {
 // listed under firstTime.
 //
 // @param {object[]} history every run, oldest first, including `current`
+// Test loads are compared with test loads, and live loads with live loads.
+const sameStage = (history, current) => history.filter(r => (r.stage === 'live') === (current.stage === 'live'));
+
 export function compareWithHistory(history, current) {
+  history = sameStage(history, current);
   const index = history.findIndex(r => r.id === current.id);
   const earlier = (index < 0 ? history : history.slice(0, index)).slice().reverse();
   const fixed = [];
@@ -732,6 +736,7 @@ export function compareWithHistory(history, current) {
 // Issue counts over time for the tables in `current` only, so the trend is
 // like for like even when earlier runs covered other tables.
 export function trendFor(history, current) {
+  history = sameStage(history, current);
   const ids = new Set(current.pairs.map(p => p.id));
   const index = history.findIndex(r => r.id === current.id);
   const upTo = index < 0 ? [...history, current] : history.slice(0, index + 1);

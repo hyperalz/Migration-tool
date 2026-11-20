@@ -28,14 +28,14 @@ export const STEP_GUIDE = {
     done: 'Every field the new system must have has a match.',
   },
   check: {
-    what: 'The data is copied into the new system. This is called a load. Then you check the copy is right.',
+    what: 'The data is copied into a test copy of the new system, then into live. Each time, you check it.',
     todo: [
-      'Ask for two files. One comes from the old system and one from the new system.',
-      'Add both files and press Run checks.',
-      'Read the summary. It tells you what matched and what needs fixing.',
-      'Fix the problems. Then load and check again.',
+      'Send the matches to whoever does the load.',
+      'When the test load is done, ask for two files for each table and check them.',
+      'People test the data on screen. Fix what is wrong, then load again.',
+      'Do the same for the live load.',
     ],
-    done: 'Every table passes its latest check.',
+    done: 'Every table is loaded into live and checks out.',
   },
   signoff: {
     what: 'The people in charge of each area agree that their part is right.',
@@ -81,9 +81,9 @@ export const SCREEN_GUIDE = {
     'A warning shows when the two sides write things in a different way.',
   ],
   reconcile: [
-    'A load is when data is copied into the new system.',
-    'For each table, add one file from the old system and one from the new system.',
-    'Press Run checks. You get a report that shows what matched and what did not.',
+    'Each table goes through the same three steps: send, test load, live load.',
+    'The table at the top shows where each one is, and what to do next.',
+    'To check a load, add one file from each system and press Run checks.',
     'Your files stay on this computer. They are not sent anywhere.',
   ],
   verify: [

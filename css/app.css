@@ -2334,3 +2334,29 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .table-new-badge { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: #dcfae6; color: #085d3a; font-size: 0.72rem; font-weight: 700; vertical-align: middle; }
 .map-new-bar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: space-between; background: #f0fdf4; border: 1px solid #abefc6; border-radius: var(--radius); padding: 0.55rem 0.9rem; margin: 0 0 0.9rem; font-size: 0.92rem; }
 .map-new-bar label { display: flex; gap: 0.4rem; align-items: center; cursor: pointer; }
+
+/* ---------- Move the data: table by table ---------- */
+.jr-steps { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+.jr-steps li { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.85rem; background: var(--surface); display: flex; flex-direction: column; gap: 0.2rem; }
+.jr-steps li span { font-size: 0.88rem; color: var(--muted); }
+.jr-table { width: 100%; }
+.jr-table td { vertical-align: top; font-size: 0.92rem; }
+.jr-table td > div + div { margin-top: 0.2rem; }
+.jr-ok { color: #067647; font-weight: 700; }
+.jr-ok-text { color: #067647; font-weight: 600; }
+.jr-part { color: #93370d; font-weight: 600; }
+.jr-todo { color: var(--muted); }
+.jr-bad { color: #b42318; font-weight: 600; }
+.jr-next { min-width: 220px; }
+.jr-next-text { font-weight: 600; margin-bottom: 0.35rem; }
+.jr-next .btn { margin: 0 0.25rem 0.25rem 0; }
+.jr-request td { background: #f8fafc; }
+.jr-request-text { white-space: pre-wrap; font-size: 0.82rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 0.6rem; margin: 0 0 0.5rem; }
+.jr-stage { border: 0; padding: 0; margin: 0 0 0.9rem; display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
+.jr-stage legend { font-weight: 600; padding: 0; margin-bottom: 0.4rem; width: 100%; }
+.jr-stage label { display: flex; gap: 0.4rem; align-items: center; cursor: pointer; }
+.jr-stage-pill { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; vertical-align: middle; }
+.jr-stage-test { background: #fef0c7; color: #93370d; }
+.jr-stage-live { background: #ede9fe; color: #5b21b6; }
+.jr-focus { outline: 3px solid var(--brand); outline-offset: 4px; border-radius: var(--radius); transition: outline 0.3s; }
+@media (max-width: 760px) { .jr-steps { grid-template-columns: 1fr; } }
