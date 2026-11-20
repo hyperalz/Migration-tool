@@ -32,8 +32,12 @@ export function buildExportPackage(project, user) {
       finalRunId: project.reconFinalRunId || null,
       areaSignoffs: project.reconAreaSignoffs || [],
     },
+    // What the supplier delivered and when, and what is still to come.
+    deliveries: project.deliveries || [],
+    expectedTables: project.expectedTables || [],
     summary: {
       totalMappings: project.mappings.length,
+      deliveries: (project.deliveries || []).length,
       checkedLoads: (project.reconRuns || []).length,
       areaSignoffs: (project.reconAreaSignoffs || []).length,
     },

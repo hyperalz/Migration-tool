@@ -290,6 +290,7 @@ export function bindScreenshotDictionary(projectId, ui, rerender, opts = {}) {
     const shotTables = new Set(incoming.tables.map(t => t.name));
     merged.schema.tables.forEach(t => { if (shotTables.has(t.name)) t.origin = 'screenshot'; });
     p.sourceSchema = { ...merged.schema, system: p.sourceSystem || merged.schema.system };
+    opts.afterApply?.(p, incoming);
 
     const ticked = state.rows.filter(r => r.ticked && !r.already).length;
     p.screenshotImport = {

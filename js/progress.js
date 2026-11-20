@@ -1,3 +1,4 @@
+import { stillExpected } from './deliveries.js';
 // Works out where a project stands: the state of each step and the single
 // most useful thing to do next. Everything is derived from the project's own
 // data, so the step bar and the project home can never disagree with it.
@@ -81,8 +82,9 @@ export function projectProgress(project) {
 
   // 1. Set up
   const haveBoth = src.fields > 0 && tgt.fields > 0;
+  const waiting = stillExpected(project).length;
   out.setup = {
-    state: haveBoth ? 'done' : (src.fields || tgt.fields) ? 'progress' : 'todo',
+    state: haveBoth ? (waiting ? 'progress' : 'done') : (src.fields || tgt.fields) ? 'progress' : 'todo',
     summary: haveBoth
       ? `Old system: ${num(src.tables)} ${plural(src.tables, 'table')}, ${num(src.fields)} fields. New system: ${num(tgt.tables)} ${plural(tgt.tables, 'table')}, ${num(tgt.fields)} fields.`
       : src.fields ? 'The old system’s field list is loaded. The new system’s is still needed.'
@@ -91,6 +93,10 @@ export function projectProgress(project) {
     next: src.fields ? 'Add the field list for the new system' : tgt.fields ? 'Add the field list for the old system' : 'Add the field lists for both systems',
     nextPath: 'setup',
   };
+  if (haveBoth && waiting) {
+    out.setup.summary += ` Waiting for ${num(waiting)} ${plural(waiting, 'table')} still to come.`;
+    out.setup.next = 'Add the tables still to come';
+  }
 
   // 2. Map and agree
   const missing = requiredUnmapped(project);

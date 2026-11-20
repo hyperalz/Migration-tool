@@ -3,7 +3,9 @@ import { defaultVerification } from './verification.js';
 import { getSchemaColumn, valuesFormatMismatch } from './schema.js';
 
 export class MappingCanvas {
-  constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping, getActor, oldLabel = 'Old system', newLabel = 'New system' }) {
+  constructor(container, { sourceSchema, targetSchema, mappings, onChange, onSelectMapping, getActor, oldLabel = 'Old system', newLabel = 'New system', newTables = { source: new Set(), target: new Set() }, onlyNewSide = null }) {
+    this.newTables = newTables;
+    this.onlyNewSide = onlyNewSide;
     this.oldLabel = oldLabel;
     this.newLabel = newLabel;
     this.container = container;
@@ -57,9 +59,11 @@ export class MappingCanvas {
       )
     );
 
-    return schema.tables.map(table => `
+    const fresh = this.newTables?.[side] || new Set();
+    const tables = this.onlyNewSide === side ? schema.tables.filter(t => fresh.has(t.name)) : schema.tables;
+    return tables.map(table => `
       <details class="table-group" open>
-        <summary>${table.name} <span>${table.columns.length} ${table.columns.length === 1 ? 'field' : 'fields'}</span></summary>
+        <summary>${table.name}${fresh.has(table.name) ? ' <b class="table-new-badge" title="Arrived or changed in the latest delivery">New</b>' : ''} <span>${table.columns.length} ${table.columns.length === 1 ? 'field' : 'fields'}</span></summary>
         ${table.columns.map(col => this.renderColumnItem(table.name, col, side, mappedSet)).join('')}
       </details>
     `).join('');

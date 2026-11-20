@@ -103,7 +103,8 @@ export function bindTemplateImport(projectId, ui, rerender, opts = {}) {
             <li><strong>${num(s.unmatched)}</strong> with no match yet</li>
             ${s.duplicates ? `<li>${num(s.duplicates)} repeated rows left out</li>` : ''}
           </ul>
-          <p class="recon-sub">Importing adds to what is already here. Nothing is removed or overwritten.</p>
+          ${opts.reviewHtml ? opts.reviewHtml(project, parsed.targetSchema) : ''}
+          <p class="recon-sub">Importing adds to what is already here.${opts.reviewHtml ? ' Tables you choose to update take the supplier\'s new version.' : ' Nothing is removed or overwritten.'}</p>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem">
             <button class="btn btn-primary btn-sm" id="template-apply">Import these</button>
             <button class="btn btn-secondary btn-sm" id="template-questions">Download the question list (CSV)</button>
@@ -125,7 +126,9 @@ export function bindTemplateImport(projectId, ui, rerender, opts = {}) {
     const user = getCurrentUser();
     const p = getProject(projectId);
     opts.beforeApply?.(p);
-    const target = mergeSchema(p.targetSchema, parsed.targetSchema);
+    const target = opts.applyTarget
+      ? opts.applyTarget(p, parsed.targetSchema, fileName, preview)
+      : mergeSchema(p.targetSchema, parsed.targetSchema);
     const source = mergeSchema(p.sourceSchema, parsed.sourceSchema);
     p.targetSchema = { ...target.schema, system: p.targetSystem || target.schema.system };
     p.sourceSchema = { ...source.schema, system: p.sourceSystem || source.schema.system };
