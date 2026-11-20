@@ -77,7 +77,7 @@ export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
     <p class="recon-sub" style="margin:-0.5rem 0 1.25rem">To record a step for a field, open the <a href="#/projects/${id}/verify">field tracker</a>.</p>
 
     ${d.usesFileChecks && d.area ? `
-      <h2 class="home-heading">File checks</h2>
+      <h2 class="home-heading">File comparisons</h2>
       <section class="card">${fileCheckTable(id, d.area, esc)}</section>` : ''}
 
     <h2 class="home-heading">Sign-off</h2>

@@ -66,13 +66,13 @@ export function fieldCheckIndex(project, runs = [], { finalRunId = null } = {}) 
       let reason = '';
       if (!f) {
         state = 'not_checked';
-        reason = 'This field was matched after the last check';
+        reason = 'This field was matched after the last file comparison';
       } else if (f.skipped) {
         state = 'not_checked';
         reason = f.skipped;
       } else if (changed) {
         state = 'recheck';
-        reason = 'The matches for this table changed after the last check';
+        reason = 'The matches for this table changed after the last file comparison';
       } else if (f.mismatched > 0 || findings.length) {
         state = 'fail';
       } else {
@@ -98,8 +98,8 @@ export function trackerConflicts(project, index) {
 // One line for the audit trail when a step is recorded.
 export function checkNote(check) {
   if (!check || !check.run) return '';
-  if (check.state === 'pass') return `Latest load check matched (${check.run.label}).`;
-  if (check.state === 'fail') return `Latest load check found differences (${check.run.label}).`;
-  if (check.state === 'recheck') return `Latest load check (${check.run.label}) is out of date: the matches changed since.`;
+  if (check.state === 'pass') return `Latest file comparison matched (${check.run.label}).`;
+  if (check.state === 'fail') return `Latest file comparison found differences (${check.run.label}).`;
+  if (check.state === 'recheck') return `Latest file comparison (${check.run.label}) is out of date: the matches changed since.`;
   return '';
 }

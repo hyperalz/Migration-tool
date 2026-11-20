@@ -305,7 +305,7 @@ function renderDashboard() {
   document.getElementById('app-shell').innerHTML = nav('Projects') + '<main class="app-main" id="app-main"></main>';
   mount(`
     <div class="page-head">
-      <div><h1>Your migration projects</h1><p>Project-scoped workspaces. Export and delete when complete.</p></div>
+      <div><h1>Your projects</h1><p>Each project is one move from an old system to a new one. When it is finished, download the evidence pack and close the project.</p></div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <button class="btn btn-ghost" id="finance-demo-btn">Try the finance demo</button>
         <a href="#/projects/new" class="btn btn-primary">+ New project</a>
@@ -327,7 +327,7 @@ function renderDashboard() {
   document.getElementById('finance-demo-btn').addEventListener('click', () => {
     const demo = createFinanceDemoProject(user);
     toast('Finance demo project created');
-    location.hash = `#/projects/${demo.id}/reconcile`;
+    location.hash = `#/projects/${demo.id}`;
   });
 }
 
@@ -1249,7 +1249,7 @@ function renderVerify({ id }) {
       </div>
       ${conflicts.length ? `
         <div class="recon-error tracker-conflict" role="alert">
-          <span><strong>${conflicts.length} ${conflicts.length === 1 ? 'field is' : 'fields are'} marked as passed, but the latest load check found differences.</strong>
+          <span><strong>${conflicts.length} ${conflicts.length === 1 ? 'field is' : 'fields are'} marked as passed, but the latest file comparison found differences.</strong>
           Either the fix has not been re-checked yet, or the field was passed too early.</span>
           <button class="btn btn-secondary btn-sm" id="show-conflicts">Show ${conflicts.length === 1 ? 'it' : 'them'}</button>
         </div>` : ''}
@@ -1283,7 +1283,7 @@ function renderVerify({ id }) {
                 <button class="verification-pill ${filterQuick === 'active' ? 'active' : ''}" data-filter-type="quick" data-filter="active">In progress <span class="count">${quickCounts.active}</span></button>
                 <button class="verification-pill verify-pill-warn ${filterQuick === 'issues' ? 'active' : ''}" data-filter-type="quick" data-filter="issues"${quickCounts.issues ? '' : ' disabled'}>Issues <span class="count">${quickCounts.issues}</span></button>
                 <button class="verification-pill ${filterQuick === 'done' ? 'active' : ''}" data-filter-type="quick" data-filter="done">Signed off <span class="count">${quickCounts.done}</span></button>
-                <button class="verification-pill verify-pill-warn ${filterQuick === 'failing' || filterQuick === 'conflict' ? 'active' : ''}" data-filter-type="quick" data-filter="failing"${failingCount ? '' : ' disabled'}>Failing load check <span class="count">${failingCount}</span></button>
+                <button class="verification-pill verify-pill-warn ${filterQuick === 'failing' || filterQuick === 'conflict' ? 'active' : ''}" data-filter-type="quick" data-filter="failing"${failingCount ? '' : ' disabled'}>Differences in files <span class="count">${failingCount}</span></button>
               </div>
             </div>
           </div>
@@ -1293,7 +1293,7 @@ function renderVerify({ id }) {
             <thead><tr>
               <th>Field</th>
               <th>Status</th>
-              <th>Latest load check</th>
+              <th>File comparison</th>
               <th>Progress</th>
               <th class="col-service-area">Area</th>
             </tr></thead>
@@ -1459,7 +1459,7 @@ async function handleTraceStepClick(projectId, mappingId, stepKey, rerender) {
     if (check?.state === 'fail') {
       const reason = await showCheckWarningModal({ step, mapping: m, check });
       if (!reason) return;
-      note = `${step.action}. Recorded as passed although the latest load check found differences (${check.run.label}). Reason: ${reason}`;
+      note = `${step.action}. Recorded as passed although the latest file comparison found differences (${check.run.label}). Reason: ${reason}`;
     } else if (checkNote(check)) {
       note = `${step.action}. ${checkNote(check)}`;
     }
@@ -1510,7 +1510,7 @@ function showCheckWarningModal({ step, mapping, check }) {
     const findings = check.findings.slice(0, 5);
     backdrop.innerHTML = `
       <div class="record-modal" role="dialog" aria-modal="true" aria-labelledby="check-warn-title" style="width:min(560px,calc(100% - 2rem))">
-        <h3 id="check-warn-title">The latest load check found differences</h3>
+        <h3 id="check-warn-title">The latest file comparison found differences</h3>
         <p class="record-modal-sub"><code>${esc(formatColumnRef(mapping))}</code> · ${esc(check.run.label)}</p>
         <ul class="check-warn-list">
           ${findings.map(f => `<li>${esc(f.title)}${f.kind === 'total_differs' || f.kind === 'not_checked' ? '' : ` <span class="recon-sub" style="display:inline">(${f.count.toLocaleString('en-GB')} ${f.count === 1 ? 'record' : 'records'})</span>`}</li>`).join('')}
