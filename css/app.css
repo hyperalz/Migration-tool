@@ -2317,3 +2317,5 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .schema-example-block { min-width: 0; }
   .schema-example-code { overflow-x: auto; }
 }
+.setup-actions { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin: 0.5rem 0 0.25rem; }
+.setup-orphans { margin: 0.5rem 0; }

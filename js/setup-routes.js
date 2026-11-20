@@ -10,7 +10,16 @@ export const SETUP_TEXT = {
   lead: 'MapBridge matches the two lists in the next step. The better the lists, the better the matches.',
   noRecords: 'You only need the names of the fields and what they hold, never real records about people.',
   question: side => `Where will the ${side} system's list come from?`,
-  change: 'Use a different way',
+  addMore: 'Add more fields',
+  replace: 'Replace this list',
+  keep: 'Cancel',
+  questionMore: side => `Where are the extra ${side} system fields coming from?`,
+  questionReplace: side => `Where will the new ${side} system list come from?`,
+  addNote: 'Fields already in the list are kept. New fields are added, and any blank definitions or values are filled in.',
+  replaceWarn: (n, side) => n
+    ? `${n} ${n === 1 ? 'match uses' : 'matches use'} fields from this list. The ${side} system's list is replaced when you add the new one. Matches to fields that are not in the new list will need matching again.`
+    : `The ${side} system's list is replaced when you add the new one. Nothing changes until then.`,
+  replaceConfirm: 'Yes, replace it',
   bothReady: 'Both lists are in. Next, match the old fields to the new ones.',
   next: 'Next: match the two lists',
   oneMissing: side => `Add the ${side} system's list to start matching.`,
@@ -42,6 +51,63 @@ export const ROUTES = {
 export const SIDE_WORD = { old: 'old', new: 'new' };
 const SCHEMA_KEY = { old: 'sourceSchema', new: 'targetSchema' };
 const ORIGIN_KEY = { old: 'sourceOrigin', new: 'targetOrigin' };
+const ORIGINS_KEY = { old: 'sourceOrigins', new: 'targetOrigins' };
+const FROM = {
+  db: 'its database',
+  file: 'a file',
+  screens: 'pictures of its screens',
+  supplier: "the supplier's spreadsheet",
+  sample: 'a sample list',
+};
+
+/** Every place a side's list came from, first one first. */
+export function listOrigins(project, side) {
+  const first = listOrigin(project, side);
+  if (!first) return [];
+  const all = [first, ...(project[ORIGINS_KEY[side]] || [])];
+  if (side === 'old' && project.templateImport?.added?.sourceFields) all.push('supplier');
+  if (side === 'old' && screenTables(project.sourceSchema).length) all.push('screens');
+  return [...new Set(all)].filter(o => FROM[o]);
+}
+
+/**
+ * Record where a list came from. Adding keeps the earlier sources;
+ * replacing starts again.
+ */
+export function recordOrigin(project, side, origin, mode) {
+  if (mode === 'add' && project[ORIGIN_KEY[side]]) {
+    const extra = new Set(project[ORIGINS_KEY[side]] || []);
+    if (origin !== project[ORIGIN_KEY[side]]) extra.add(origin);
+    project[ORIGINS_KEY[side]] = [...extra];
+  } else {
+    project[ORIGIN_KEY[side]] = origin;
+    delete project[ORIGINS_KEY[side]];
+  }
+}
+
+/** Matches that use a field on this side. */
+export function matchesUsing(project, side) {
+  return (project?.mappings || []).filter(m => side === 'old' ? m.sourceTable && m.sourceColumn : m.targetTable && m.targetColumn).length;
+}
+
+/** Matches whose field on this side is no longer in the list. */
+export function orphanMatches(project, side) {
+  const schema = project?.[SCHEMA_KEY[side]];
+  if (!schema?.tables) return [];
+  const have = new Set(schema.tables.flatMap(t => (t.columns || []).map(c => `${t.name}\u241f${c.name}`)));
+  return (project.mappings || []).filter(m => {
+    const [t, c] = side === 'old' ? [m.sourceTable, m.sourceColumn] : [m.targetTable, m.targetColumn];
+    return t && c && !have.has(`${t}\u241f${c}`);
+  });
+}
+
+/** What adding a list did, in plain words. */
+export function addResultText({ added = 0, filled = 0, kept = 0 }) {
+  const parts = [`Added ${added} ${added === 1 ? 'field' : 'fields'}`];
+  if (filled) parts.push(`filled in details for ${filled}`);
+  if (kept) parts.push(`${kept} ${kept === 1 ? 'was' : 'were'} already in the list`);
+  return parts.join('; ') + '.';
+}
 
 export function routeFor(side, key) {
   return ROUTES[side].find(r => r.key === key) || null;
@@ -99,14 +165,7 @@ export function originLine(project, side) {
   if (!schema?.tables?.length) return '';
   const fields = schema.tables.reduce((n, t) => n + (t.columns?.length || 0), 0);
   const tables = schema.tables.length;
-  const from = {
-    db: 'from its database',
-    file: 'from a file',
-    screens: 'from pictures of its screens',
-    supplier: "from the supplier's spreadsheet",
-    sample: 'from a sample list',
-  }[listOrigin(project, side)] || '';
-  const alsoSupplier = side === 'old' && listOrigin(project, side) !== 'supplier' && project.templateImport?.added?.sourceFields
-    ? " and the supplier's spreadsheet" : '';
-  return `${fields.toLocaleString('en-GB')} ${fields === 1 ? 'field' : 'fields'} in ${tables} ${tables === 1 ? 'table' : 'tables'}${from ? `, ${from}${alsoSupplier}` : ''}`;
+  const froms = listOrigins(project, side).map(o => FROM[o]);
+  const from = froms.length > 1 ? `${froms.slice(0, -1).join(', ')} and ${froms.at(-1)}` : froms[0];
+  return `${fields.toLocaleString('en-GB')} ${fields === 1 ? 'field' : 'fields'} in ${tables} ${tables === 1 ? 'table' : 'tables'}${from ? `, from ${from}` : ''}`;
 }

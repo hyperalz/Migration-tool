@@ -166,17 +166,24 @@ export function parseMappingTemplate(rows, { targetSystem = '', sourceSystem = '
 // Add a parsed field list to an existing one without removing anything.
 export function mergeSchema(existing, incoming) {
   const out = { system: existing?.system || incoming.system || '', tables: (existing?.tables || []).map(t => ({ ...t, columns: [...(t.columns || [])] })) };
-  let added = 0;
+  let added = 0; let filled = 0; let kept = 0;
   for (const t of incoming.tables) {
     let table = out.tables.find(x => x.name === t.name);
     if (!table) { table = { name: t.name, columns: [] }; out.tables.push(table); }
     // Keep the table's area, unless it already has one.
     if (t.section && !table.section) table.section = t.section;
     for (const col of t.columns) {
-      if (!table.columns.some(x => x.name === col.name)) { table.columns.push(col); added++; }
+      const at = table.columns.findIndex(x => x.name === col.name);
+      if (at < 0) { table.columns.push(col); added++; continue; }
+      // A field already there keeps what it has; blanks are filled from the new list.
+      const have = table.columns[at];
+      const fill = {};
+      for (const k of ['type', 'description', 'values']) if (!have[k] && col[k]) fill[k] = col[k];
+      if (Object.keys(fill).length) { table.columns[at] = { ...have, ...fill }; filled++; }
+      else kept++;
     }
   }
-  return { schema: out, added };
+  return { schema: out, added, filled, kept };
 }
 
 // The questions as a list to send to the supplier or service area.

@@ -1728,7 +1728,7 @@ test('masking: titles, special-category and sensitive schools fields are masked 
 });
 
 // ---------- set up: one question per system ----------
-import { ROUTES, chosenRoute, listOrigin, answersFromChoice, originLine, SETUP_TEXT } from '../js/setup-routes.js';
+import { ROUTES, chosenRoute, listOrigin, answersFromChoice, originLine, SETUP_TEXT, recordOrigin, orphanMatches, addResultText, listOrigins } from '../js/setup-routes.js';
 
 test('set up: each system has its own ways in, best first', () => {
   assert.deepEqual(ROUTES.old.map(r => r.key), ['db', 'file', 'screens']);
@@ -1754,4 +1754,45 @@ test('set up: picking a way in answers the start questions too', () => {
   assert.deepEqual(answersFromChoice({ supplierSheet: false }, 'old', 'db'), { supplierSheet: false, oldSystemOpen: true, oldDatabase: true });
   assert.deepEqual(answersFromChoice({}, 'new', 'supplier'), { supplierSheet: true });
   assert.match(SETUP_TEXT.lead, /matches the two lists/);
+});
+
+test('set up: adding fields keeps what is there and fills in blanks; replacing starts again', () => {
+  const existing = { tables: [{ name: 'supplier', columns: [{ name: 'id', type: 'int' }, { name: 'name', type: 'text', description: 'Trading name' }] }] };
+  const incoming = { tables: [
+    { name: 'supplier', columns: [{ name: 'id', type: 'int', description: 'Supplier number' }, { name: 'name', description: 'Other words' }, { name: 'terms', type: 'int' }] },
+    { name: 'contact', columns: [{ name: 'email' }] },
+  ] };
+  const r = mergeSchema(existing, incoming);
+  assert.equal(r.added, 2);
+  assert.equal(r.filled, 1);
+  assert.equal(r.kept, 1);
+  const sup = r.schema.tables.find(t => t.name === 'supplier');
+  assert.equal(sup.columns.find(c => c.name === 'id').description, 'Supplier number', 'a blank is filled in');
+  assert.equal(sup.columns.find(c => c.name === 'name').description, 'Trading name', 'what was there is kept');
+  assert.equal(addResultText(r), 'Added 2 fields; filled in details for 1; 1 was already in the list.');
+
+  const p = { sourceSchema: existing, sourceOrigin: 'db' };
+  recordOrigin(p, 'old', 'screens', 'add');
+  recordOrigin(p, 'old', 'file', 'add');
+  assert.deepEqual(listOrigins(p, 'old'), ['db', 'screens', 'file']);
+  assert.match(originLine(p, 'old'), /from its database, pictures of its screens and a file$/);
+  recordOrigin(p, 'old', 'file', 'replace');
+  assert.deepEqual(listOrigins(p, 'old'), ['file']);
+});
+
+test('set up: matches to fields no longer in a list are found', () => {
+  const p = {
+    sourceSchema: { tables: [{ name: 'supplier', columns: [{ name: 'id' }] }] },
+    targetSchema: { tables: [{ name: 'S', columns: [{ name: 'REF' }] }] },
+    mappings: [
+      { id: 'a', sourceTable: 'supplier', sourceColumn: 'id', targetTable: 'S', targetColumn: 'REF' },
+      { id: 'b', sourceTable: 'supplier', sourceColumn: 'gone', targetTable: 'S', targetColumn: 'REF' },
+      { id: 'c', sourceTable: 'supplier', sourceColumn: 'id', targetTable: 'S', targetColumn: 'OLD' },
+    ],
+  };
+  assert.deepEqual(orphanMatches(p, 'old').map(m => m.id), ['b']);
+  assert.deepEqual(orphanMatches(p, 'new').map(m => m.id), ['c']);
+  assert.match(SETUP_TEXT.replaceWarn(3, 'old'), /^3 matches use fields from this list/);
+  assert.equal(SETUP_TEXT.addMore, 'Add more fields');
+  assert.equal(SETUP_TEXT.replace, 'Replace this list');
 });
