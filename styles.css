@@ -1,25 +1,25 @@
     :root {
-      --bg: #f8fafc;
+      --bg: #f3f2f1;
       --surface: #ffffff;
-      --ink: #0f172a;
-      --text: #374151;
-      --muted: #5B6370;
-      --line: #e2e8f0;
+      --ink: #0b0c0c;
+      --text: #0b0c0c;
+      --muted: #505a5f;
+      --line: #b1b4b6;
       --orange: #F97316;
       --orange-dark: #C2410C;
-      --orange-light: #fff7ed;
-      --blue: #2563EB;
-      --blue-light: #eff6ff;
+      --orange-light: #fdf0e6;
+      --blue: #1d70b8;
+      --blue-light: #e8f1f8;
       --navy: #0b1f4d;
-      --grey-bg: #f3f4f6;
-      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      --grey-bg: #f3f2f1;
+      --shadow: none;
       --radius: 12px;
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: "DM Sans", system-ui, sans-serif;
+      font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
       background: var(--bg);
       color: var(--ink);
       line-height: 1.6;
@@ -62,7 +62,7 @@
     .logo-mark {
       width: 32px;
       height: 32px;
-      border-radius: 8px;
+      border-radius: 0;
       background: linear-gradient(135deg, var(--orange), #ea580c);
       display: grid;
       place-items: center;
@@ -99,7 +99,7 @@
     .btn {
       display: inline-block;
       padding: 0.85rem 1.5rem;
-      border-radius: 8px;
+      border-radius: 0;
       font-weight: 600;
       font-size: 0.95rem;
       transition: all 0.2s;
@@ -115,7 +115,7 @@
     .btn-primary:hover {
       background: #fb923c;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+      box-shadow: none;
     }
 
     .btn-secondary {
@@ -135,7 +135,7 @@
 
     .btn-white:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: none;
     }
 
     /* Sections */
@@ -252,7 +252,7 @@
 
     .hero-image {
       position: relative;
-      border-radius: var(--radius);
+      border-radius: 0;
       overflow: hidden;
       box-shadow: var(--shadow);
       border: 1px solid var(--line);
@@ -308,14 +308,14 @@
     .problem-card {
       background: white;
       border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 0;
       padding: 1.75rem;
     }
 
     .problem-icon {
       width: 56px;
       height: 56px;
-      border-radius: 12px;
+      border-radius: 0;
       background: var(--orange-light);
       display: flex;
       align-items: center;
@@ -369,7 +369,7 @@
       left: 10%;
       right: 10%;
       height: 4px;
-      background: #bfdbfe;
+      background: #d2e2f1;
       z-index: 0;
     }
 
@@ -415,7 +415,7 @@
       color: var(--orange-dark);
       background: var(--orange-light);
       border: 1px solid #fed7aa;
-      border-radius: 20px;
+      border-radius: 0;
       padding: 0.3rem 0.75rem;
       margin-top: 0.5rem;
     }
@@ -444,7 +444,7 @@
     }
 
     .case-label {
-      color: #93c5fd;
+      color: #d2e2f1;
       font-weight: 700;
       font-size: 0.85rem;
       text-transform: none;
@@ -485,7 +485,7 @@
     }
 
     .case-link {
-      color: #93c5fd;
+      color: #d2e2f1;
       font-weight: 600;
       font-size: 1.05rem;
     }
@@ -495,9 +495,9 @@
     }
 
     .case-timeline {
-      background: #1e3a8a;
-      border: 2px solid #60a5fa;
-      border-radius: var(--radius);
+      background: #003078;
+      border: 2px solid #5694ca;
+      border-radius: 0;
       padding: 2.5rem;
       position: relative;
     }
@@ -530,7 +530,7 @@
     }
 
     .mapbridge-screenshot {
-      border-radius: var(--radius);
+      border-radius: 0;
       overflow: hidden;
       box-shadow: var(--shadow);
       border: 1px solid var(--line);
@@ -550,7 +550,7 @@
     .feature-card {
       background: white;
       border: 1px solid var(--line);
-      border-radius: 10px;
+      border-radius: 0;
       padding: 1.25rem;
     }
 
@@ -604,7 +604,7 @@
     .savings-chart {
       background: white;
       border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 0;
       padding: 2rem;
     }
 
@@ -624,8 +624,8 @@
 
     .bar {
       height: 32px;
-      background: #e5e7eb;
-      border-radius: 16px;
+      background: #b1b4b6;
+      border-radius: 0;
       position: relative;
       margin-bottom: 0.5rem;
     }
@@ -635,7 +635,7 @@
       top: 0;
       bottom: 0;
       background: linear-gradient(90deg, #fdba74, var(--orange));
-      border-radius: 16px;
+      border-radius: 0;
     }
 
     .bar-range {
@@ -665,8 +665,8 @@
     .flow-box {
       flex: 1;
       background: white;
-      border: 2px dashed #9ca3af;
-      border-radius: var(--radius);
+      border: 2px dashed #626a6e;
+      border-radius: 0;
       padding: 1.5rem;
       text-align: center;
       font-size: 0.9rem;
@@ -746,7 +746,7 @@
     .credential-box {
       background: var(--grey-bg);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 0;
       padding: 0.75rem 1.25rem;
       font-size: 0.9rem;
       font-weight: 500;
@@ -757,14 +757,14 @@
     .project-card {
       background: white;
       border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 0;
       padding: 2rem;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .project-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      box-shadow: none;
     }
 
     .project-icon {
@@ -806,7 +806,7 @@
       font-size: 0.75rem;
       font-weight: 500;
       padding: 0.35rem 0.75rem;
-      border-radius: 4px;
+      border-radius: 0;
       border: 1px solid var(--line);
     }
 
@@ -895,7 +895,7 @@
     }
 
     .contact-options a {
-      color: #93c5fd;
+      color: #d2e2f1;
       font-weight: 600;
     }
 
@@ -940,7 +940,7 @@
         flex-direction: column;
         align-items: flex-start;
         padding: 5rem 2rem 2rem;
-        box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+        box-shadow: none;
         transition: right 0.3s ease;
         z-index: 100;
       }
@@ -994,7 +994,7 @@
       background: var(--navy);
       color: white;
       padding: 0.75rem 1.25rem;
-      border-radius: 0 0 8px 0;
+      border-radius: 0;
       font-weight: 600;
       z-index: 200;
     }
@@ -1041,7 +1041,7 @@
       align-items: center;
       background: var(--blue-light);
       border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 0;
       padding: 2rem 2.5rem;
       margin: 0 0 2rem;
     }
@@ -1129,21 +1129,96 @@
     @media (max-width: 900px) { .dpo-three { grid-template-columns: 1fr; gap: 1.25rem; } }
 
 /* MapBridge product page */
-.mb-note { color: #6B7280; font-size: 0.92rem; margin-top: 0.75rem; }
+.mb-note { color: #505a5f; font-size: 0.92rem; margin-top: 0.75rem; }
 .mb-steps { list-style: none; counter-reset: mb; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
-.mb-steps li { counter-increment: mb; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem 1rem; }
+.mb-steps li { counter-increment: mb; background: #fff; border: 1px solid #b1b4b6; border-radius: 0; padding: 1.1rem 1rem; }
 .mb-steps li::before { content: counter(mb); display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: #0b4a50; color: #fff; font-weight: 700; margin-bottom: 0.6rem; }
 .mb-steps h3 { font-size: 1.05rem; margin: 0 0 0.35rem; }
-.mb-steps p { font-size: 0.93rem; color: #374151; margin: 0; }
+.mb-steps p { font-size: 0.93rem; color: #0b0c0c; margin: 0; }
 .mb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
 .mb-two h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
 .mb-list { list-style: none; padding: 0; margin: 0; }
-.mb-list li { padding: 0.6rem 0 0.6rem 1.6rem; border-bottom: 1px solid #e2e8f0; position: relative; }
-.mb-list li::before { content: "✓"; position: absolute; left: 0; color: #059669; font-weight: 700; }
-.mb-muted li { color: #6B7280; }
-.mb-muted li::before { content: "–"; color: #9CA3AF; }
+.mb-list li { padding: 0.6rem 0 0.6rem 1.6rem; border-bottom: 1px solid #b1b4b6; position: relative; }
+.mb-list li::before { content: "✓"; position: absolute; left: 0; color: #00703c; font-weight: 700; }
+.mb-muted li { color: #505a5f; }
+.mb-muted li::before { content: "–"; color: #626a6e; }
 .mb-shot { margin: 2.5rem 0 0; }
-.mb-shot img { width: 100%; height: auto; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,0.08); }
-.mb-shot figcaption { color: #6B7280; font-size: 0.88rem; margin-top: 0.5rem; text-align: center; }
+.mb-shot img { width: 100%; height: auto; border-radius: 0; border: 1px solid #b1b4b6; box-shadow: none; }
+.mb-shot figcaption { color: #505a5f; font-size: 0.88rem; margin-top: 0.5rem; text-align: center; }
 @media (max-width: 1000px) { .mb-steps { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 760px) { .mb-steps, .mb-two { grid-template-columns: 1fr; } .mb-two { gap: 2rem; } }
+
+/* ==========================================================================
+   GOV.UK Frontend patterns, Foam Works Digital / MapBridge brand
+   Square corners, Arial, green action buttons, yellow focus, blue underlined
+   links, and dark teal as the only brand colour. Not GOV.UK: no crown, no
+   GDS Transport, no GOV.UK blue header.
+   ========================================================================== */
+:root {
+  --bg: #ffffff; --surface: #ffffff; --ink: #0b0c0c; --text: #0b0c0c; --muted: #505a5f; --line: #b1b4b6;
+  --orange: #0b4a50; --orange-dark: #08363b; --orange-light: #e3eff0;
+  --navy: #0b4a50; --blue: #1d70b8; --blue-light: #f3f2f1; --grey-bg: #f3f2f1;
+  --radius: 0; --shadow: none;
+  --focus: #ffdd00; --link: #1d70b8; --link-hover: #003078;
+}
+body { font-size: 1.1875rem; line-height: 1.32; background: #fff; color: #0b0c0c; -webkit-font-smoothing: antialiased; }
+h1 { font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.04; font-weight: 700; letter-spacing: 0; }
+h2 { font-weight: 700; letter-spacing: 0; }
+h3 { font-weight: 700; }
+.lead { font-size: 1.5rem; line-height: 1.25; color: #0b0c0c; }
+
+/* Links in content: blue and underlined */
+main p a, main li a, .feature-links a, footer a, .faq a, details a {
+  color: var(--link); text-decoration: underline; text-decoration-thickness: max(1px, .0625rem); text-underline-offset: .1578em;
+}
+main p a:hover, main li a:hover, .feature-links a:hover, footer a:hover { color: var(--link-hover); text-decoration-thickness: max(3px, .1875rem); }
+a:focus-visible, summary:focus-visible { outline: 3px solid transparent; background: var(--focus) !important; color: #0b0c0c !important; box-shadow: 0 -2px var(--focus), 0 4px #0b0c0c !important; text-decoration: none; }
+
+/* Header: brand teal, white links */
+nav { background: var(--navy) !important; backdrop-filter: none; border-bottom: 0; }
+.logo, .logo:hover { color: #fff; }
+.logo-mark { background: #fff !important; color: var(--navy); border-radius: 0; }
+.nav-links a { color: #fff; text-decoration: underline; text-underline-offset: .1578em; font-weight: 400; }
+.nav-links a:hover { color: #fff; text-decoration-thickness: 3px; }
+.nav-links .btn, .nav-links a.btn { text-decoration: none; }
+.mobile-menu-btn { color: #fff; }
+.mobile-menu-btn svg { stroke: #fff; }
+
+/* Buttons */
+.btn { border-radius: 0; font-weight: 400; font-size: 1.1875rem; line-height: 1.1875; padding: 8px 12px 7px; border: 2px solid transparent; transition: none; }
+.btn:active { transform: translateY(2px); box-shadow: none !important; }
+.btn-primary { background: #00703c; color: #fff; box-shadow: 0 2px 0 #002d18; }
+.btn-primary:hover { background: #005a30; color: #fff; }
+.btn-secondary { background: #f3f2f1; color: #0b0c0c; border-color: transparent; box-shadow: 0 2px 0 #929191; }
+.btn-secondary:hover { background: #dbdad9; color: #0b0c0c; }
+.btn-white { background: #fff; color: #0b4a50; box-shadow: 0 2px 0 #08363b; }
+.btn-white:hover { background: #f3f2f1; color: #0b4a50; }
+.btn:focus-visible { background: var(--focus) !important; color: #0b0c0c !important; box-shadow: 0 2px 0 #0b0c0c !important; border-color: var(--focus); }
+
+/* Sections */
+.section-grey, .section-blue-light { background: #f3f2f1; }
+.section-navy, .section-orange { background: var(--navy); color: #fff; }
+.section-orange h2, .section-orange p, .section-navy h2, .section-navy p, .section-navy h3, .section-navy li { color: #fff; }
+.section-navy a, .section-orange a:not(.btn) { color: #fff; text-decoration: underline; }
+.hero { background: #fff; }
+.hero-checks li::before { color: #00703c; }
+
+/* Cards and panels: hairline borders, no shadow, square */
+.problem-card, .proof-card, .feature-card, .faq details, .mb-steps li, .hero-image img, .mb-shot img, .case-card, .stage-card {
+  border-radius: 0 !important; box-shadow: none !important; border-color: var(--line) !important;
+}
+.mb-steps li::before { border-radius: 50%; background: var(--navy); }
+.case-label { letter-spacing: 0; text-transform: none; }
+/* Figures and numbers on teal bands are white; on white they are brand teal */
+.section-navy .case-number .big-number, .section-orange .big-number, .section-navy .step-num, .section-orange .step-num { color: #fff; }
+.case-number .big-number, .next-step .step-num { font-weight: 700; }
+.bar-fill { background: var(--navy); }
+.footer-links a:hover { color: var(--link-hover); }
+.case-timeline { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.4); border-radius: 0 !important; }
+/* Header call to action: white button on the teal bar */
+nav .btn-primary, .nav-links .btn-primary { background: #fff; color: #0b4a50; box-shadow: 0 2px 0 #08363b; }
+nav .btn-primary:hover, .nav-links .btn-primary:hover { background: #f3f2f1; color: #0b4a50; }
+/* Buttons on teal bands: white, no underline */
+.section-navy a.btn, .section-orange a.btn { text-decoration: none; }
+.section-navy .btn-primary, .section-orange .btn-primary { background: #fff; color: #0b4a50; box-shadow: 0 2px 0 #08363b; }
+.section-navy .btn-primary:hover, .section-orange .btn-primary:hover { background: #f3f2f1; color: #0b4a50; }
