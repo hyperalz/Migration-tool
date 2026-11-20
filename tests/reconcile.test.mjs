@@ -1249,8 +1249,10 @@ test('strays: rare options sit one click deeper', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   const otherWays = [...app.matchAll(/<details class="other-ways">([\s\S]*?)<\/details>/g)].map(m => m[1]);
   const inside = id => otherWays.some(block => block.includes(`id="${id}"`));
-  for (const id of ['load-source-sample', 'load-target-sample', 'import-source-connector', 'import-target-connector', 'export-csv', 'export-xlsx', 'export-sql']) assert.ok(inside(id), id);
+  for (const id of ['export-csv', 'export-xlsx', 'export-sql']) assert.ok(inside(id), id);
   assert.ok(!inside('export-json'), 'the evidence pack stays in front');
+  // Sample lists only appear inside the "Upload a field list" way in, as a quiet link.
+  assert.match(app, /if \(key === 'file'\) return `[\s\S]*?id="load-\$\{SIDE\[side\]\}-sample">Try a sample list instead/);
 });
 
 // ---------- help panel ----------
@@ -1723,4 +1725,33 @@ test('masking: titles, special-category and sensitive schools fields are masked 
   assert.ok(isLikelyPersonal({ name: 'need_code', description: 'Special educational needs stage' }));
   const notMasked = ['status', 'supplier_ref', 'payment_terms', 'cost_centre', 'account_code', 'period', 'balance', 'tax_code', 'sentence_count', 'subtitle_code', 'scene', 'cpu'];
   for (const name of notMasked) assert.ok(!isLikelyPersonal({ name }), `${name} should not be masked`);
+});
+
+// ---------- set up: one question per system ----------
+import { ROUTES, chosenRoute, listOrigin, answersFromChoice, originLine, SETUP_TEXT } from '../js/setup-routes.js';
+
+test('set up: each system has its own ways in, best first', () => {
+  assert.deepEqual(ROUTES.old.map(r => r.key), ['db', 'file', 'screens']);
+  assert.deepEqual(ROUTES.new.map(r => r.key), ['supplier', 'db', 'file']);
+  assert.ok(!ROUTES.new.some(r => r.key === 'screens'), 'pictures of screens are for the old system only');
+  for (const r of [...ROUTES.old, ...ROUTES.new]) assert.ok(r.best && r.gives, r.key);
+});
+
+test('set up: the open way in follows the choice, then the list, then the start answers', () => {
+  assert.equal(chosenRoute({}, 'old'), null);
+  assert.equal(chosenRoute({ route: { oldSystemOpen: false } }, 'old'), 'screens');
+  assert.equal(chosenRoute({ route: { supplierSheet: true } }, 'new'), 'supplier');
+  const withFile = { sourceSchema: { tables: [{ name: 't', columns: [{ name: 'a' }] }] }, sourceOrigin: 'db' };
+  assert.equal(listOrigin(withFile, 'old'), 'db');
+  assert.equal(chosenRoute(withFile, 'old'), 'db');
+  assert.equal(chosenRoute({ ...withFile, setupRoutes: { old: 'file' } }, 'old'), 'file');
+  assert.equal(listOrigin({ targetSchema: { tables: [{ name: 'T', columns: [] }] }, templateImport: {} }, 'new'), 'supplier');
+  assert.equal(originLine(withFile, 'old'), '1 field in 1 table, from its database');
+});
+
+test('set up: picking a way in answers the start questions too', () => {
+  assert.deepEqual(answersFromChoice({}, 'old', 'screens'), { oldSystemOpen: false });
+  assert.deepEqual(answersFromChoice({ supplierSheet: false }, 'old', 'db'), { supplierSheet: false, oldSystemOpen: true, oldDatabase: true });
+  assert.deepEqual(answersFromChoice({}, 'new', 'supplier'), { supplierSheet: true });
+  assert.match(SETUP_TEXT.lead, /matches the two lists/);
 });

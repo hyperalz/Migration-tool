@@ -10,10 +10,10 @@ export const INTRO = 'You are moving information from an old system to a new one
 // Keyed by step key (see STEPS in progress.js).
 export const STEP_GUIDE = {
   setup: {
-    what: 'Tell MapBridge what information each system holds.',
+    what: 'Get a list of fields from each system.',
     todo: [
-      'Add the list of fields from the old system.',
-      'Add the list of fields from the new system.',
+      'Pick how to get the old system\'s list, and add it.',
+      'Pick how to get the new system\'s list, and add it.',
       'Add the names of the people working on the move.',
     ],
     done: 'Both lists are in.',
@@ -66,9 +66,9 @@ export const SCREEN_GUIDE = {
   ],
   setup: [
     'A field is one piece of information, like a name or a date of birth.',
-    'Each system has a list of its fields. Add the list for the old system on the left. Add the list for the new system on the right.',
+    'You need a list of fields from each system. The next step matches the two lists.',
+    'Pick how you will get each list. Only the tool you pick opens.',
     'You only need the lists. Do not add real records about people.',
-    'Can you no longer open the old system? Add pictures of its screens. The AI reads the names on them and you check each one.',
   ],
   invite: [
     'Add the people who are working on this move.',

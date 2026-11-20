@@ -39,6 +39,8 @@ import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
+import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine } from './setup-routes.js';
+import { screenTables } from './trace.js';
 import { renderExecutive } from './executive-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
 import { bindHelp } from './help-view.js';
@@ -366,137 +368,185 @@ function renderNewProject() {
   });
 }
 
+// Which sides are showing their ways in again after a list was added.
+// Held in memory only: a reload shows the finished state.
+const setupChanging = new Set();
+
 function renderSetup({ id }) {
   const project = getProject(id);
   if (!project) return renderNotFound();
 
   document.getElementById('app-shell').innerHTML = nav(project.name) + '<main class="app-main" id="app-main"></main>';
-  const srcStats = schemaStats(project.sourceSchema);
-  const tgtStats = schemaStats(project.targetSchema);
-  const plan = fieldListsPlan(project);
+  const SIDE = { old: 'source', new: 'target' };
+  const label = side => side === 'old' ? oldLabel(project) : newLabel(project);
+  const hasList = side => Boolean(project[SIDE[side] + 'Schema']?.tables?.length);
+  const changing = side => setupChanging.has(`${id}:${side}`);
+  const chosen = side => chosenRoute(project, side);
 
+  const routeOptions = side => `
+    <fieldset class="setup-routes">
+      <legend>${esc(SETUP_TEXT.question(SIDE_WORD[side]))}</legend>
+      ${ROUTES[side].map(r => `
+        <label class="setup-route ${chosen(side) === r.key ? 'is-on' : ''}">
+          <input type="radio" name="setup-route-${side}" value="${r.key}" data-side="${side}" ${chosen(side) === r.key ? 'checked' : ''}>
+          <span class="setup-route-text"><span class="setup-route-title">${esc(r.title)}</span>
+          <span class="setup-route-best">${esc(r.best)}</span></span>
+        </label>`).join('')}
+    </fieldset>`;
+
+  const sideCard = side => {
+    const list = hasList(side);
+    const stats = schemaStats(project[SIDE[side] + 'Schema']);
+    return `
+      <section class="card setup-side" id="setup-side-${side}">
+        <h2 class="setup-side-title">${esc(label(side))}</h2>
+        ${list ? `
+          <p class="setup-done"><span aria-hidden="true">✓</span> ${esc(originLine(project, side))}</p>
+          ${changing(side) ? `<button type="button" class="btn-link setup-keep" data-side="${side}">Keep this list</button>` : `<button type="button" class="btn-link setup-change" data-side="${side}">${esc(SETUP_TEXT.change)}</button>`}` : ''}
+        ${!list || changing(side) ? routeOptions(side) : ''}
+        ${list && !changing(side) ? renderSchemaPreview(project[SIDE[side] + 'Schema'], stats) : ''}
+      </section>`;
+  };
+
+  const uploadZone = (side, origin, hint) => `
+    <div class="upload-zone" id="${SIDE[side]}-upload" data-origin="${origin}">
+      <input type="file" id="${SIDE[side]}-file" accept="${origin === 'db' ? '.json' : '.json,.csv'}">
+      <p><strong>${origin === 'db' ? 'Add the connector file' : 'Add a field list file'}</strong> (drop it here, or click to choose)</p>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">${esc(hint)}</p>
+    </div>`;
+
+  const tool = (side, key) => {
+    if (key === 'db') return `
+      <ol class="setup-steps">
+        <li>Ask your IT team to run the MapBridge connector once against the ${esc(SIDE_WORD[side])} system's database. It works with SQL Server and Oracle.</li>
+        <li>It only reads the names and types of tables and fields, never records. It saves them in a file.</li>
+        <li>Add that file below.</li>
+      </ol>
+      <p class="recon-sub" style="margin:0 0 0.75rem"><a href="https://github.com/hyperalz/Migration-tool/tree/main/connector" target="_blank" rel="noopener">How IT runs the connector</a> · <a href="it-and-dpo.html" target="_blank" rel="noopener">Security note for IT and data protection</a></p>
+      ${uploadZone(side, 'db', 'The file the connector made, ending in .json.')}`;
+    if (key === 'file') return `
+      ${uploadZone(side, 'file', 'A CSV or JSON file. Row 1 holds the field names. Rows 2 to 4 can hold types, what each field means and the values it allows.')}
+      <p class="recon-sub" style="margin:0.6rem 0 0"><button type="button" class="btn-link" id="load-${SIDE[side]}-sample">Try a sample list instead</button></p>
+      ${renderSchemaExamples()}`;
+    if (key === 'screens') {
+      const shots = screenTables(project.sourceSchema).length > 0;
+      return `${screenshotCard(project, esc)}
+        ${shots ? `<h4 class="setup-then">Then: link the screen names to the real fields</h4>
+        <p class="recon-sub" style="margin:0 0 0.5rem">Screen names are not the names of the fields in the database. If you can still reach it, this finds the real ones.</p>
+        ${traceCard(project, esc)}` : ''}`;
+    }
+    if (key === 'supplier') return templateImportCard(project, esc);
+    return '';
+  };
+
+  // A side's tool stays open while there is no list, while changing, and for
+  // the two ways in that have results or a follow-on step to look at.
+  const panel = side => {
+    const key = chosen(side);
+    if (!key) return '';
+    const showAfter = key === 'screens' || key === 'supplier';
+    if (hasList(side) && !changing(side) && !showAfter) return '';
+    const r = routeFor(side, key);
+    return `
+      <section class="card setup-panel" id="setup-panel-${side}">
+        <h3 class="setup-panel-title">${esc(label(side))}: ${esc(r.title.toLowerCase())}</h3>
+        <p class="recon-sub" style="margin:0 0 0.9rem">${esc(r.gives)}</p>
+        ${tool(side, key)}
+      </section>`;
+  };
+
+  const both = hasList('old') && hasList('new');
   mount(`
     ${projectSteps(project, 'setup')}
-    <div class="page-head"><div><h1>Field lists</h1><p>Add the list of fields for each system, with what each field means and the values it holds.</p></div></div>
-    ${routeCard(project, plan)}
-    ${plan.order.map(k => ({ template: () => templateImportCard(project, esc), screenshots: () => screenshotCard(project, esc), trace: () => traceCard(project, esc) })[k]()).join('')}
-    <div class="grid-2">
-      <div class="card">
-        <h3 style="margin-bottom:0.75rem">${esc(oldLabel(project))}</h3>
-        ${plan.oldUpload ? '' : `<p class="recon-sub" style="margin:0 0 0.5rem">${esc(ROUTE_TEXT.oldFromScreens)}</p>
-        <details class="other-ways"><summary>Add a field list from a file anyway</summary>`}
-        <div class="upload-zone" id="source-upload">
-          <input type="file" id="source-file" accept=".json,.csv">
-          <p><strong>Drop JSON or CSV</strong> or click to browse</p>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">A JSON or CSV file. See the examples below.</p>
-        </div>
-        <details class="other-ways">
-          <summary>Other ways to add a list</summary>
-          <div class="other-ways-body">
-            <button class="btn btn-ghost btn-sm" id="import-source-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
-            <button class="btn btn-ghost btn-sm" id="load-source-sample">Load a sample list (Synergy)</button>
-          </div>
-        </details>
-        ${plan.oldUpload ? '' : '</details>'}
-        ${project.sourceSchema ? renderSchemaPreview(project.sourceSchema, srcStats) : ''}
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:0.75rem">${esc(newLabel(project))}</h3>
-        <div class="upload-zone" id="target-upload">
-          <input type="file" id="target-file" accept=".json,.csv">
-          <p><strong>Drop JSON or CSV</strong> or click to browse</p>
-          <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">Include the values each field allows, for example Y/N or 1/0</p>
-        </div>
-        <details class="other-ways">
-          <summary>Other ways to add a list</summary>
-          <div class="other-ways-body">
-            <button class="btn btn-ghost btn-sm" id="import-target-connector" title="Add the file made by the MapBridge connector">Import connector file</button>
-            <button class="btn btn-ghost btn-sm" id="load-target-sample">Load a sample list (Impulse)</button>
-          </div>
-        </details>
-        ${project.targetSchema ? renderSchemaPreview(project.targetSchema, tgtStats) : ''}
-      </div>
+    <div class="page-head"><div><h1>${esc(SETUP_TEXT.title)}</h1>
+      <p>${esc(SETUP_TEXT.lead)} ${esc(SETUP_TEXT.noRecords)}</p></div></div>
+    <div class="setup-flow" aria-hidden="true">
+      <span class="setup-flow-box ${hasList('old') ? 'is-done' : ''}">${hasList('old') ? '✓ ' : ''}Old system's fields</span>
+      <span class="setup-flow-arrow">→</span>
+      <span class="setup-flow-box setup-flow-match">Match</span>
+      <span class="setup-flow-arrow">←</span>
+      <span class="setup-flow-box ${hasList('new') ? 'is-done' : ''}">${hasList('new') ? '✓ ' : ''}New system's fields</span>
     </div>
-    ${renderSchemaExamples()}
-    <div style="margin-top:1.25rem;display:flex;gap:0.65rem">
-      ${project.sourceSchema && project.targetSchema ? `
-        <a href="#/projects/${id}/map" class="btn btn-primary">Start matching →</a>` : ''}
+    <div class="grid-2 setup-sides">${sideCard('old')}${sideCard('new')}</div>
+    ${panel('old')}
+    ${panel('new')}
+    <div class="setup-next">
+      ${both ? `<p class="setup-next-text">${esc(SETUP_TEXT.bothReady)}</p>
+        <a href="#/projects/${id}/map" class="btn btn-primary">${esc(SETUP_TEXT.next)} →</a>`
+        : `<p class="recon-sub">${esc(!hasList('old') ? SETUP_TEXT.oneMissing('old') : SETUP_TEXT.oneMissing('new'))}</p>`}
     </div>
   `);
-  // Open the box the answers point to first, so the next step is in view.
-  const first = { template: 'template-import', screenshots: 'shot-dict' }[firstBox(project)];
-  if (first && document.getElementById(first)) document.getElementById(first).open = true;
+
+  // The tools inside the panels open straight away: the panel heading already names them.
+  document.querySelectorAll('.setup-panel details.template-import').forEach(d => { d.open = true; });
   bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
   bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }));
   bindTrace(id, reconcileUI(), () => renderSetup({ id }));
   attachLogout();
-  setupUpload('source', id, project);
-  setupUpload('target', id, project);
-  document.getElementById('load-source-sample').addEventListener('click', () => {
-    const p = getProject(id);
-    p.sourceSchema = cloneSample(synergySample);
-    saveProject(p);
-    toast('Synergy sample loaded');
-    renderSetup({ id });
-  });
-  document.getElementById('load-target-sample').addEventListener('click', () => {
-    const p = getProject(id);
-    p.targetSchema = cloneSample(impulseSample);
-    saveProject(p);
-    toast('Impulse sample loaded');
-    renderSetup({ id });
-  });
-  
-  document.getElementById('import-source-connector').addEventListener('click', () => {
-    openConnectorImportModal('source', id);
-  });
-  document.getElementById('import-target-connector').addEventListener('click', () => {
-    openConnectorImportModal('target', id);
-  });
-}
+  if (document.getElementById('source-upload')) setupUpload('source', id);
+  if (document.getElementById('target-upload')) setupUpload('target', id);
 
-// "What you have": the start answers as a "check your answers" list. They
-// are changed in Project settings, so they live in one place.
-function routeCard(project, plan) {
-  const href = `#/projects/${project.id}/settings#settings-route-card`;
-  if (!plan.answered) return `
-    <section class="card route-card" id="route-card">
-      <strong>${esc(ROUTE_TEXT.summary)}</strong>
-      <span class="recon-sub"> ${esc(ROUTE_TEXT.unanswered)}</span>
-      <a class="btn btn-ghost btn-sm" style="margin-left:0.5rem" href="${href}">Answer the questions</a>
-    </section>`;
-  return `
-    <section class="card route-card" id="route-card">
-      <h2 class="route-card-title">${esc(ROUTE_TEXT.summary)}</h2>
-      ${summaryListHtml(routeAnswerRows(project).map(r => ({ ...r, href })), esc)}
-    </section>`;
+  document.querySelectorAll('input[name^="setup-route-"]').forEach(input => {
+    input.addEventListener('change', () => {
+      const side = input.dataset.side;
+      const p = getProject(id);
+      p.setupRoutes = { ...(p.setupRoutes || {}), [side]: input.value };
+      p.route = answersFromChoice(p.route, side, input.value);
+      saveProject(p);
+      renderSetup({ id });
+      document.getElementById(`setup-panel-${side}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+  });
+  document.querySelectorAll('.setup-keep').forEach(btn => {
+    btn.addEventListener('click', () => { setupChanging.delete(`${id}:${btn.dataset.side}`); renderSetup({ id }); });
+  });
+  document.querySelectorAll('.setup-change').forEach(btn => {
+    btn.addEventListener('click', () => { setupChanging.add(`${id}:${btn.dataset.side}`); renderSetup({ id }); });
+  });
+  const sample = (side, schema, name) => document.getElementById(`load-${side}-sample`)?.addEventListener('click', () => {
+    const p = getProject(id);
+    p[side + 'Schema'] = cloneSample(schema);
+    p[side + 'Origin'] = 'sample';
+    saveProject(p);
+    setupChanging.delete(`${id}:${side === 'source' ? 'old' : 'new'}`);
+    toast(`${name} sample loaded`);
+    renderSetup({ id });
+  });
+  sample('source', synergySample, 'Synergy');
+  sample('target', impulseSample, 'Impulse');
 }
 
 function setupUpload(side, projectId) {
   const zone = document.getElementById(`${side}-upload`);
   const input = document.getElementById(`${side}-file`);
+  const origin = zone.dataset.origin || 'file';
   zone.addEventListener('click', () => input.click());
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
   zone.addEventListener('drop', e => {
     e.preventDefault();
     zone.classList.remove('dragover');
-    if (e.dataTransfer.files[0]) handleSchemaFile(e.dataTransfer.files[0], side, projectId);
+    if (e.dataTransfer.files[0]) handleSchemaFile(e.dataTransfer.files[0], side, projectId, origin);
   });
   input.addEventListener('change', e => {
-    if (e.target.files[0]) handleSchemaFile(e.target.files[0], side, projectId);
+    if (e.target.files[0]) handleSchemaFile(e.target.files[0], side, projectId, origin);
   });
 }
 
-async function handleSchemaFile(file, side, projectId) {
+async function handleSchemaFile(file, side, projectId, origin = 'file') {
   try {
     const text = await readFileAsText(file);
     const schema = file.name.endsWith('.csv')
       ? parseCSVTemplate(text, file.name.replace('.csv', ''))
       : parseJSONSchema(text);
+    if (origin === 'db' && (!schema.tables || !schema.tables.length)) {
+      throw new Error('This does not look like a connector file. It should list tables and their fields.');
+    }
     const p = getProject(projectId);
     p[side === 'source' ? 'sourceSchema' : 'targetSchema'] = schema;
+    p[side === 'source' ? 'sourceOrigin' : 'targetOrigin'] = origin;
     saveProject(p);
+    setupChanging.delete(`${projectId}:${side === 'source' ? 'old' : 'new'}`);
     
     const warnings = schema._warnings;
     delete schema._warnings;
