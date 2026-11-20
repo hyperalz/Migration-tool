@@ -281,8 +281,7 @@ export function renderReconcile({ id }, ui) {
 
   ui.mount(`
     ${ui.projectSteps(project, 'reconcile')}
-    <div class="page-head"><div><h1>${esc(COMPARE_TEXT.title)}</h1>
-      <p>${esc(COMPARE_TEXT.lead)}</p></div>
+    <div class="page-head"><div><h1>${esc(COMPARE_TEXT.title)}</h1></div>
       <a class="btn btn-secondary" href="#/projects/${project.id}/verify">← Field tracker</a></div>
 
     ${project.demo === FINANCE_DEMO ? `

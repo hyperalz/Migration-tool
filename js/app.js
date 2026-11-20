@@ -35,7 +35,7 @@ import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject
 import { renderHome } from './home-view.js';
 import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './field-checks.js';
 import { projectProgress, stepForScreen, STATE_LABEL, visibleScreens } from './progress.js';
-import { SCREEN_GUIDE } from './guide.js';
+import { SCREEN_GUIDE, PAGE_INTRO } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { mergeSchema } from './template-import.js';
 import { DELIVERY_TEXT, compareDelivery, needsReview, applyDelivery, deliveryRecord, deliverySummaryText, stillExpected, parseExpected, recentTables } from './deliveries.js';
@@ -157,7 +157,7 @@ function projectSteps(project, active) {
       `<a href="#/projects/${project.id}/${sc.path}" class="${sc.key === active ? 'active' : ''}">${esc(sc.label)}</a>`).join('')}</div>`
     : '';
   return `<div class="steps-bar"><a href="#/projects/${project.id}" class="step-chip step-home ${active === 'home' ? 'active' : ''}">Home</a>${chips}
-    ${problemsChip(project, active)}<a href="#/projects/${project.id}/executive" class="step-chip step-exec ${active === 'executive' ? 'active' : ''}"${active === 'executive' ? ' aria-current="page"' : ''}>Executive overview</a><a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${screenHelp(active)}`;
+    ${problemsChip(project, active)}<a href="#/projects/${project.id}/executive" class="step-chip step-exec ${active === 'executive' ? 'active' : ''}"${active === 'executive' ? ' aria-current="page"' : ''}>Executive overview</a><a href="#/projects/${project.id}/settings" class="step-chip step-settings ${active === 'settings' ? 'active' : ''}"${active === 'settings' ? ' aria-current="page"' : ''}>Settings</a></div>${sub}${PAGE_INTRO[active] ? `<p class="page-intro">${esc(PAGE_INTRO[active])}</p>` : ''}${screenHelp(active)}`;
 }
 
 // "What do I do here?" for the screen being shown. Open until the reader
@@ -1243,7 +1243,7 @@ function renderVerify({ id }) {
       <div class="page-head verify-page-head">
         <div>
           <h1>Field tracker</h1>
-          <p class="verify-lede">Follow each field through the move: matched, tables filled and sent, loaded into test, checked on screen, then loaded into live and checked again, then signed off. Select <strong>+</strong> on a row to record the next step.</p>
+          <p class="verify-lede">The steps are: matched, sent for loading, loaded into test, passed in test, loaded into live, passed in live, signed off. Select <strong>+</strong> on a row to record the next step.</p>
         </div>
         <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Compare files (optional) →</a>
       </div>

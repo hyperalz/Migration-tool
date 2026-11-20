@@ -7,6 +7,22 @@
 
 export const INTRO = 'You are moving information from an old system to a new one. There are five steps. Each area of the work goes through them at its own pace, and may need to go back a step. The home page shows what to do next.';
 
+// One line at the top of each page: what the page is for. Keyed by screen.
+export const PAGE_INTRO = {
+  home: 'This is an overview of the move. It shows what to do next, what is left to do, and where each area is.',
+  setup: 'Use this page to add the tables and fields from your old and new systems. For example, the lists your new supplier sends you.',
+  invite: 'Use this page to add the people working on the move.',
+  map: 'Use this page to match each field in the old system to where it goes in the new one.',
+  verify: 'Use this page to track each field as the data moves into the new system. Each field is loaded and tested on screen, first in test, then in live.',
+  reconcile: 'Use this page to compare two files of records, if you have them. This is an extra check. You do not have to use it.',
+  overview: 'Use this page to see where each area is. Each area manager signs off their area here when the data in live is right.',
+  export: 'Use this page to download the evidence pack, then close the project. Closing it deletes the project from this browser.',
+  executive: 'This is a one-page summary of the move for senior managers. You can print it or save it as a PDF.',
+  problems: 'This is a list of every problem found in testing, and whether it has been fixed.',
+  area: 'This page shows one area of the move: where each field is, and who signs the area off.',
+  settings: 'Use this page to change the project details, the areas and who manages them.',
+};
+
 // Keyed by step key (see STEPS in progress.js).
 export const STEP_GUIDE = {
   setup: {

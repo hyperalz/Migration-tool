@@ -578,7 +578,7 @@ test('field checks: conflicts are fields marked as passed that are failing', () 
 });
 
 // ---------- plain-English guidance ----------
-import { INTRO, STEP_GUIDE, SCREEN_GUIDE, GLOSSARY, HOME_TEXT } from '../js/guide.js';
+import { PAGE_INTRO, INTRO, STEP_GUIDE, SCREEN_GUIDE, GLOSSARY, HOME_TEXT } from '../js/guide.js';
 import { STEPS } from '../js/progress.js';
 
 function syllables(word) {
@@ -600,15 +600,19 @@ function readingGrade(text) {
 function allGuideText() {
   const steps = Object.values(STEP_GUIDE).flatMap(g => [g.what, ...g.todo, g.done]);
   const screens = Object.values(SCREEN_GUIDE).flat();
-  return [INTRO, ...steps, ...screens, ...GLOSSARY.map(g => g[1]), ...Object.values(HOME_TEXT)];
+  return [INTRO, ...steps, ...screens, ...GLOSSARY.map(g => g[1]), ...Object.values(HOME_TEXT), ...Object.values(PAGE_INTRO)];
 }
 
 test('guide: every step and every screen has guidance', () => {
   for (const step of STEPS) {
     assert.ok(STEP_GUIDE[step.key], `step ${step.key}`);
     assert.ok(STEP_GUIDE[step.key].todo.length >= 2);
-    for (const screen of step.screens) assert.ok(SCREEN_GUIDE[screen.key]?.length, `screen ${screen.key}`);
+    for (const screen of step.screens) {
+      assert.ok(SCREEN_GUIDE[screen.key]?.length, `screen ${screen.key}`);
+      assert.ok(PAGE_INTRO[screen.key], `page intro ${screen.key}`);
+    }
   }
+  for (const k of ['home', 'executive', 'problems']) assert.ok(PAGE_INTRO[k], `page intro ${k}`);
   assert.ok(SCREEN_GUIDE.home.length);
 });
 
