@@ -14,7 +14,7 @@ import { areaFields } from './field-progress.js';
 
 export const PROBLEM_STATUS = {
   open: 'Open',
-  reloaded: 'Fix loaded, needs UAT again',
+  reloaded: 'Fix loaded, needs checking again',
   fixed: 'Fixed',
   signed: 'Closed at sign-off',
   withdrawn: 'Taken back',
@@ -23,9 +23,9 @@ export const PROBLEM_STATUS = {
 export const WHERE_LABEL = { test: 'Test', live: 'Live' };
 
 export const PROBLEMS_TEXT = {
-  title: 'Problems found in UAT',
-  lead: 'Every time UAT fails, in test or in live, it is listed here. When the field passes again, its problem is marked fixed.',
-  none: 'No problems yet. When you record that UAT failed, it shows up here.',
+  title: 'Problems found in testing',
+  lead: 'Every time a field fails testing, in test or in live, it is listed here. When the field passes again, its problem is marked fixed.',
+  none: 'No problems yet. When you record that a field failed, it shows up here.',
   noneOpen: 'Nothing is open. Every problem found so far has been fixed.',
   download: 'Download for the supplier',
   areaHeading: 'Open problems',

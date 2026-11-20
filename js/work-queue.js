@@ -101,7 +101,7 @@ export function areaBoard(project, overview = null) {
     else if (c.inTest) test = { state: 'open', text: `${num(c.inTest)} to check` };
     else if (c.passedTest === c.total) test = { state: 'done', text: 'All passed' };
     else test = { state: 'open', text: `${num(c.passedTest)} of ${num(c.total)} passed` };
-    // UAT in live: fields move into live once they have passed UAT in test.
+    // UAT in live: fields move into live once they have passed testing in test.
     let live;
     const toLoad = c.testPassed;
     if (!c.total || (!c.reachedLive && !toLoad)) live = { state: 'none', text: '—' };
@@ -156,12 +156,12 @@ export function todoList(project) {
     const recheck = a ? a.tables.filter(t => t.state === 'recheck').length : 0;
     if (recheck) add(`recheck-${r.name}`, TIER.recheck, `${num(recheck)} ${plural(recheck, 'table has', 'tables have')} changed since the last check. Check ${plural(recheck, 'it', 'them')} again.`, 'reconcile', 'check', where);
     const st = r.counts.stages;
-    if (st.liveFailed) add(`live-failed-${r.name}`, TIER.liveFailed, `${num(st.liveFailed)} ${plural(st.liveFailed, 'field')} failed UAT in live. Fix ${plural(st.liveFailed, 'it', 'them')}, then load into live again.`, 'verify', 'check', where);
-    if (st.testFailed) add(`failed-${r.name}`, TIER.failed, `${num(st.testFailed)} ${plural(st.testFailed, 'field')} failed UAT in test. Fix the SQL or the data, then send again.`, 'verify', 'check', where);
-    if (st.inLive) add(`in-live-${r.name}`, TIER.inLive, `${num(st.inLive)} ${plural(st.inLive, 'field is', 'fields are')} in live. Do UAT in live and record what you find.`, 'verify', 'check', where);
-    if (st.inTest) add(`testing-${r.name}`, TIER.testing, `${num(st.inTest)} ${plural(st.inTest, 'field is', 'fields are')} in test. Do UAT in test and record what you find.`, 'verify', 'check', where);
-    if (st.testPassed) add(`to-live-${r.name}`, TIER.toLive, `${num(st.testPassed)} ${plural(st.testPassed, 'field')} passed UAT in test. Load ${plural(st.testPassed, 'it', 'them')} into live.`, 'verify', 'check', where);
-    if (st.matched) add(`send-${r.name}`, TIER.send, `${num(st.matched)} matched ${plural(st.matched, 'field has', 'fields have')} no SQL sent yet.`, 'verify', 'check', where);
+    if (st.liveFailed) add(`live-failed-${r.name}`, TIER.liveFailed, `${num(st.liveFailed)} ${plural(st.liveFailed, 'field')} failed testing in live. Fix ${plural(st.liveFailed, 'it', 'them')}, then load into live again.`, 'verify', 'check', where);
+    if (st.testFailed) add(`failed-${r.name}`, TIER.failed, `${num(st.testFailed)} ${plural(st.testFailed, 'field')} failed testing in test. Fix the match or the data, then send again.`, 'verify', 'check', where);
+    if (st.inLive) add(`in-live-${r.name}`, TIER.inLive, `${num(st.inLive)} ${plural(st.inLive, 'field is', 'fields are')} in live. Check them on screen and record what you find.`, 'verify', 'check', where);
+    if (st.inTest) add(`testing-${r.name}`, TIER.testing, `${num(st.inTest)} ${plural(st.inTest, 'field is', 'fields are')} in test. Check them on screen and record what you find.`, 'verify', 'check', where);
+    if (st.testPassed) add(`to-live-${r.name}`, TIER.toLive, `${num(st.testPassed)} ${plural(st.testPassed, 'field')} passed testing in test. Load ${plural(st.testPassed, 'it', 'them')} into live.`, 'verify', 'check', where);
+    if (st.matched) add(`send-${r.name}`, TIER.send, `${num(st.matched)} matched ${plural(st.matched, 'field has', 'fields have')} not been sent for loading yet.`, 'verify', 'check', where);
     // Tables with no file check: only listed when this move uses file checks.
     const unchecked = runs.length && a ? a.tables.filter(t => t.state === 'not_checked').length : 0;
     if (unchecked) add(`unchecked-${r.name}`, TIER.unchecked, `${num(unchecked)} ${plural(unchecked, 'table has', 'tables have')} not been checked yet.`, 'reconcile', 'check', where);

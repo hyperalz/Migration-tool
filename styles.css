@@ -410,7 +410,7 @@
       display: inline-block;
       font-size: 0.7rem;
       font-weight: 700;
-      text-transform: uppercase;
+      text-transform: none;
       letter-spacing: 0.03em;
       color: var(--orange-dark);
       background: var(--orange-light);
@@ -447,7 +447,7 @@
       color: #93c5fd;
       font-weight: 700;
       font-size: 0.85rem;
-      text-transform: uppercase;
+      text-transform: none;
       letter-spacing: 0.05em;
       margin-bottom: 1rem;
     }

@@ -56,7 +56,7 @@ export function renderExecutive({ id }, ui) {
   const proof = [
     `${num(p.checks)} ${p.checks === 1 ? 'load' : 'loads'} checked${p.lastCheck ? `, the latest ${esc(p.lastCheck.label)} on ${esc(day(p.lastCheck.at))}` : ''}.`,
     p.finalLoad ? `Final load chosen: ${esc(p.finalLoad.label)}.` : 'No final load chosen yet.',
-    p.problemsFound ? `${num(p.problemsFound)} UAT ${p.problemsFound === 1 ? 'problem' : 'problems'} logged: ${num(p.problemsFixed)} fixed, ${num(p.problemsOpen)} open.` : 'No UAT problems logged.',
+    p.problemsFound ? `${num(p.problemsFound)} testing ${p.problemsFound === 1 ? 'problem' : 'problems'} logged: ${num(p.problemsFixed)} fixed, ${num(p.problemsOpen)} open.` : 'No UAT problems logged.',
     p.evidenceAt
       ? `Evidence pack downloaded ${esc(when(p.evidenceAt))}.${p.evidenceChanged ? ' <strong class="exec-warn">The project has changed since then.</strong>' : ''}`
       : 'Evidence pack not downloaded yet.',

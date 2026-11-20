@@ -138,17 +138,17 @@ export function projectProgress(project) {
   } else if (o.checked === 0 && trackerActive) {
     out.check = {
       state: fc.done === fc.total ? 'done' : 'progress',
-      summary: `${num(fc.done)} of ${num(fc.total)} ${plural(fc.total, 'field')} passed UAT in live. ${num(fc.passedTest)} passed UAT in test.`
-        + (fc.failed ? ` ${num(fc.failed)} failed.` : '') + (fc.waiting ? ` ${num(fc.waiting)} waiting for UAT.` : ''),
-      next: fc.liveFailed ? `Fix the ${num(fc.liveFailed)} ${plural(fc.liveFailed, 'field')} that failed UAT in live`
-        : fc.testFailed ? `Fix the ${num(fc.testFailed)} ${plural(fc.testFailed, 'field')} that failed UAT in test, then send again`
-          : fc.waiting ? `Do UAT on the ${num(fc.waiting)} ${plural(fc.waiting, 'field')} waiting for it`
-            : fc.testPassed ? `Load the ${num(fc.testPassed)} ${plural(fc.testPassed, 'field')} that passed UAT in test into live`
-              : `Send the SQL for the ${num(fc.matched + fc.sent)} ${plural(fc.matched + fc.sent, 'field')} still to test`,
+      summary: `${num(fc.done)} of ${num(fc.total)} ${plural(fc.total, 'field')} passed testing in live. ${num(fc.passedTest)} passed testing in test.`
+        + (fc.failed ? ` ${num(fc.failed)} failed.` : '') + (fc.waiting ? ` ${num(fc.waiting)} waiting to be checked.` : ''),
+      next: fc.liveFailed ? `Fix the ${num(fc.liveFailed)} ${plural(fc.liveFailed, 'field')} that failed testing in live`
+        : fc.testFailed ? `Fix the ${num(fc.testFailed)} ${plural(fc.testFailed, 'field')} that failed testing in test, then send again`
+          : fc.waiting ? `Check the ${num(fc.waiting)} ${plural(fc.waiting, 'field')} waiting on screen`
+            : fc.testPassed ? `Load the ${num(fc.testPassed)} ${plural(fc.testPassed, 'field')} that passed testing in test into live`
+              : `Send the ${num(fc.matched + fc.sent)} ${plural(fc.matched + fc.sent, 'field')} still to test for loading`,
       nextPath: 'verify',
     };
   } else if (o.checked === 0) {
-    out.check = { state: 'todo', summary: `No loads checked yet.${trackerLine}`, next: 'Check the first trial load', nextPath: 'reconcile' };
+    out.check = { state: 'todo', summary: `Nothing sent for loading yet.${trackerLine}`, next: `Send the ${num(mappings.length)} matched ${plural(mappings.length, 'field')} for loading`, nextPath: 'verify' };
   } else {
     const allClear = o.status.level === 'clear';
     const waiting = o.unchecked + o.recheck;

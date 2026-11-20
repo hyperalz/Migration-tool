@@ -29,8 +29,8 @@ export function renderSettings({ id }, ui) {
       <p class="recon-sub">${esc(SETTINGS_TEXT.names)}</p>
       <form id="settings-names" class="settings-form">
         <div class="field"><label for="s-name">Project name</label><input id="s-name" name="name" value="${esc(project.name)}" required></div>
-        <div class="field"><label for="s-old">The old system's name</label><input id="s-old" name="oldName" value="${esc(project.sourceSystem || '')}" placeholder="e.g. Synergy"></div>
-        <div class="field"><label for="s-new">The new system's name</label><input id="s-new" name="newName" value="${esc(project.targetSystem || '')}" placeholder="e.g. Impulse"></div>
+        <div class="field"><label for="s-old">The old system's name</label><input id="s-old" name="oldName" value="${esc(project.sourceSystem || '')}" placeholder="For example, Synergy"></div>
+        <div class="field"><label for="s-new">The new system's name</label><input id="s-new" name="newName" value="${esc(project.targetSystem || '')}" placeholder="For example, Impulse"></div>
         <button class="btn btn-primary btn-sm" type="submit">Save names</button>
       </form>
     </section>

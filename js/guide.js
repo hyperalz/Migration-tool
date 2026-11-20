@@ -77,7 +77,7 @@ export const SCREEN_GUIDE = {
   map: [
     'The old system is on the left. The new system is on the right.',
     'Drag from a dot on the left to a dot on the right to match two fields.',
-    'Click a match to add a rule or a note.',
+    'Select a match to add a rule or a note.',
     'A warning shows when the two sides write things in a different way.',
   ],
   reconcile: [
@@ -88,13 +88,13 @@ export const SCREEN_GUIDE = {
   ],
   verify: [
     'Each row is one field. The dots show how far it has got.',
-    'Click the plus sign on a row when the next job is done. Say who did it.',
+    'Select the plus sign on a row when the next job is done. Say who did it.',
     'The Latest load check part of each row shows if the field matched in the last check.',
     'A red row means it was marked as passed but the last check found a problem.',
   ],
   problems: [
-    'Each time UAT fails, the problem is listed here.',
-    'When you load a fix, it shows as waiting for UAT again.',
+    'Each time a field fails testing, the problem is listed here.',
+    'When you load a fix, it shows as waiting to be checked again.',
     'When the field passes, its problem is marked fixed.',
     'Download the list to send to the supplier.',
   ],
@@ -135,7 +135,7 @@ export const GLOSSARY = [
   ['Table', 'A group of fields about one kind of thing, like all the facts about a supplier.'],
   ['Record', 'One row in a table. For example, one supplier.'],
   ['Match', 'A link that says this old field goes into that new field.'],
-  ['Load', 'Copying data into the new system. A trial load is a practice run.'],
+  ['Load', 'Copying data into the new system. A test load is a practice run in a copy of the new system.'],
   ['Check', 'Comparing the old data with the new data to see if they are the same.'],
   ['Area', 'A part of the work, such as Finance or Pupils. Each area has an owner who agrees it is right.'],
   ['Old and new system', 'The system the data comes from, and the one it moves to. MapBridge uses their own names when you give them.'],

@@ -52,7 +52,7 @@ function runs(project) {
 
 export function createFinanceDemoProject(user) {
   const project = createProject({
-    name: 'Demo — finance system trial load',
+    name: 'Demo: finance system move',
     sourceSystem: legacyFinanceSchema.system,
     targetSystem: newFinanceSchema.system,
     ownerId: user.id,
@@ -222,7 +222,7 @@ export function renderReconcile({ id }, ui) {
         </div>
         <div class="recon-sub" data-keycheck="${esc(pair.id)}" aria-live="polite"></div>
         <details class="recon-fields" ${guess.length ? '' : 'open'}>
-          <summary>Fields and settings ${guess.length ? '' : '<span class="recon-warn">· choose a key field</span>'}</summary>
+          <summary>Fields and settings ${guess.length ? '' : '<span class="recon-warn">· choose the field that identifies a record</span>'}</summary>
           <table class="recon-table">
             <thead><tr><th>Matched field</th><th class="recon-c">Identifies a record</th><th class="recon-c">Add up as total</th><th class="recon-c">Mask values in report</th></tr></thead>
             <tbody>${pair.mappings.map(m => fieldRow(pair, m, guess)).join('')}</tbody>
@@ -351,7 +351,7 @@ export function renderReconcile({ id }, ui) {
     const ms = missingIn(l.sourceRows, keyMappings.map(m => m.sourceColumn));
     const mt = missingIn(l.targetRows, keyMappings.map(m => m.targetColumn));
     if (ms.length || mt.length) {
-      box.innerHTML = `<span class="recon-warn">${ms.length ? `The old file has no ${esc(ms.join(', '))} column. ` : ''}${mt.length ? `The new file has no ${esc(mt.join(', '))} column. ` : ''}Records cannot be matched until the key is in both files. Check you chose the right files, or tick a different key under Fields and settings.</span>`;
+      box.innerHTML = `<span class="recon-warn">${ms.length ? `The old file has no ${esc(ms.join(', '))} column. ` : ''}${mt.length ? `The new file has no ${esc(mt.join(', '))} column. ` : ''}Records cannot be paired until the identifying field is in both files. Check you chose the right files, or tick a different key under Fields and settings.</span>`;
       return;
     }
     let s = repeats(l.sourceRows, keyMappings.map(m => m.sourceColumn));
@@ -369,11 +369,11 @@ export function renderReconcile({ id }, ui) {
     const t = repeats(l.targetRows, keyMappings.map(m => m.targetColumn));
     const label = keyMappings.map(m => m.sourceColumn).join(' + ');
     if (s > 0) {
-      box.innerHTML = `<span class="recon-warn">Key ${esc(label)} repeats on ${num(s)} row${s === 1 ? '' : 's'} of the old extract. If records are identified by more than one field, tick them all under Fields and settings.</span>`;
+      box.innerHTML = `<span class="recon-warn">${esc(label)} repeats on ${num(s)} row${s === 1 ? '' : 's'} of the old extract. If records are identified by more than one field, tick them all under Fields and settings.</span>`;
       const details = document.querySelector(`[data-pair-block="${CSS.escape(pairId)}"] details`);
       if (details) details.open = true;
     } else {
-      box.textContent = `Records matched on ${label}.` + autoNote + (t > 0 ? ` ${num(t)} repeated key${t === 1 ? '' : 's'} in the new extract will be reported as duplicates.` : '');
+      box.textContent = `Records matched on ${label}.` + autoNote + (t > 0 ? ` ${num(t)} repeated ${t === 1 ? 'value' : 'values'} in the new extract will be reported as duplicates.` : '');
     }
   }
 
@@ -500,7 +500,7 @@ function pairSection(p) {
     <div class="recon-block">
       <h3><span class="recon-mono">${esc(p.sourceTable)}</span> → <span class="recon-mono">${esc(p.targetTable)}</span></h3>
       <table class="recon-table">
-        <thead><tr><th>Records in old</th><th>Records in new</th><th>Matched on key</th><th>Missing from new</th><th>Only in new</th><th>Duplicated in new</th></tr></thead>
+        <thead><tr><th>Records in old</th><th>Records in new</th><th>Paired</th><th>Missing from new</th><th>Only in new</th><th>Duplicated in new</th></tr></thead>
         <tbody><tr>
           <td>${num(c.source)}</td><td>${num(c.target)}</td><td>${num(c.matched)}</td>
           <td class="${c.missingInTarget ? 'recon-bad' : ''}">${num(c.missingInTarget)}</td>
@@ -563,7 +563,7 @@ export async function renderReport({ id, runId }, ui) {
       </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" id="recon-print">Print or save as PDF</button>
-        <button class="btn btn-secondary btn-sm" id="recon-csv">Download exceptions (CSV)</button>
+        <button class="btn btn-secondary btn-sm" id="recon-csv">Download problems (CSV)</button>
         <button class="btn btn-secondary btn-sm" id="recon-json">Download full results (JSON)</button>
       </div>
     </div>
@@ -627,12 +627,12 @@ export async function renderReport({ id, runId }, ui) {
             <td class="recon-mono">${esc(p.key.source.join(' + '))} = ${esc(p.key.target.join(' + '))}</td></tr>`).join('')}</tbody>
         </table>
         <ul class="recon-method">
-          <li>Every record in the old system's file is paired with the record in the new system's file that has the same key. Each matched field is then compared.</li>
+          <li>Every record in the old system's file is paired with the record in the new system's file with the same value in the identifying fields. Each matched field is then compared.</li>
           <li>Where a match has a rule to turn one value into another, the old value is turned first and the result compared. A value with no rule is always reported.</li>
           <li>Values that are the same but written differently count as matched: spacing at either end, numbers such as 100 and 100.00, and dates in a different layout (day-first dates are read as DD/MM/YYYY). Blank and NULL are treated as the same.</li>
           <li>Control totals add up every row in each file, including records that could not be paired.</li>
           <li>Match and mismatch are decided by fixed rules. No AI is used in this report.</li>
-          <li>Values in fields marked as masked are replaced with dots and a length. Record keys are shown so exceptions can be traced.</li>
+          <li>Values in fields marked as masked are replaced with dots and a length. Record keys are shown so problems can be traced.</li>
         </ul>
         <h4>Not covered</h4>
         ${run.notCovered.length ? `<ul class="recon-method">${run.notCovered.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '<p class="recon-sub">Nothing left out: every matched table had files, and every new-system field in those tables is matched.</p>'}
@@ -645,8 +645,8 @@ export async function renderReport({ id, runId }, ui) {
         <form id="recon-review-form" class="recon-review-form no-print">
           <div class="field"><label for="rv-name">Name</label><input id="rv-name" value="${esc(user?.name || '')}" required></div>
           <div class="field"><label for="rv-role">Recording</label>
-            <select id="rv-role"><option>Reviewed the exceptions</option><option>Accepted the result</option><option>Did not accept the result</option></select></div>
-          <div class="field" style="flex:2"><label for="rv-note">Note (optional)</label><input id="rv-note" placeholder="e.g. E3 accepted as known, fix due in load 3"></div>
+            <select id="rv-role"><option>Reviewed the problems</option><option>Accepted the result</option><option>Did not accept the result</option></select></div>
+          <div class="field" style="flex:2"><label for="rv-note">Note (optional)</label><input id="rv-note" placeholder="For example: E3 accepted as known, fix due in the next load"></div>
           <button class="btn btn-secondary" type="submit">Record</button>
         </form>
       </section>
@@ -675,7 +675,7 @@ export async function renderReport({ id, runId }, ui) {
   document.getElementById('recon-print').onclick = () => window.print();
   document.getElementById('recon-csv').onclick = () => {
     const rows = exceptionRows(run);
-    if (!rows.length) return ui.toast('No exceptions to download');
+    if (!rows.length) return ui.toast('No problems to download');
     downloadCSV(rows, `${slug(run.project.name)}-${slug(run.label)}-exceptions.csv`);
   };
   document.getElementById('recon-json').onclick = () =>
@@ -923,7 +923,7 @@ export function renderOverview({ id }, ui) {
 
       ${!all.length ? '' : `<section>
         <h2>Final load</h2>
-        <p class="recon-sub">During trial loads each table is judged on its latest check. Once the final load has been run and checked, choose it here.
+        <p class="recon-sub">During test loads each table is judged on its latest comparison. Once the final load has been run and checked, choose it here.
           Every table is then judged on that load alone, and any table missing from it shows as not checked.</p>
         ${all.length ? `
           <form id="recon-final-form" class="recon-review-form no-print">

@@ -137,7 +137,7 @@ function renderActionPanel(data) {
         <div class="dash-activity-meta">${esc(ev.by)}${ev.note ? ` · ${esc(ev.note)}` : ''}</div>
       </li>`;
     }).join('')}</ul>`
-    : `<p class="dash-action-empty">No steps recorded yet — click + on a row to start.</p>`;
+    : `<p class="dash-action-empty">No steps recorded yet. Select + on a row to start.</p>`;
 
   return `
     <div class="dash-action-grid">
@@ -148,7 +148,7 @@ function renderActionPanel(data) {
       </div>
       <div class="dash-action-block">
         <h3>Recent activity</h3>
-        <p class="dash-chart-hint">Latest steps. Click one to open its field</p>
+        <p class="dash-chart-hint">Latest steps. Select one to open its field</p>
         ${activityHtml}
       </div>
     </div>`;
