@@ -1243,9 +1243,9 @@ function renderVerify({ id }) {
       <div class="page-head verify-page-head">
         <div>
           <h1>Field tracker</h1>
-          <p class="verify-lede">Record delivery and checks for each field — click <strong>+</strong> on a row to advance, or open a row for full history. The latest load check for each field is shown alongside.</p>
+          <p class="verify-lede">Follow each field through the move: matched, tables filled and sent, loaded into test, checked on screen, then loaded into live and checked again, then signed off. Click <strong>+</strong> on a row to record the next step.</p>
         </div>
-        <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Check a load →</a>
+        <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Compare files (optional) →</a>
       </div>
       ${conflicts.length ? `
         <div class="recon-error tracker-conflict" role="alert">

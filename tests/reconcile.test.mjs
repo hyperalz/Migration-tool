@@ -459,7 +459,7 @@ test('progress: issues open keeps checking in progress; sign-off opens up', () =
 
 test('progress: one module checked points at the tables still waiting', () => {
   const p = schemaProjectFull({ reconRuns: [runDemoPartial(1, [LEDGER], 'g', 'Ledger 1')] });
-  assert.equal(projectProgress(p).next.text, 'Check a load for the 1 table still waiting');
+  assert.equal(projectProgress(p).next.text, 'Compare files for the 1 table still waiting');
 });
 
 test('progress: sign-off is done only with every area signed, a final load, and nothing open', () => {

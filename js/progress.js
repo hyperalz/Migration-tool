@@ -13,11 +13,11 @@ const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
 
 // The five steps of a migration, and the screens that belong to each.
 export const STEPS = [
-  { key: 'setup', label: 'Set up', path: 'setup',
+  { key: 'setup', label: 'Field lists', path: 'setup',
     screens: [{ key: 'setup', label: 'Field lists', path: 'setup' }, { key: 'invite', label: 'Team', path: 'invite', hidden: true }] },
   { key: 'map', label: 'Match', path: 'map', screens: [{ key: 'map', label: 'Match fields', path: 'map' }] },
-  { key: 'check', label: 'Load and check', path: 'reconcile',
-    screens: [{ key: 'reconcile', label: 'Check a load', path: 'reconcile' }, { key: 'verify', label: 'Field tracker', path: 'verify' }] },
+  { key: 'check', label: 'Load and test', path: 'verify',
+    screens: [{ key: 'verify', label: 'Field tracker', path: 'verify' }, { key: 'reconcile', label: 'Compare files (optional)', path: 'reconcile' }] },
   { key: 'signoff', label: 'Sign off', path: 'reconcile/overview', screens: [{ key: 'overview', label: 'Overview', path: 'reconcile/overview' }] },
   { key: 'handover', label: 'Hand over', path: 'export', screens: [{ key: 'export', label: 'Downloads and close', path: 'export' }] },
 ];
@@ -155,7 +155,7 @@ export function projectProgress(project) {
     out.check = {
       state: allClear ? 'done' : 'progress',
       summary: `${num(o.checked)} of ${num(o.tables)} ${plural(o.tables, 'table')} checked. ${o.status.headline}${trackerLine}`,
-      next: waiting ? `Check a load for the ${num(waiting)} ${plural(waiting, 'table')} still waiting`
+      next: waiting ? `Compare files for the ${num(waiting)} ${plural(waiting, 'table')} still waiting`
         : 'Fix the open issues, then check the next load',
       nextPath: 'reconcile',
     };

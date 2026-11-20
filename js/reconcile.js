@@ -331,6 +331,8 @@ export function reconcilePair({
   pair, sourceRows, targetRows, keyMappingIds,
   sourceSchema = null, targetSchema = null,
   maskedMappingIds = [], totalMappingIds = null, sourceFile = '', targetFile = '',
+  // The first file is the filled table that was sent, so translations and defaults are already applied.
+  alreadyTranslated = false,
 }) {
   const masked = new Set(maskedMappingIds);
   const groups = new GroupCollector();
@@ -435,8 +437,8 @@ export function reconcilePair({
     }
 
     const lookup = parseLookupRule(m.lookupRule);
-    const hasLookup = lookup.map.size > 0;
-    const hasDefault = !isBlank(m.defaultValue);
+    const hasLookup = !alreadyTranslated && lookup.map.size > 0;
+    const hasDefault = !alreadyTranslated && !isBlank(m.defaultValue);
     const required = tCol?.required === true;
 
     for (const key of matchedKeys) {
@@ -692,7 +694,11 @@ export function allGroups(run) {
 // listed under firstTime.
 //
 // @param {object[]} history every run, oldest first, including `current`
+// Test loads are compared with test loads, and live loads with live loads.
+const sameStage = (history, current) => history.filter(r => (r.stage === 'live') === (current.stage === 'live'));
+
 export function compareWithHistory(history, current) {
+  history = sameStage(history, current);
   const index = history.findIndex(r => r.id === current.id);
   const earlier = (index < 0 ? history : history.slice(0, index)).slice().reverse();
   const fixed = [];
@@ -732,6 +738,7 @@ export function compareWithHistory(history, current) {
 // Issue counts over time for the tables in `current` only, so the trend is
 // like for like even when earlier runs covered other tables.
 export function trendFor(history, current) {
+  history = sameStage(history, current);
   const ids = new Set(current.pairs.map(p => p.id));
   const index = history.findIndex(r => r.id === current.id);
   const upTo = index < 0 ? [...history, current] : history.slice(0, index + 1);

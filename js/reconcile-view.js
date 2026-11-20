@@ -16,6 +16,7 @@ import { plainSummary } from './reconcile-plain.js';
 import { projectOverview } from './reconcile-overview.js';
 import { areaBoard, STAGES } from './work-queue.js';
 import { areaPath } from './area-page.js';
+import { COMPARE_TEXT, tableJourney, suggestedStage, runStage, asOldColumns } from './journey.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
 } from './demoFinance.js';
@@ -89,7 +90,7 @@ function unmappedTargetNotes(project, pairs) {
   return notes;
 }
 
-async function executeRun(project, { label, inputs }) {
+async function executeRun(project, { label, inputs, stage = 'test' }) {
   const user = getCurrentUser();
   const pairs = tablePairs(project.mappings);
   const results = [];
@@ -112,6 +113,7 @@ async function executeRun(project, { label, inputs }) {
       targetSchema: project.targetSchema,
       sourceFile: input.sourceFile,
       targetFile: input.targetFile,
+      alreadyTranslated: !!input.sourceTranslated,
     }));
   }
   if (!results.length) throw new Error('Add the old and new extract for at least one table.');
@@ -119,6 +121,7 @@ async function executeRun(project, { label, inputs }) {
   notCovered.push(...unmappedTargetNotes(project, pairs.filter(p => results.some(r => r.id === p.id))));
 
   const run = buildRun({ project, label, by: user?.name || user?.email || 'unknown', pairResults: results, notCovered });
+  run.stage = stage === 'live' ? 'live' : 'test';
   run.fingerprint = await fingerprintRun(run);
 
   const fresh = getProject(project.id);
@@ -176,7 +179,7 @@ export function renderReconcile({ id }, ui) {
   if (!pairs.length) {
     ui.mount(`
       ${ui.projectSteps(project, 'reconcile')}
-      <div class="page-head"><div><h1>Check a load</h1><p>Check that what landed in ${esc(newName(project))} matches ${esc(oldName(project))}.</p></div></div>
+      <div class="page-head"><div><h1>Compare files</h1><p>Match some fields first. Then you can compare what was meant to arrive in ${esc(newName(project))} with what did.</p></div></div>
       <div class="card empty-state"><p>Match some fields first. The agreed matches are the rule book for the checks.</p>
       <a class="btn btn-primary" style="margin-top:1rem" href="#/projects/${project.id}/map">Go to Match fields</a></div>`);
     ui.attachLogout();
@@ -207,14 +210,14 @@ export function renderReconcile({ id }, ui) {
           <span class="recon-sub" style="display:inline">· ${pair.mappings.length} matched field${pair.mappings.length === 1 ? '' : 's'}</span></h3>
         <div class="grid-2 recon-files">
           <div class="field">
-            <label for="src-${esc(pair.id)}">File from ${esc(oldName(project))} (CSV)</label>
+            <label for="src-${esc(pair.id)}">What was meant to arrive (CSV)</label>
             <input type="file" accept=".csv,text/csv" id="src-${esc(pair.id)}" data-file="source" data-pair="${esc(pair.id)}">
-            <div class="recon-sub" data-status="source" data-pair="${esc(pair.id)}">Not loaded</div>
+            <div class="recon-sub" data-status="source" data-pair="${esc(pair.id)}">No file added</div>
           </div>
           <div class="field">
-            <label for="tgt-${esc(pair.id)}">File from ${esc(newName(project))} (CSV)</label>
+            <label for="tgt-${esc(pair.id)}">What actually arrived in ${esc(newName(project))} (CSV)</label>
             <input type="file" accept=".csv,text/csv" id="tgt-${esc(pair.id)}" data-file="target" data-pair="${esc(pair.id)}">
-            <div class="recon-sub" data-status="target" data-pair="${esc(pair.id)}">Not loaded</div>
+            <div class="recon-sub" data-status="target" data-pair="${esc(pair.id)}">No file added</div>
           </div>
         </div>
         <div class="recon-sub" data-keycheck="${esc(pair.id)}" aria-live="polite"></div>
@@ -230,11 +233,11 @@ export function renderReconcile({ id }, ui) {
 
   function renderRunsList() {
     const list = runs(getProject(id)).slice().reverse();
-    if (!list.length) return '<p class="recon-sub">No trial loads checked yet.</p>';
+    if (!list.length) return '<p class="recon-sub">No comparisons yet.</p>';
     return list.map(r => `
       <div class="recon-run">
         <div>
-          <strong>${esc(r.label)}</strong>
+          <strong>${esc(r.label)}</strong> <span class="jr-stage-pill jr-stage-${runStage(r)}">${runStage(r) === 'live' ? 'Live' : 'Test'}</span>
           <div class="recon-sub">${esc(fmtDate(r.at))} · ${esc(r.by)} · ${num(r.summary.recordsSource)} records · ${pct(r.summary.matchRate)} of field values matched</div>
         </div>
         <div class="recon-run-right">
@@ -245,37 +248,42 @@ export function renderReconcile({ id }, ui) {
       </div>`).join('');
   }
 
+  // Which stage a comparison belongs to is worked out from the field tracker.
+  const stageNow = suggestedStage(tableJourney(project));
+  const nextName = () => `Comparison ${runs(project).length + 1}`;
+
   ui.mount(`
     ${ui.projectSteps(project, 'reconcile')}
-    <div class="page-head"><div><h1>Check a load</h1>
-      <p>Check that what landed in ${esc(newName(project))} matches ${esc(oldName(project))}. The agreed matches are the rule book.</p></div>
-      <a class="btn btn-secondary" href="#/projects/${project.id}/reconcile/overview">Overview and sign-off</a></div>
+    <div class="page-head"><div><h1>${esc(COMPARE_TEXT.title)}</h1>
+      <p>${esc(COMPARE_TEXT.lead)}</p></div>
+      <a class="btn btn-secondary" href="#/projects/${project.id}/verify">← Field tracker</a></div>
 
     ${project.demo === FINANCE_DEMO ? `
       <div class="card recon-demo">
         <div><strong>Demo data</strong>
-        <p class="recon-sub">Invented suppliers and ledger balances with faults planted in them. Run load 1, then load 2 to see what was fixed.</p></div>
+        <p class="recon-sub">Invented suppliers and ledger balances with faults planted in them. Compare 1, then compare 2 to see what was fixed.</p></div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" data-demo-load="1">Run demo trial load 1</button>
-          <button class="btn btn-secondary btn-sm" data-demo-load="2">Run demo trial load 2</button>
+          <button class="btn btn-secondary btn-sm" data-demo-load="1">Demo comparison 1</button>
+          <button class="btn btn-secondary btn-sm" data-demo-load="2">Demo comparison 2</button>
         </div>
       </div>` : ''}
 
-    <div class="card">
-      <h2 class="recon-h2">Check a trial load</h2>
+    <div class="card" id="recon-check">
+      <p style="margin:0 0 0.5rem">${esc(COMPARE_TEXT.how)}</p>
+      <p class="recon-sub" style="margin:0 0 0.9rem">${esc(COMPARE_TEXT.gives)}</p>
       <div class="field" style="max-width:360px">
-        <label for="recon-label">Name of this load</label>
-        <input id="recon-label" value="Trial load ${runs(project).length + 1}">
+        <label for="recon-label">Name of this comparison</label>
+        <input id="recon-label" value="${esc(nextName())}">
       </div>
       ${pairs.map(pairBlock).join('')}
-      <p class="recon-privacy">Extract files are read in this browser only. Rows are not saved or sent anywhere.
-        Only counts, totals and a few example records per exception are kept, with values hidden for fields you mark as masked.</p>
+      <p class="recon-privacy">Your files are read in this browser only. Nothing is uploaded, and the records are not kept.
+        Only the results are saved: counts, totals and a few example records per problem, with values hidden for fields you mark as masked.</p>
       <div id="recon-error" class="recon-error" role="alert" hidden></div>
-      <button class="btn btn-primary" id="recon-run">Run checks</button>
+      <button class="btn btn-primary" id="recon-run">Compare</button>
     </div>
 
     <div class="card">
-      <h2 class="recon-h2">Trial loads checked</h2>
+      <h2 class="recon-h2">Comparisons so far</h2>
       <div id="recon-runs">${renderRunsList()}</div>
     </div>
   `);
@@ -293,18 +301,21 @@ export function renderReconcile({ id }, ui) {
       loaded[pairId] = loaded[pairId] || {};
       if (!file) {
         delete loaded[pairId][`${side}Rows`];
-        status.textContent = 'Not loaded';
+        status.textContent = 'No file added';
         updateKeyCheck(pairId);
         return;
       }
       try {
-        const { rows, columns } = parseExtract(await file.text());
+        const parsed = parseExtract(await file.text());
+        const pair0 = pairs.find(p => p.id === pairId);
+        const { rows, columns, renamed } = side === 'source' ? asOldColumns(parsed.rows, parsed.columns, pair0.mappings) : { ...parsed, renamed: false };
         loaded[pairId][`${side}Rows`] = rows;
         loaded[pairId][`${side}File`] = file.name;
+        if (side === 'source') loaded[pairId].sourceTranslated = renamed;
         const pair = pairs.find(p => p.id === pairId);
         const wanted = pair.mappings.map(m => (side === 'source' ? m.sourceColumn : m.targetColumn));
         const missing = wanted.filter(c => !columns.includes(c));
-        status.innerHTML = `${num(rows.length)} rows · ${columns.length} headings`
+        status.innerHTML = `${num(rows.length)} rows · ${columns.length} headings${renamed ? ' · read as the filled table' : ''}`
           + (missing.length ? ` <span class="recon-warn">· matched field${missing.length === 1 ? '' : 's'} not in file: ${esc(missing.join(', '))}</span>` : '');
       } catch (err) {
         delete loaded[pairId][`${side}Rows`];
@@ -384,12 +395,13 @@ export function renderReconcile({ id }, ui) {
       }
       inputs[pair.id] = {
         sourceRows: l.sourceRows, targetRows: l.targetRows, sourceFile: l.sourceFile, targetFile: l.targetFile,
+        sourceTranslated: !!l.sourceTranslated,
         keyMappingIds: keyIds, maskedMappingIds: checked('mask', pair.id), totalMappingIds: checked('total', pair.id),
       };
     }
     try {
-      const label = document.getElementById('recon-label').value.trim() || 'Trial load';
-      const run = await executeRun(getProject(id), { label, inputs });
+      const label = document.getElementById('recon-label').value.trim() || nextName();
+      const run = await executeRun(getProject(id), { label, inputs, stage: stageNow });
       ui.toast('Checks complete');
       location.hash = `#/projects/${id}/reconcile/${run.id}`;
     } catch (err) {
@@ -402,7 +414,7 @@ export function renderReconcile({ id }, ui) {
       const load = Number(btn.dataset.demoLoad);
       try {
         const p = getProject(id);
-        const run = await executeRun(p, { label: `Demo trial load ${load}`, inputs: demoInputs(p, load) });
+        const run = await executeRun(p, { label: `Demo comparison ${load}`, inputs: demoInputs(p, load), stage: 'test' });
         location.hash = `#/projects/${id}/reconcile/${run.id}`;
       } catch (err) {
         showError(err.message);
@@ -544,7 +556,7 @@ export async function renderReport({ id, runId }, ui) {
   document.getElementById('app-shell').innerHTML = ui.nav(project.name) + '<main class="app-main" id="app-main"></main>';
   ui.mount(`
     <div class="recon-toolbar no-print">
-      <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All trial loads</a>
+      <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All comparisons</a>
       <div class="recon-switch" role="tablist" aria-label="Report view">
         <button role="tab" id="recon-tab-summary" aria-selected="true" aria-controls="recon-view-summary">Summary</button>
         <button role="tab" id="recon-tab-detail" aria-selected="false" aria-controls="recon-view-detail">Full detail</button>
@@ -560,7 +572,7 @@ export async function renderReport({ id, runId }, ui) {
 
     <article class="recon-report" id="recon-view-detail" role="tabpanel" aria-labelledby="recon-tab-detail" hidden>
       <header class="recon-report-head">
-        <div class="recon-eyebrow">Load check report</div>
+        <div class="recon-eyebrow">Comparison report</div>
         <h1>${esc(run.label)}</h1>
         <p class="recon-meta">${esc(run.project.name)} · ${esc(run.project.sourceSystem)} → ${esc(run.project.targetSystem)}</p>
         <p class="recon-meta">Checked ${esc(fmtDate(run.at))} by ${esc(run.by)} · ${num(run.mappingCount)} agreed matches ·
@@ -595,7 +607,7 @@ export async function renderReport({ id, runId }, ui) {
           <p class="recon-sub">${change.fixed.length} fixed · ${change.stillOpen.length} still open · ${change.added.length} new.
             Each table is compared with the last load in which that table was checked${change.singleLabel ? '' : `: ${esc(change.baselines.map(b => `${b.table} with ${b.label}`).join('; '))}`}.
             ${change.firstTime.length ? `First check, so nothing to compare: ${esc(change.firstTime.join('; '))}.` : ''}</p>
-          ${changeList('New in this load', change.added, 'recon-change-new')}
+          ${changeList('New since the last comparison', change.added, 'recon-change-new')}
           ${changeList('Still open', change.stillOpen, 'recon-change-open')}
           ${changeList('Fixed since the last check', change.fixed, 'recon-change-fixed')}
         </section>` : ''}
@@ -869,7 +881,7 @@ export function renderOverview({ id }, ui) {
   ui.mount(`
     ${ui.projectSteps(project, 'overview')}
     <div class="recon-toolbar no-print">
-      <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All trial loads</a>
+      <a class="btn btn-ghost btn-sm" href="#/projects/${id}/reconcile">← All comparisons</a>
       <button class="btn btn-primary btn-sm" id="recon-print">Print or save as PDF</button>
     </div>
 

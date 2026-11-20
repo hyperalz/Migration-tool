@@ -28,14 +28,14 @@ export const STEP_GUIDE = {
     done: 'Every field the new system must have has a match.',
   },
   check: {
-    what: 'The data is copied into the new system. This is called a load. Then you check the copy is right.',
+    what: 'The tables are filled and loaded into test, then live. Your team checks each field on screen.',
     todo: [
-      'Ask for two files. One comes from the old system and one from the new system.',
-      'Add both files and press Run checks.',
-      'Read the summary. It tells you what matched and what needs fixing.',
-      'Fix the problems. Then load and check again.',
+      'Fill the tables and send them to the person who loads them.',
+      'When they are loaded into test, check each field on screen.',
+      'Record pass or fail in the field tracker. Fix what fails and load again.',
+      'Do the same in live.',
     ],
-    done: 'Every table passes its latest check.',
+    done: 'Every field has passed on screen in live.',
   },
   signoff: {
     what: 'The people in charge of each area agree that their part is right.',
@@ -81,9 +81,9 @@ export const SCREEN_GUIDE = {
     'A warning shows when the two sides write things in a different way.',
   ],
   reconcile: [
-    'A load is when data is copied into the new system.',
-    'For each table, add one file from the old system and one from the new system.',
-    'Press Run checks. You get a report that shows what matched and what did not.',
+    'This is an extra check. You do not have to use it.',
+    'Add what was meant to arrive, and what did arrive.',
+    'MapBridge shows records that are missing, extra or different.',
     'Your files stay on this computer. They are not sent anywhere.',
   ],
   verify: [
