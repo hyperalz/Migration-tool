@@ -1133,7 +1133,7 @@ test('to-do: one list across steps and areas, with the jobs that hold work up fi
   const list = todoList(templateProject());
   assert.deepEqual(list.map(t => t.id), ['list-Payroll', 'match-Customer', 'match-Order', 'send-Customer', 'send-Order', 'questions']);
   assert.equal(list[0].area, 'Payroll');
-  assert.equal(list[1].text, '1 field in the new system has no match yet. Match it or mark it as not used.');
+  assert.equal(list[1].text, '1 field in the new system not matched yet. Match it or mark it as not used.');
   assert.ok(list.every(t => t.path && t.step));
 
   assert.deepEqual(todoList(emptyProject()).map(t => t.id), ['old-list', 'new-list']);

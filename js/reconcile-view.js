@@ -16,6 +16,7 @@ import { plainSummary } from './reconcile-plain.js';
 import { projectOverview } from './reconcile-overview.js';
 import { areaBoard, STAGES } from './work-queue.js';
 import { areaPath } from './area-page.js';
+import { boldLeadNumber, cellTone } from './figures.js';
 import { COMPARE_TEXT, tableJourney, suggestedStage, runStage, asOldColumns } from './journey.js';
 import {
   FINANCE_DEMO, legacyFinanceSchema, newFinanceSchema, financeMappings, financeKeys, financeDemoExtracts,
@@ -926,7 +927,7 @@ export function renderOverview({ id }, ui) {
         <p class="recon-sub">Open an area to see its fields and to record its sign-off.</p>
         <table class="recon-table">
           <thead><tr><th>Area</th>${STAGES.map(st => `<th>${esc(st.label)}</th>`).join('')}</tr></thead>
-          <tbody>${board.map(r => `<tr><td><a href="${areaPath(id, r.name)}"><strong>${esc(r.name)}</strong></a></td>${STAGES.map(st => `<td class="home-cell-${r.cells[st.key].state}">${esc(r.cells[st.key].text)}</td>`).join('')}</tr>`).join('')}</tbody>
+          <tbody>${board.map(r => `<tr><td><a href="${areaPath(id, r.name)}"><strong>${esc(r.name)}</strong></a></td>${STAGES.map(st => `<td class="home-cell home-cell-${cellTone(r.cells[st.key].state, r.cells[st.key].text)}">${boldLeadNumber(r.cells[st.key].text, esc)}</td>`).join('')}</tr>`).join('')}</tbody>
         </table>
       </section>
 
