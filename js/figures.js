@@ -34,7 +34,7 @@ export function todoRowHtml(t, { esc, href, chip = '' }) {
   return `<li>
       <span class="fig fig-${tone}">${f ? esc(f.n) : ''}</span>
       <span class="home-todo-text">${body}</span>
-      ${chip}
+      <span class="home-todo-chip">${chip}</span>
       <a class="btn btn-ghost btn-sm" href="${href}">Open</a></li>`;
 }
 

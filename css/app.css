@@ -2434,3 +2434,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .setup-flow-box.sys-flow-new { background: var(--new-bg); color: var(--new-ink); border-color: var(--new); }
 .panel-source .panel-header, .panel-target .panel-header { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-header .sys-tag { margin-right: 0; flex: none; }
+
+/* To-do rows: "Open" always lines up on the right, with or without an area label. */
+.home-todo-list li { grid-template-columns: 3rem minmax(0, 1fr) auto 4.5rem; }
+.home-todo-list li > .btn { justify-self: end; }
+.home-todo-chip { display: flex; justify-content: flex-end; }
+.home-todo-chip:empty { display: block; }
+.home-todo details { border-top: 1px solid var(--line); }
+.home-todo details > summary { padding: 0.7rem 0 0.5rem; margin-top: 0; }
+.home-todo details[open] > summary { border-bottom: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .home-todo-list li { grid-template-columns: 2.4rem minmax(0, 1fr) auto; }
+  .home-todo-chip { grid-column: 2; justify-content: flex-start; }
+  .home-todo-chip:empty { display: none; }
+}
