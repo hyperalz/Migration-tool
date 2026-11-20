@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tableJourney, bulkMark, supplierRows, fileRequestText, fileRequestRows, runStage, suggestedStage } from '../js/journey.js';
+import { asOldColumns, tableJourney, bulkMark, supplierRows, fileRequestText, fileRequestRows, runStage, suggestedStage } from '../js/journey.js';
 
 const m = (id, src, tgt, status = 'mapped') => ({ id, sourceTable: 'old_sup', sourceColumn: src, targetTable: 'Supplier', targetColumn: tgt, verification: { status, history: [] } });
 const project = (mappings, reconRuns = []) => ({ mappings, reconRuns });
@@ -63,4 +63,12 @@ test('supplier rows and the file request list every matched field', () => {
   const list = fileRequestRows(rows, () => ['a']);
   assert.equal(list.length, 4);
   assert.equal(list.filter(r => r.identifies_a_record === 'yes').length, 2);
+});
+
+test('a filled table with the new headings is read under the old ones', () => {
+  const ms = [m('a', 'id', 'Id'), m('b', 'nm', 'Name')];
+  const r = asOldColumns([{ Id: '1', Name: 'Acme' }], ['Id', 'Name'], ms);
+  assert.equal(r.renamed, true);
+  assert.deepEqual(r.rows[0], { id: '1', nm: 'Acme' });
+  assert.equal(asOldColumns([{ id: '1' }], ['id', 'nm'], ms).renamed, false);
 });

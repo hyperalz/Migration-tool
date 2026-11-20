@@ -9,36 +9,11 @@ import { tablePairs } from './reconcile.js';
 import { recordTransition } from './verification.js';
 import { tableNoun } from './reconcile-plain.js';
 
-export const JOURNEY_TEXT = {
-  title: 'Copy the data across, then check it arrived',
-  lead: 'Your fields are matched. Now the supplier copies the real records into the new system: first into a test copy, then into live. MapBridge does not do the copying. After each copy, you export the same tables from both systems, and MapBridge compares them to show whether everything arrived correctly.',
-  does: [
-    'Gives the supplier the agreed matches, table by table',
-    'Tracks each table through the test copy and the live copy',
-    'Compares the data in the old and new systems after each copy: counts, totals and every matched field',
-    'Keeps a record of who did what, ready for sign-off',
-  ],
-  doesNot: [
-    'Copy, move or change any data. The supplier does the copying',
-    'Connect to either system',
-    'Upload or keep your records. Files are read in your browser and only the results are saved',
-    'Decide when you go live. People sign that off',
-  ],
-  boardTitle: 'Where each table is',
-  steps: [
-    { key: 'send', title: '1. Send the matches', text: 'Give the agreed matches to the supplier. They use them to copy the data.' },
-    { key: 'test', title: '2. Test copy', text: 'The supplier copies the data into a test system. You compare old with new, and people test it on screen.' },
-    { key: 'live', title: '3. Live copy', text: 'The same again into the real system. This is the copy you sign off.' },
-  ],
-  checkTitle: 'Compare the data: old system with new',
-  checkLead: 'After the supplier has copied a table, export it from both systems as CSV and add both files here. These are the actual records, not the field lists you added at the start.',
-  checkGives: [
-    'Record counts, and exactly which records are missing or extra',
-    'Totals for money fields, and how far apart they are',
-    'Fields that came across different, such as a changed sort code',
-    'Duplicates in the new system',
-  ],
-  whichLoad: 'Which copy is this?',
+export const COMPARE_TEXT = {
+  title: 'Compare files (optional)',
+  lead: 'An extra check after a load, when you have the files. Most checking is done on screen and recorded in the field tracker.',
+  how: 'For each table, add what was meant to arrive (for example, the filled table you sent) and what actually arrived (for example, the extract you got back after a merge). Use the headings from either system.',
+  gives: 'MapBridge lists records that are missing, extra or duplicated, totals that do not agree, and fields that came across different.',
 };
 
 export const NEXT = {
@@ -194,4 +169,22 @@ export function fileRequestText(rows, { oldName = 'the old system', newName = 't
     lines.push('');
   }
   return lines.join('\n');
+}
+
+/**
+ * The first file can be the filled table that was sent, which has the new
+ * system's headings. If so, read it under the old headings so it lines up.
+ */
+export function asOldColumns(rows, columns, mappings) {
+  const cols = new Set(columns);
+  const oldHits = mappings.filter(m => cols.has(m.sourceColumn)).length;
+  const newHits = mappings.filter(m => cols.has(m.targetColumn)).length;
+  if (newHits <= oldHits) return { rows, columns, renamed: false };
+  const rename = new Map(mappings.filter(m => cols.has(m.targetColumn)).map(m => [m.targetColumn, m.sourceColumn]));
+  const out = rows.map(r => {
+    const o = {};
+    for (const [k, v] of Object.entries(r)) o[rename.get(k) ?? k] = v;
+    return o;
+  });
+  return { rows: out, columns: columns.map(c => rename.get(c) ?? c), renamed: true };
 }

@@ -331,6 +331,8 @@ export function reconcilePair({
   pair, sourceRows, targetRows, keyMappingIds,
   sourceSchema = null, targetSchema = null,
   maskedMappingIds = [], totalMappingIds = null, sourceFile = '', targetFile = '',
+  // The first file is the filled table that was sent, so translations and defaults are already applied.
+  alreadyTranslated = false,
 }) {
   const masked = new Set(maskedMappingIds);
   const groups = new GroupCollector();
@@ -435,8 +437,8 @@ export function reconcilePair({
     }
 
     const lookup = parseLookupRule(m.lookupRule);
-    const hasLookup = lookup.map.size > 0;
-    const hasDefault = !isBlank(m.defaultValue);
+    const hasLookup = !alreadyTranslated && lookup.map.size > 0;
+    const hasDefault = !alreadyTranslated && !isBlank(m.defaultValue);
     const required = tCol?.required === true;
 
     for (const key of matchedKeys) {
