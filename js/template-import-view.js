@@ -59,7 +59,7 @@ export function templateImportCard(project, escapeHtml) {
     </details>`;
 }
 
-export function bindTemplateImport(projectId, ui, rerender) {
+export function bindTemplateImport(projectId, ui, rerender, opts = {}) {
   const input = document.getElementById('template-file');
   const preview = document.getElementById('template-preview');
   if (!input) return;
@@ -124,6 +124,7 @@ export function bindTemplateImport(projectId, ui, rerender) {
     if (!parsed) return;
     const user = getCurrentUser();
     const p = getProject(projectId);
+    opts.beforeApply?.(p);
     const target = mergeSchema(p.targetSchema, parsed.targetSchema);
     const source = mergeSchema(p.sourceSchema, parsed.sourceSchema);
     p.targetSchema = { ...target.schema, system: p.targetSystem || target.schema.system };

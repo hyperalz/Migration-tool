@@ -37,9 +37,10 @@ import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './fie
 import { projectProgress, stepForScreen, STATE_LABEL, visibleScreens } from './progress.js';
 import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
+import { mergeSchema } from './template-import.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
-import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine } from './setup-routes.js';
+import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine, listOrigin, recordOrigin, matchesUsing, orphanMatches, addResultText } from './setup-routes.js';
 import { screenTables } from './trace.js';
 import { renderExecutive } from './executive-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
@@ -368,9 +369,10 @@ function renderNewProject() {
   });
 }
 
-// Which sides are showing their ways in again after a list was added.
+// What a side with a list is doing: 'add' (adding more fields),
+// 'replace-confirm' (asked to replace, not yet confirmed) or 'replace'.
 // Held in memory only: a reload shows the finished state.
-const setupChanging = new Set();
+const setupMode = new Map();
 
 function renderSetup({ id }) {
   const project = getProject(id);
@@ -380,12 +382,12 @@ function renderSetup({ id }) {
   const SIDE = { old: 'source', new: 'target' };
   const label = side => side === 'old' ? oldLabel(project) : newLabel(project);
   const hasList = side => Boolean(project[SIDE[side] + 'Schema']?.tables?.length);
-  const changing = side => setupChanging.has(`${id}:${side}`);
+  const mode = side => setupMode.get(`${id}:${side}`) || null;
   const chosen = side => chosenRoute(project, side);
 
-  const routeOptions = side => `
+  const routeOptions = (side, legend) => `
     <fieldset class="setup-routes">
-      <legend>${esc(SETUP_TEXT.question(SIDE_WORD[side]))}</legend>
+      <legend>${esc(legend)}</legend>
       ${ROUTES[side].map(r => `
         <label class="setup-route ${chosen(side) === r.key ? 'is-on' : ''}">
           <input type="radio" name="setup-route-${side}" value="${r.key}" data-side="${side}" ${chosen(side) === r.key ? 'checked' : ''}>
@@ -394,17 +396,47 @@ function renderSetup({ id }) {
         </label>`).join('')}
     </fieldset>`;
 
+  const orphanNote = side => {
+    const orphans = orphanMatches(project, side);
+    if (!orphans.length) return '';
+    const names = orphans.slice(0, 3).map(m => `${m.sourceColumn} → ${m.targetColumn}`).join(', ');
+    return `
+      <div class="alert alert-warn setup-orphans" role="note">
+        ${orphans.length} ${orphans.length === 1 ? 'match uses a field' : 'matches use fields'} that ${orphans.length === 1 ? 'is' : 'are'} no longer in this list: ${esc(names)}${orphans.length > 3 ? ` and ${orphans.length - 3} more` : ''}.
+        Match ${orphans.length === 1 ? 'it' : 'them'} again on the Match screen, or remove ${orphans.length === 1 ? 'it' : 'them'}.
+        <div style="margin-top:0.5rem"><button type="button" class="btn btn-ghost btn-sm setup-remove-orphans" data-side="${side}">Remove ${orphans.length === 1 ? 'this match' : `these ${orphans.length} matches`}</button></div>
+      </div>`;
+  };
+
   const sideCard = side => {
     const list = hasList(side);
+    const m = mode(side);
     const stats = schemaStats(project[SIDE[side] + 'Schema']);
+    const word = SIDE_WORD[side];
+    let body;
+    if (!list) body = routeOptions(side, SETUP_TEXT.question(word));
+    else if (m === 'add') body = `${routeOptions(side, SETUP_TEXT.questionMore(word))}
+      <p class="recon-sub" style="margin:0.5rem 0 0">${esc(SETUP_TEXT.addNote)}</p>
+      <button type="button" class="btn-link setup-cancel" data-side="${side}">${esc(SETUP_TEXT.keep)}</button>`;
+    else if (m === 'replace-confirm') body = `
+      <div class="alert alert-warn" role="alert" style="margin:0.5rem 0">${esc(SETUP_TEXT.replaceWarn(matchesUsing(project, side), word))}</div>
+      <div class="setup-actions">
+        <button type="button" class="btn btn-secondary btn-sm setup-replace-yes" data-side="${side}">${esc(SETUP_TEXT.replaceConfirm)}</button>
+        <button type="button" class="btn-link setup-cancel" data-side="${side}">${esc(SETUP_TEXT.keep)}</button>
+      </div>`;
+    else if (m === 'replace') body = `${routeOptions(side, SETUP_TEXT.questionReplace(word))}
+      <button type="button" class="btn-link setup-cancel" data-side="${side}">${esc(SETUP_TEXT.keep)}</button>`;
+    else body = `
+      <div class="setup-actions">
+        <button type="button" class="btn btn-secondary btn-sm setup-add" data-side="${side}">${esc(SETUP_TEXT.addMore)}</button>
+        <button type="button" class="btn-link setup-replace" data-side="${side}">${esc(SETUP_TEXT.replace)}</button>
+      </div>
+      ${renderSchemaPreview(project[SIDE[side] + 'Schema'], stats)}`;
     return `
       <section class="card setup-side" id="setup-side-${side}">
         <h2 class="setup-side-title">${esc(label(side))}</h2>
-        ${list ? `
-          <p class="setup-done"><span aria-hidden="true">✓</span> ${esc(originLine(project, side))}</p>
-          ${changing(side) ? `<button type="button" class="btn-link setup-keep" data-side="${side}">Keep this list</button>` : `<button type="button" class="btn-link setup-change" data-side="${side}">${esc(SETUP_TEXT.change)}</button>`}` : ''}
-        ${!list || changing(side) ? routeOptions(side) : ''}
-        ${list && !changing(side) ? renderSchemaPreview(project[SIDE[side] + 'Schema'], stats) : ''}
+        ${list ? `<p class="setup-done"><span aria-hidden="true">✓</span> ${esc(originLine(project, side))}</p>${orphanNote(side)}` : ''}
+        ${body}
       </section>`;
   };
 
@@ -444,12 +476,14 @@ function renderSetup({ id }) {
   const panel = side => {
     const key = chosen(side);
     if (!key) return '';
+    const m = mode(side);
+    if (m === 'replace-confirm') return '';
     const showAfter = key === 'screens' || key === 'supplier';
-    if (hasList(side) && !changing(side) && !showAfter) return '';
+    if (hasList(side) && !m && !showAfter) return '';
     const r = routeFor(side, key);
     return `
       <section class="card setup-panel" id="setup-panel-${side}">
-        <h3 class="setup-panel-title">${esc(label(side))}: ${esc(r.title.toLowerCase())}</h3>
+        <h3 class="setup-panel-title">${esc(label(side))}: ${esc(r.title.toLowerCase())}${m === 'add' ? ' (adding to the list)' : m === 'replace' ? ' (replacing the list)' : ''}</h3>
         <p class="recon-sub" style="margin:0 0 0.9rem">${esc(r.gives)}</p>
         ${tool(side, key)}
       </section>`;
@@ -479,8 +513,23 @@ function renderSetup({ id }) {
 
   // The tools inside the panels open straight away: the panel heading already names them.
   document.querySelectorAll('.setup-panel details.template-import').forEach(d => { d.open = true; });
-  bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }));
-  bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }));
+  // The supplier spreadsheet and the screenshot tool add to a list. When the
+  // person chose to replace it, the old list is cleared just before they apply.
+  const before = (side, origin) => p => {
+    const key = `${id}:${side}`;
+    const sk = SIDE[side];
+    if (setupMode.get(key) === 'replace') {
+      p[sk + 'Schema'] = null;
+      recordOrigin(p, side, origin, 'replace');
+    } else {
+      if (!p[sk + 'Origin'] && p[sk + 'Schema']?.tables?.length) p[sk + 'Origin'] = listOrigin(p, side);
+      recordOrigin(p, side, origin, 'add');
+    }
+    setupMode.delete(key);
+  };
+  bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }), { beforeApply: before('new', 'supplier') });
+  bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }), { beforeApply: before('old', 'screens') });
+
   bindTrace(id, reconcileUI(), () => renderSetup({ id }));
   attachLogout();
   if (document.getElementById('source-upload')) setupUpload('source', id);
@@ -497,18 +546,26 @@ function renderSetup({ id }) {
       document.getElementById(`setup-panel-${side}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
   });
-  document.querySelectorAll('.setup-keep').forEach(btn => {
-    btn.addEventListener('click', () => { setupChanging.delete(`${id}:${btn.dataset.side}`); renderSetup({ id }); });
-  });
-  document.querySelectorAll('.setup-change').forEach(btn => {
-    btn.addEventListener('click', () => { setupChanging.add(`${id}:${btn.dataset.side}`); renderSetup({ id }); });
-  });
+  const setMode = (side, value) => { if (value) setupMode.set(`${id}:${side}`, value); else setupMode.delete(`${id}:${side}`); renderSetup({ id }); };
+  document.querySelectorAll('.setup-add').forEach(b => b.addEventListener('click', () => setMode(b.dataset.side, 'add')));
+  document.querySelectorAll('.setup-replace').forEach(b => b.addEventListener('click', () => setMode(b.dataset.side, 'replace-confirm')));
+  document.querySelectorAll('.setup-replace-yes').forEach(b => b.addEventListener('click', () => setMode(b.dataset.side, 'replace')));
+  document.querySelectorAll('.setup-cancel').forEach(b => b.addEventListener('click', () => setMode(b.dataset.side, null)));
+  document.querySelectorAll('.setup-remove-orphans').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Click again to remove them'; return; }
+    const p = getProject(id);
+    const gone = new Set(orphanMatches(p, b.dataset.side).map(m => m.id));
+    p.mappings = p.mappings.filter(m => !gone.has(m.id));
+    saveProject(p);
+    toast(`Removed ${gone.size} ${gone.size === 1 ? 'match' : 'matches'}`);
+    renderSetup({ id });
+  }));
   const sample = (side, schema, name) => document.getElementById(`load-${side}-sample`)?.addEventListener('click', () => {
     const p = getProject(id);
     p[side + 'Schema'] = cloneSample(schema);
-    p[side + 'Origin'] = 'sample';
+    recordOrigin(p, side === 'source' ? 'old' : 'new', 'sample', 'replace');
     saveProject(p);
-    setupChanging.delete(`${id}:${side === 'source' ? 'old' : 'new'}`);
+    setupMode.delete(`${id}:${side === 'source' ? 'old' : 'new'}`);
     toast(`${name} sample loaded`);
     renderSetup({ id });
   });
@@ -543,19 +600,28 @@ async function handleSchemaFile(file, side, projectId, origin = 'file') {
       throw new Error('This does not look like a connector file. It should list tables and their fields.');
     }
     const p = getProject(projectId);
-    p[side === 'source' ? 'sourceSchema' : 'targetSchema'] = schema;
-    p[side === 'source' ? 'sourceOrigin' : 'targetOrigin'] = origin;
-    saveProject(p);
-    setupChanging.delete(`${projectId}:${side === 'source' ? 'old' : 'new'}`);
-    
+    const key = side === 'source' ? 'sourceSchema' : 'targetSchema';
+    const sideWord = side === 'source' ? 'old' : 'new';
+    const modeKey = `${projectId}:${sideWord}`;
     const warnings = schema._warnings;
     delete schema._warnings;
-    
-    if (warnings?.length) {
-      toast(`Field list added, with a warning: ${warnings[0]}`);
+    let message;
+    if (p[key]?.tables?.length && setupMode.get(modeKey) !== 'replace') {
+      // Adding to a list never takes anything away.
+      if (!p[side + 'Origin']) p[side + 'Origin'] = listOrigin(p, sideWord);
+      const merged = mergeSchema(p[key], schema);
+      p[key] = { ...merged.schema, system: p[key].system || merged.schema.system };
+      recordOrigin(p, sideWord, origin, 'add');
+      message = addResultText(merged);
     } else {
-      toast('Field list added');
+      p[key] = schema;
+      recordOrigin(p, sideWord, origin, 'replace');
+      const orphans = orphanMatches(p, sideWord).length;
+      message = orphans ? `List replaced. ${orphans} ${orphans === 1 ? 'match uses a field' : 'matches use fields'} not in the new list.` : 'Field list added';
     }
+    saveProject(p);
+    setupMode.delete(modeKey);
+    toast(warnings?.length ? `${message} Warning: ${warnings[0]}` : message);
     renderSetup({ id: projectId });
   } catch (err) {
     toast(err.message);

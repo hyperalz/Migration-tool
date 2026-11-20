@@ -91,7 +91,7 @@ async function fingerprint(file) {
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function bindScreenshotDictionary(projectId, ui, rerender) {
+export function bindScreenshotDictionary(projectId, ui, rerender, opts = {}) {
   const openSettings = () => ui.openAISettings?.(() => rerender(), { showKey: true });
   document.getElementById('shot-open-settings')?.addEventListener('click', openSettings);
   document.getElementById('shot-settings-link')?.addEventListener('click', openSettings);
@@ -284,6 +284,7 @@ export function bindScreenshotDictionary(projectId, ui, rerender) {
     const state = pending.get(projectId);
     if (!state) return;
     const p = getProject(projectId);
+    opts.beforeApply?.(p);
     const incoming = screenshotSchema(state.rows);
     const merged = mergeSchema(p.sourceSchema, incoming);
     const shotTables = new Set(incoming.tables.map(t => t.name));
