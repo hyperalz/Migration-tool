@@ -51,6 +51,9 @@ function runs(project) {
 
 // ---------- demo project ----------
 
+// Raise this when the demo changes, so anyone with an older copy gets the new one.
+export const DEMO_VERSION = 2;
+
 export function createFinanceDemoProject(user) {
   const project = createProject({
     name: 'Demo: finance system move',
@@ -59,6 +62,7 @@ export function createFinanceDemoProject(user) {
     ownerId: user.id,
   });
   project.demo = FINANCE_DEMO;
+  project.demoVersion = DEMO_VERSION;
   project.sourceSchema = JSON.parse(JSON.stringify(legacyFinanceSchema));
   project.targetSchema = JSON.parse(JSON.stringify(newFinanceSchema));
   project.serviceAreas = [...new Set(financeMappings.map(m => m.serviceArea))].map(name => ({ id: uid(), name }));

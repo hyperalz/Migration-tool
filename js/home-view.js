@@ -37,11 +37,9 @@ export function renderHome({ id }, ui) {
           <div><h2 class="home-next-text">${esc(topFig.action || topFig.what)}</h2>
             <p class="home-next-what">${esc(topFig.what[0].toUpperCase() + topFig.what.slice(1))}</p></div>
         </div>` : `
-        <h2 class="home-next-text">${esc(top.text)}</h2>
-        <p class="home-next-why">${esc(topStep.number === 1 ? INTRO : guideTop.what)}</p>`}
+        <h2 class="home-next-text">${esc(top.text)}</h2>`}
         <a class="btn btn-primary" href="#/projects/${id}/${top.path}">Go to ${esc(topStep.label)}</a>
       </div>
-      ${started ? `<p class="home-next-status home-next-status-${status.level}"><strong>File comparisons: ${esc(status.label)}.</strong> ${esc(status.headline)}</p>` : ''}
     </section>` : `
     <section class="card home-next"><div class="home-next-main">
       <div class="recon-eyebrow">All done</div>
