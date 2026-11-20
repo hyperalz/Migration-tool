@@ -2,7 +2,7 @@
 // kinds of evidence:
 //   - what people record in the field tracker (SQL sent, in test, checked
 //     in the new system's own screens, passed or failed);
-//   - what file checks found (Check a load).
+//   - what file checks found (Compare the data).
 // A failure from either counts as failed, so the two can never tell
 // different stories. Fields add up to their table and their area.
 // No AI anywhere in this: it only reads what was recorded and checked.

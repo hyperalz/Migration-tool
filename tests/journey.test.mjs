@@ -17,7 +17,7 @@ test('marking sent then loaded moves the table on, field by field in the history
   assert.equal(bulkMark(ms, 'send', 'Alex'), 2);
   assert.equal(tableJourney(project(ms))[0].next, 'markTest');
   assert.equal(bulkMark(ms, 'markTest', 'Alex'), 2);
-  assert.equal(ms[0].verification.history.at(-1).note, 'Loaded into test');
+  assert.equal(ms[0].verification.history.at(-1).note, 'Supplier copied the data into test');
   assert.equal(tableJourney(project(ms))[0].next, 'checkTest');
   // Nothing to move live yet: nothing has passed test.
   assert.equal(bulkMark(ms, 'markLive', 'Alex'), 0);
@@ -59,7 +59,7 @@ test('supplier rows and the file request list every matched field', () => {
   assert.deepEqual(supplierRows(rows[0].pair).map(r => r.new_field), ['Id', 'Name']);
   const text = fileRequestText(rows, { oldName: 'Old', newName: 'New', keyIdsFor: () => ['a'] });
   assert.match(text, /From Old \(old_sup\): id\*, nm/);
-  assert.match(text, /after the test load/);
+  assert.match(text, /copied into test/);
   const list = fileRequestRows(rows, () => ['a']);
   assert.equal(list.length, 4);
   assert.equal(list.filter(r => r.identifies_a_record === 'yes').length, 2);

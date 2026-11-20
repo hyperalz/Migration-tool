@@ -10,28 +10,46 @@ import { recordTransition } from './verification.js';
 import { tableNoun } from './reconcile-plain.js';
 
 export const JOURNEY_TEXT = {
-  title: 'Move the data: test first, then live',
-  lead: 'Your fields are matched. Now whoever does the load copies the data across: first into a test copy of the new system, then into live. At each stage you check the data arrived correctly, and people test it on screen. MapBridge never moves any data itself.',
+  title: 'Copy the data across, then check it arrived',
+  lead: 'Your fields are matched. Now the supplier copies the real records into the new system: first into a test copy, then into live. MapBridge does not do the copying. After each copy, you export the same tables from both systems, and MapBridge compares them to show whether everything arrived correctly.',
+  does: [
+    'Gives the supplier the agreed matches, table by table',
+    'Tracks each table through the test copy and the live copy',
+    'Compares the data in the old and new systems after each copy: counts, totals and every matched field',
+    'Keeps a record of who did what, ready for sign-off',
+  ],
+  doesNot: [
+    'Copy, move or change any data. The supplier does the copying',
+    'Connect to either system',
+    'Upload or keep your records. Files are read in your browser and only the results are saved',
+    'Decide when you go live. People sign that off',
+  ],
   boardTitle: 'Where each table is',
   steps: [
-    { key: 'send', title: '1. Send', text: 'Give the agreed matches to whoever does the load.' },
-    { key: 'test', title: '2. Test load', text: 'They load a test copy. You check the files, and people test it on screen.' },
-    { key: 'live', title: '3. Live load', text: 'The same again for the real system. This is the load you sign off.' },
+    { key: 'send', title: '1. Send the matches', text: 'Give the agreed matches to the supplier. They use them to copy the data.' },
+    { key: 'test', title: '2. Test copy', text: 'The supplier copies the data into a test system. You compare old with new, and people test it on screen.' },
+    { key: 'live', title: '3. Live copy', text: 'The same again into the real system. This is the copy you sign off.' },
   ],
-  checkTitle: 'Check a load',
-  checkLead: 'Add one file from each system for the tables in this load. MapBridge compares every record, every total and every matched field.',
-  whichLoad: 'Which load is this?',
+  checkTitle: 'Compare the data: old system with new',
+  checkLead: 'After the supplier has copied a table, export it from both systems as CSV and add both files here. These are the actual records, not the field lists you added at the start.',
+  checkGives: [
+    'Record counts, and exactly which records are missing or extra',
+    'Totals for money fields, and how far apart they are',
+    'Fields that came across different, such as a changed sort code',
+    'Duplicates in the new system',
+  ],
+  whichLoad: 'Which copy is this?',
 };
 
 export const NEXT = {
-  send: 'Send the matches to whoever does the load',
-  markTest: 'Waiting for the test load',
-  checkTest: 'Check the test load',
-  fixTest: 'Fix the problems, then load into test again',
+  send: 'Send the matches to the supplier',
+  markTest: 'Waiting for the supplier to copy it into test',
+  checkTest: 'Compare the data in test',
+  fixTest: 'Problems found. The supplier fixes them and copies again',
   uatTest: 'People test it on screen in test',
-  markLive: 'Waiting for the live load',
-  checkLive: 'Check the live load',
-  fixLive: 'Fix the problems, then load into live again',
+  markLive: 'Waiting for the supplier to copy it into live',
+  checkLive: 'Compare the data in live',
+  fixLive: 'Problems found. The supplier fixes them and copies again',
   uatLive: 'People test it on screen in live',
   done: 'Ready to sign off',
 };
@@ -116,9 +134,9 @@ export function suggestedStage(rows) {
  * the same as doing it field by field in the tracker.
  */
 export const BULK = {
-  send: { from: ['mapped', 'test_failed'], to: 'sql_sent', note: 'Matches sent to whoever does the load' },
-  markTest: { from: ['sql_sent'], to: 'test_uploaded', note: 'Loaded into test' },
-  markLive: { from: ['test_passed', 'live_failed'], to: 'live_uploaded', note: 'Loaded into live' },
+  send: { from: ['mapped', 'test_failed'], to: 'sql_sent', note: 'Matches sent to the supplier' },
+  markTest: { from: ['sql_sent'], to: 'test_uploaded', note: 'Supplier copied the data into test' },
+  markLive: { from: ['test_passed', 'live_failed'], to: 'live_uploaded', note: 'Supplier copied the data into live' },
 };
 
 export function bulkMark(mappings, action, by) {
@@ -162,9 +180,10 @@ export function fileRequestRows(rows, keyIdsFor = () => []) {
 
 export function fileRequestText(rows, { oldName = 'the old system', newName = 'the new system', stage = 'test', keyIdsFor = () => [] } = {}) {
   const where = stage === 'live' ? 'live' : 'test';
+  // Exports of the actual records, taken after the supplier's copy.
   const lines = [
-    `Please send two CSV files for each table below, taken after the ${where} load: one exported from ${oldName}, and one exported from what is now in ${newName}.`,
-    'Each file needs a heading row, and the fields listed. The fields marked * identify each record, so please include them.',
+    `Now that the data has been copied into ${where}, please export each table below from both systems as a CSV file: one from ${oldName}, and one from what is now in ${newName}. We will compare them to check every record arrived correctly.`,
+    'Each file needs a heading row and the fields listed. The fields marked * identify each record, so please include them.',
     '',
   ];
   for (const r of rows) {

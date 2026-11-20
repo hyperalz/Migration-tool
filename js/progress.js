@@ -16,8 +16,8 @@ export const STEPS = [
   { key: 'setup', label: 'Field lists', path: 'setup',
     screens: [{ key: 'setup', label: 'Field lists', path: 'setup' }, { key: 'invite', label: 'Team', path: 'invite', hidden: true }] },
   { key: 'map', label: 'Match', path: 'map', screens: [{ key: 'map', label: 'Match fields', path: 'map' }] },
-  { key: 'check', label: 'Move the data', path: 'reconcile',
-    screens: [{ key: 'reconcile', label: 'Test and live loads', path: 'reconcile' }, { key: 'verify', label: 'Field tracker', path: 'verify' }] },
+  { key: 'check', label: 'Copy and check', path: 'reconcile',
+    screens: [{ key: 'reconcile', label: 'Test and live copies', path: 'reconcile' }, { key: 'verify', label: 'Field tracker', path: 'verify' }] },
   { key: 'signoff', label: 'Sign off', path: 'reconcile/overview', screens: [{ key: 'overview', label: 'Overview', path: 'reconcile/overview' }] },
   { key: 'handover', label: 'Hand over', path: 'export', screens: [{ key: 'export', label: 'Downloads and close', path: 'export' }] },
 ];
@@ -155,7 +155,7 @@ export function projectProgress(project) {
     out.check = {
       state: allClear ? 'done' : 'progress',
       summary: `${num(o.checked)} of ${num(o.tables)} ${plural(o.tables, 'table')} checked. ${o.status.headline}${trackerLine}`,
-      next: waiting ? `Check a load for the ${num(waiting)} ${plural(waiting, 'table')} still waiting`
+      next: waiting ? `Compare the data for the ${num(waiting)} ${plural(waiting, 'table')} still waiting`
         : 'Fix the open issues, then check the next load',
       nextPath: 'reconcile',
     };

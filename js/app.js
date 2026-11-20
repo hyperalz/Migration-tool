@@ -1245,7 +1245,7 @@ function renderVerify({ id }) {
           <h1>Field tracker</h1>
           <p class="verify-lede">Record delivery and checks for each field — click <strong>+</strong> on a row to advance, or open a row for full history. The latest load check for each field is shown alongside.</p>
         </div>
-        <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Check a load →</a>
+        <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Compare the data →</a>
       </div>
       ${conflicts.length ? `
         <div class="recon-error tracker-conflict" role="alert">
