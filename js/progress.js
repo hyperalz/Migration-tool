@@ -128,7 +128,7 @@ export function projectProgress(project) {
   const tracked = mappings.filter(m => m.verification?.status === 'signed_off').length;
   const conflicts = trackerConflicts(project, fieldCheckIndex(project, runs, { finalRunId: project.reconFinalRunId || null })).length;
   const trackerLine = (mappings.length ? ` Field tracker: ${num(tracked)} of ${num(mappings.length)} signed off.` : '')
-    + (conflicts ? ` ${num(conflicts)} ${plural(conflicts, 'field is', 'fields are')} marked as passed but failing ${plural(conflicts, 'its', 'their')} latest check.` : '');
+    + (conflicts ? ` ${num(conflicts)} ${plural(conflicts, 'field is', 'fields are')} marked as passed but failing ${plural(conflicts, 'its', 'their')} latest file comparison.` : '');
   // Checks recorded in the field tracker (in the new system's own screens)
   // count as much as file checks.
   const fc = stageCounts(mappings, fieldStages(project));

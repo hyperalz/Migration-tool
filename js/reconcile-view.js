@@ -69,9 +69,36 @@ export function createFinanceDemoProject(user) {
     ...m,
     verification: defaultVerification('Demo match', user.name || 'demo'),
   }));
+  seedDemoTesting(project, user);
   project.status = 'mapping';
   project.reconRuns = [];
   return saveProject(project);
+}
+
+// The demo shows a move part way through testing, the way most checking
+// really happens: on screen, field by field. Ledger balances have passed in
+// test and are now in live; two supplier fields failed in test.
+function seedDemoTesting(project, user) {
+  const me = user.name || 'Demo user';
+  const day = n => new Date(Date.now() - n * 86400000).toISOString();
+  const step = (m, status, by, daysAgo, note) => {
+    m.verification.status = status;
+    m.verification.history.push({ status, at: day(daysAgo), by, note, reference: '' });
+  };
+  for (const m of project.mappings) {
+    m.verification.history[0].at = day(12);
+    step(m, 'sql_sent', me, 10, 'Filled tables sent for loading');
+    step(m, 'test_uploaded', 'Database team', 8, 'Loaded into test');
+    if (m.targetTable === 'GL_Opening_Balance') {
+      step(m, 'test_passed', 'Finance team', 6, 'Checked on screen');
+      step(m, 'live_uploaded', 'Database team', 2, 'Loaded into live');
+    } else if (m.targetColumn === 'STATUS' || m.targetColumn === 'BANK_SORT_CODE') {
+      step(m, 'test_failed', 'Accounts payable team', 6,
+        m.targetColumn === 'STATUS' ? 'Suppliers on hold show as inactive' : 'Some sort codes have lost their leading zero');
+    } else {
+      step(m, 'test_passed', 'Accounts payable team', 6, 'Checked on screen');
+    }
+  }
 }
 
 // ---------- running a check ----------
@@ -609,7 +636,7 @@ export async function renderReport({ id, runId }, ui) {
             ${change.firstTime.length ? `First check, so nothing to compare: ${esc(change.firstTime.join('; '))}.` : ''}</p>
           ${changeList('New since the last comparison', change.added, 'recon-change-new')}
           ${changeList('Still open', change.stillOpen, 'recon-change-open')}
-          ${changeList('Fixed since the last check', change.fixed, 'recon-change-fixed')}
+          ${changeList('Fixed since the last comparison', change.fixed, 'recon-change-fixed')}
         </section>` : ''}
 
       <section>
@@ -738,7 +765,7 @@ function summaryArticle(run, plain, verified) {
   return `
     <article class="recon-report recon-plain" id="recon-view-summary" role="tabpanel" aria-labelledby="recon-tab-summary">
       <header class="recon-report-head">
-        <div class="recon-eyebrow">Data check summary</div>
+        <div class="recon-eyebrow">File comparison summary</div>
         <h1>${esc(run.label)}</h1>
         <p class="recon-meta">${esc(run.project.name)} · moving from ${esc(run.project.sourceSystem)} to ${esc(run.project.targetSystem)}</p>
         <p class="recon-meta">Checked ${esc(fmtDate(run.at))} by ${esc(run.by)}</p>
@@ -890,9 +917,9 @@ export function renderOverview({ id }, ui) {
         <div class="recon-eyebrow">All areas</div>
         <h1>${esc(project.name)}</h1>
         <p class="recon-meta">Moving from ${esc(project.sourceSystem)} to ${esc(project.targetSystem)} · as at ${esc(fmtDate(new Date().toISOString()))}</p>
-        ${all.length ? `<p class="recon-meta">File checks: ${s.finalRun
-          ? `judged on the final load, <strong>${esc(s.finalRun.label)}</strong> (${esc(fmtDate(s.finalRun.at))}). Earlier checks are not counted.`
-          : 'each table is judged on its own most recent check. No final load has been chosen.'}</p>` : ''}
+        ${all.length ? `<p class="recon-meta">File comparisons: ${s.finalRun
+          ? `judged on the final load, <strong>${esc(s.finalRun.label)}</strong> (${esc(fmtDate(s.finalRun.at))}). Earlier comparisons are not counted.`
+          : 'each table is judged on its own most recent comparison. No final load has been chosen.'}</p>` : ''}
       </header>
 
       <section>
@@ -904,7 +931,7 @@ export function renderOverview({ id }, ui) {
         </table>
       </section>
 
-      ${!all.length ? '' : `<h2>File checks</h2>
+      ${!all.length ? '' : `<h2>File comparisons</h2>
       <section class="recon-status recon-status-${s.status.level}">
         <div class="recon-status-label">${esc(s.status.label)}</div>
         <div class="recon-status-headline">${esc(s.status.headline)}</div>

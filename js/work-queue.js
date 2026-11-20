@@ -152,9 +152,9 @@ export function todoList(project) {
     const where = inArea(r.name);
     if (newFields && !r.counts.fields && where) add(`list-${r.name}`, TIER.areaList, 'No fields for this area yet. Add them to the new system list.', 'setup', 'setup', where);
     if (r.counts.mustHave) add(`must-${r.name}`, TIER.mustHave, `${num(r.counts.mustHave)} ${plural(r.counts.mustHave, 'field')} the new system must have ${plural(r.counts.mustHave, 'has', 'have')} no match yet.`, 'map', 'map', where);
-    if (a?.issues.high) add(`serious-${r.name}`, TIER.serious, `The last check found ${num(a.issues.high)} serious ${plural(a.issues.high, 'problem')}. Fix ${plural(a.issues.high, 'it', 'them')}, then load again.`, 'reconcile/overview', 'check', where);
+    if (a?.issues.high) add(`serious-${r.name}`, TIER.serious, `The last file comparison found ${num(a.issues.high)} serious ${plural(a.issues.high, 'problem')}. Fix ${plural(a.issues.high, 'it', 'them')}, then load again.`, 'reconcile/overview', 'check', where);
     const recheck = a ? a.tables.filter(t => t.state === 'recheck').length : 0;
-    if (recheck) add(`recheck-${r.name}`, TIER.recheck, `${num(recheck)} ${plural(recheck, 'table has', 'tables have')} changed since the last check. Check ${plural(recheck, 'it', 'them')} again.`, 'reconcile', 'check', where);
+    if (recheck) add(`recheck-${r.name}`, TIER.recheck, `${num(recheck)} ${plural(recheck, 'table has', 'tables have')} changed since the last file comparison. Compare ${plural(recheck, 'it', 'them')} again.`, 'reconcile', 'check', where);
     const st = r.counts.stages;
     if (st.liveFailed) add(`live-failed-${r.name}`, TIER.liveFailed, `${num(st.liveFailed)} ${plural(st.liveFailed, 'field')} failed testing in live. Fix ${plural(st.liveFailed, 'it', 'them')}, then load into live again.`, 'verify', 'check', where);
     if (st.testFailed) add(`failed-${r.name}`, TIER.failed, `${num(st.testFailed)} ${plural(st.testFailed, 'field')} failed testing in test. Fix the match or the data, then send again.`, 'verify', 'check', where);

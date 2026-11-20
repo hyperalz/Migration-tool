@@ -34,7 +34,7 @@ export function renderHome({ id }, ui) {
         <a class="btn btn-primary" href="#/projects/${id}/${top.path}">Go to ${esc(topStep.label)}</a>
         ${todo.length > 1 ? `<p class="recon-sub" style="margin-top:0.6rem">And ${todo.length - 1} more ${todo.length - 1 === 1 ? 'thing' : 'things'} to do, listed below.</p>` : ''}
       </div>
-      ${started ? `<p class="home-next-status home-next-status-${status.level}"><strong>Data checks: ${esc(status.label)}.</strong> ${esc(status.headline)}</p>` : ''}
+      ${started ? `<p class="home-next-status home-next-status-${status.level}"><strong>File comparisons: ${esc(status.label)}.</strong> ${esc(status.headline)}</p>` : ''}
     </section>` : `
     <section class="card home-next"><div class="home-next-main">
       <div class="recon-eyebrow">All done</div>

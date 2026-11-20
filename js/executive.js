@@ -66,7 +66,7 @@ export function executiveSummary(project, { evidenceChanged = false } = {}) {
     trendLine = b < a ? `Serious problems down from ${num(a)} to ${num(b)} since ${first.label}.`
       : b > a ? `Serious problems up from ${num(a)} to ${num(b)} since ${first.label}.`
         : `Serious problems unchanged at ${num(b)} since ${first.label}.`;
-  } else if (latest) trendLine = `One load checked so far. Check the next one to see the trend.`;
+  } else if (latest) trendLine = `One file comparison so far. Compare the next load to see the trend.`;
 
   // ----- areas -----
   const areas = board.filter(r => r.name !== NO_AREA || r.counts.stages.total).map(r => {
@@ -92,14 +92,15 @@ export function executiveSummary(project, { evidenceChanged = false } = {}) {
   });
 
   // ----- top risks: the serious problems from the latest check, with owners -----
+  // Testing on screen comes first; problems from file comparisons follow.
   const latestRun = runs[runs.length - 1] || null;
   const risks = [];
+  if (fields.liveFailed) risks.push({ text: `${num(fields.liveFailed)} ${plural(fields.liveFailed, 'field')} failed testing in live.`, why: 'What people see in live is wrong.', area: '' });
+  if (fields.testFailed) risks.push({ text: `${num(fields.testFailed)} ${plural(fields.testFailed, 'field')} failed testing in test.`, why: 'They need fixing before they can go into live.', area: '' });
   if (latestRun) {
     const plain = plainSummary(latestRun, runs, project);
     for (const i of plain.issues.filter(x => x.severity === 'high')) risks.push({ text: i.text, why: i.why, area: i.area });
   }
-  if (fields.liveFailed) risks.push({ text: `${num(fields.liveFailed)} ${plural(fields.liveFailed, 'field')} failed testing in live.`, why: 'What people see in live is wrong.', area: '' });
-  if (fields.testFailed) risks.push({ text: `${num(fields.testFailed)} ${plural(fields.testFailed, 'field')} failed testing in test.`, why: 'They need fixing before they can go into live.', area: '' });
 
   // ----- readiness -----
   const blockers = [];
@@ -128,6 +129,8 @@ export function executiveSummary(project, { evidenceChanged = false } = {}) {
 
   // ----- proof -----
   const proof = {
+    fieldsDone: fields.done, fieldsTotal: fields.total,
+    areasSigned, areasTotal: areas.length,
     checks: runs.length,
     lastCheck: latest ? { label: latest.label, at: latest.at } : null,
     finalLoad: ov.summary.finalRun,
@@ -140,6 +143,8 @@ export function executiveSummary(project, { evidenceChanged = false } = {}) {
     readiness: { level, ...READINESS[level], reason, left: level === 'blocked' ? left : [] },
     tiles: {
       fieldsDone: { done: fields.done, total: fields.total, pct: pct(fields.done, fields.total) },
+      fieldsTested: { done: fields.passedTest, total: fields.total },
+      open: { testing: problems.open, files: ov.summary.high, total: problems.open + ov.summary.high },
       latestMatch: latest ? { pct: latest.matchRate, label: latest.label, totals: latest.totals } : null,
       serious: { open: ov.summary.high, smaller: ov.summary.other },
       signed: { done: areasSigned, total: areas.length },

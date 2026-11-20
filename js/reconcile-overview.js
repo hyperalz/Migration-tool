@@ -158,7 +158,7 @@ export function projectOverview(project, runs = [], { finalRunId = null, signoff
   else if (level === 'attention') headline = [`${num(high)} serious ${plural(high, 'issue')} open across ${num(areasWithHigh)} ${plural(areasWithHigh, 'area')}.`, ...gaps].join(' ');
   else if (level === 'incomplete') headline = gaps.join(' ');
   else if (level === 'nearly') headline = `No serious issues. ${num(other)} smaller ${plural(other, 'issue')} open.`;
-  else headline = finalRun ? 'Every matched table passed on the final load.' : 'Every matched table passed its latest check.';
+  else headline = finalRun ? 'Every matched table passed on the final load.' : 'Every matched table passed its latest comparison.';
 
   return {
     tables, areas,

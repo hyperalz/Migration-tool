@@ -535,7 +535,7 @@ test('field checks: each field shows what the latest check of its table found', 
   // whole-record problems are carried as context for every field in the table
   assert.ok(byCol(project, idx, 'payment_terms').tableFindings.some(f => /missing from the new system/.test(f.title)));
   assert.equal(byCol(project, idx, 'balance').tableFindings.length, 0);
-  assert.equal(checkNote(status), 'Latest load check found differences (Trial load 1).');
+  assert.equal(checkNote(status), 'Latest file comparison found differences (Trial load 1).');
 });
 
 test('field checks: unchecked tables, later loads and the final load', () => {
@@ -1626,13 +1626,17 @@ test('executive: serious problems make it not ready, and say why in plain words'
   assert.equal(ap.rag, 'red');
   assert.equal(ap.serious, 2);
   assert.ok(ap.next, 'an area that is not signed off says what is next');
-  assert.ok(e.risks.length >= 2 && e.risks[0].area === 'Accounts payable');
+  // Fields that failed testing on screen come first, then file comparison problems.
+  assert.ok(e.risks.some(r => r.area === 'Accounts payable'));
+  const firstFile = e.risks.findIndex(r => r.area);
+  assert.ok(e.risks.slice(0, firstFile).every(r => /failed testing/.test(r.text)));
+  assert.equal(e.tiles.open.files, 2);
   assert.equal(e.proof.checks, 2);
 });
 
 test('executive: one load gives no trend yet; an empty project is not started', () => {
   const e = executiveSummary(execProject([1]));
-  assert.match(e.trendLine, /^One load checked so far/);
+  assert.match(e.trendLine, /^One file comparison so far/);
   assert.equal(executiveSummary({ name: 'E', mappings: [] }).readiness.level, 'empty');
 });
 

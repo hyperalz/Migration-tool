@@ -2370,3 +2370,5 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .jr-scope ul { margin: 0; padding-left: 1.15rem; font-size: 0.92rem; }
 .jr-scope li + li { margin-top: 0.2rem; }
 @media (max-width: 760px) { .jr-scope { grid-template-columns: 1fr; } }
+.exec-sub-h { font-size: 0.92rem; margin: 1rem 0 0.4rem; color: var(--muted); }
+.exec-mini-wide { width: 100%; max-width: 320px; display: block; margin: 0.3rem 0 0.2rem; }

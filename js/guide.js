@@ -47,7 +47,7 @@ export const STEP_GUIDE = {
     done: 'Every area is agreed on the final load, with nothing left to fix.',
   },
   handover: {
-    what: 'Save the proof and tidy up.',
+    what: 'Save the evidence and tidy up.',
     todo: [
       'Download the evidence pack. It holds all that was agreed, checked and signed.',
       'Keep it somewhere safe. Someone may ask to see it later.',
@@ -89,8 +89,8 @@ export const SCREEN_GUIDE = {
   verify: [
     'Each row is one field. The dots show how far it has got.',
     'Select the plus sign on a row when the next job is done. Say who did it.',
-    'The Latest load check part of each row shows if the field matched in the last check.',
-    'A red row means it was marked as passed but the last check found a problem.',
+    'If you compare files, the File comparison part of each row shows what the latest one found.',
+    'A red row means it was marked as passed but the latest file comparison found a problem.',
   ],
   problems: [
     'Each time a field fails testing, the problem is listed here.',
@@ -113,7 +113,7 @@ export const SCREEN_GUIDE = {
     'This page shows the whole move on one screen.',
     'Each area has a colour. Green means clear. Red means there is something to fix. Grey means not checked yet.',
     'When an area is right, its owner records that they agree.',
-    'After the very last load, choose it as the final load.',
+    'If you compare files, choose the last live load as the final load.',
   ],
   export: [
     'The evidence pack is one file with the full story of this move.',
@@ -125,7 +125,7 @@ export const SCREEN_GUIDE = {
 // The project home page.
 export const HOME_TEXT = {
   todoHelp: 'This is every job left, from all the steps. The ones at the top hold other work up, so do those first.',
-  boardHelp: 'Each area moves at its own pace. One area can be at the checks while another is still being matched. That is normal.',
+  boardHelp: 'Each area moves at its own pace. One area can be in testing while another is still being matched. That is normal.',
   nothing: 'There is nothing left to do. Every step is complete.',
 };
 
@@ -136,7 +136,8 @@ export const GLOSSARY = [
   ['Record', 'One row in a table. For example, one supplier.'],
   ['Match', 'A link that says this old field goes into that new field.'],
   ['Load', 'Copying data into the new system. A test load is a practice run in a copy of the new system.'],
-  ['Check', 'Comparing the old data with the new data to see if they are the same.'],
+  ['Testing', 'Looking at the data on the new system\'s screens to see it is right.'],
+  ['File comparison', 'An extra check. It compares a file of records from each side to see if they are the same.'],
   ['Area', 'A part of the work, such as Finance or Pupils. Each area has an owner who agrees it is right.'],
   ['Old and new system', 'The system the data comes from, and the one it moves to. MapBridge uses their own names when you give them.'],
   ['Sign off', 'When the person in charge says, on the record, that their part is right.'],
