@@ -1131,9 +1131,11 @@ test('board: each area shows its own stage, and the spreadsheet\'s areas are kep
 
 test('to-do: one list across steps and areas, with the jobs that hold work up first', () => {
   const list = todoList(templateProject());
-  assert.deepEqual(list.map(t => t.id), ['list-Payroll', 'match-Customer', 'match-Order', 'send-Customer', 'send-Order', 'questions']);
-  assert.equal(list[0].area, 'Payroll');
-  assert.equal(list[1].text, '1 field in the new system not matched yet. Match it or mark it as not used.');
+  assert.deepEqual(list.map(t => t.id), ['match-Customer', 'match-Order', 'send-Customer', 'send-Order', 'list-Payroll', 'questions']);
+  // An area with no fields comes after the real work, and points at the right fix.
+  assert.equal(list[4].area, 'Payroll');
+  assert.match(list[4].text, /Choose the area for its fields in the field tracker/);
+  assert.equal(list[0].text, '1 field in the new system not matched yet. Match it or mark it as not used.');
   assert.ok(list.every(t => t.path && t.step));
 
   assert.deepEqual(todoList(emptyProject()).map(t => t.id), ['old-list', 'new-list']);

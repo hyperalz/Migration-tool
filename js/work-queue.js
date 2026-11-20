@@ -126,8 +126,8 @@ export function areaBoard(project, overview = null) {
 
 // The order jobs are listed in. Lower comes first: it holds up more.
 const TIER = {
-  lists: 1, areaList: 2, mustHave: 3, serious: 4, liveFailed: 5, failed: 6, recheck: 7, inLive: 8, testing: 9,
-  toLive: 10, match: 11, send: 12, unchecked: 13, questions: 14, screens: 15, sign: 16, final: 17, evidence: 18,
+  lists: 1, mustHave: 3, serious: 4, liveFailed: 5, failed: 6, recheck: 7, inLive: 8, testing: 9,
+  toLive: 10, match: 11, send: 12, unchecked: 13, areaList: 13.5, questions: 14, screens: 15, sign: 16, final: 17, evidence: 18,
 };
 
 /**
@@ -150,7 +150,7 @@ export function todoList(project) {
   for (const r of board) {
     const a = ov.areas.find(x => x.name === r.name);
     const where = inArea(r.name);
-    if (newFields && !r.counts.fields && where) add(`list-${r.name}`, TIER.areaList, 'No fields for this area yet. Add them to the new system list.', 'setup', 'setup', where);
+    if (newFields && !r.counts.fields && where) add(`list-${r.name}`, TIER.areaList, 'No fields are in this area yet. Choose the area for its fields in the field tracker, or remove the area in Settings.', 'verify', 'check', where);
     if (r.counts.mustHave) add(`must-${r.name}`, TIER.mustHave, `${num(r.counts.mustHave)} required ${plural(r.counts.mustHave, 'field')} in the new system not matched yet. Match ${plural(r.counts.mustHave, 'it', 'them')} first.`, 'map', 'map', where);
     if (a?.issues.high) add(`serious-${r.name}`, TIER.serious, `${num(a.issues.high)} serious ${plural(a.issues.high, 'problem')} found by the last file comparison. Fix ${plural(a.issues.high, 'it', 'them')}, then load again.`, 'reconcile/overview', 'check', where);
     const recheck = a ? a.tables.filter(t => t.state === 'recheck').length : 0;

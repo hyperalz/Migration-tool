@@ -31,7 +31,7 @@ import {
 import {
   getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions, STRONG_SUGGESTION,
 } from './ai-suggestions.js';
-import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject } from './reconcile-view.js';
+import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject, DEMO_VERSION } from './reconcile-view.js';
 import { renderHome } from './home-view.js';
 import { fieldCheckIndex, trackerConflicts, checkNote, CHECK_LABEL } from './field-checks.js';
 import { projectProgress, stepForScreen, STATE_LABEL, visibleScreens } from './progress.js';
@@ -230,8 +230,10 @@ function renderDemo() {
   const user = seedDemoUser();
   login({ email: user.email, password: 'demo123' });
   const me = getCurrentUser();
-  const existing = getProjects().find(p => p.demo && p.members.some(m => m.userId === me.id));
-  const project = existing || createFinanceDemoProject(me);
+  const mine = getProjects().filter(p => p.demo && p.members.some(m => m.userId === me.id));
+  // An older copy of the demo is replaced, so everyone sees the current one.
+  for (const p of mine) if (p.demoVersion !== DEMO_VERSION) deleteProject(p.id);
+  const project = mine.find(p => p.demoVersion === DEMO_VERSION) || createFinanceDemoProject(me);
   location.replace(`#/projects/${project.id}`);
 }
 
