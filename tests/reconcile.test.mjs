@@ -1796,3 +1796,74 @@ test('set up: matches to fields no longer in a list are found', () => {
   assert.equal(SETUP_TEXT.addMore, 'Add more fields');
   assert.equal(SETUP_TEXT.replace, 'Replace this list');
 });
+
+// ---------- supplier deliveries ----------
+import { compareDelivery, needsReview, applyDelivery, deliveryRecord, deliverySummaryText, recentTables, stillExpected, parseExpected } from '../js/deliveries.js';
+
+const v1 = { system: 'New', tables: [{ name: 'Supplier_Load', columns: [
+  { name: 'SUPPLIER_REF', type: 'string', description: 'Supplier reference' },
+  { name: 'NAME', type: 'string(40)' },
+  { name: 'OLD_FLAG', type: 'char(1)' },
+] }] };
+
+test('deliveries: a re-sent table is compared field by field', () => {
+  const v2 = { tables: [
+    { name: 'Supplier_Load', columns: [
+      { name: 'SUPPLIER_REF', type: 'string', description: 'Supplier reference' },
+      { name: 'NAME', type: 'string(60)', description: 'Trading name' },
+      { name: 'TERMS_DAYS', type: 'integer' },
+    ] },
+    { name: 'GL_Opening_Balance', columns: [{ name: 'AMOUNT', type: 'decimal' }] },
+  ] };
+  const cmp = compareDelivery(v1, v2);
+  const sup = cmp.find(c => c.name === 'Supplier_Load');
+  assert.equal(sup.status, 'changed');
+  assert.deepEqual(sup.added, ['TERMS_DAYS']);
+  assert.deepEqual(sup.removed, ['OLD_FLAG']);
+  assert.deepEqual(sup.changed.map(c => [c.name, c.what]), [['NAME', ['type']]], 'a filled-in blank is not a change');
+  assert.equal(cmp.find(c => c.name === 'GL_Opening_Balance').status, 'new');
+  assert.deepEqual(needsReview(cmp).map(c => c.name), ['Supplier_Load']);
+});
+
+test('deliveries: the person chooses per table; nothing MapBridge added to a field is lost', () => {
+  const withLink = structuredClone(v1);
+  withLink.tables[0].columns[1].link = { table: 'tblSupp', column: 'NM' };
+  const v2 = { tables: [{ name: 'Supplier_Load', columns: [
+    { name: 'SUPPLIER_REF', type: 'string' }, { name: 'NAME', type: 'string(60)' }, { name: 'TERMS_DAYS', type: 'integer' },
+  ] }] };
+  const take = applyDelivery(withLink, v2, { useNewVersion: new Set(['Supplier_Load']), at: '2026-11-20T09:00:00Z' });
+  const cols = take.schema.tables[0].columns;
+  assert.deepEqual(cols.map(c => c.name), ['SUPPLIER_REF', 'NAME', 'TERMS_DAYS']);
+  assert.equal(cols[1].type, 'string(60)');
+  assert.deepEqual(cols[1].link, { table: 'tblSupp', column: 'NM' });
+  assert.equal(cols[0].description, 'Supplier reference', 'details the new copy leaves blank are kept');
+  assert.equal(take.summary.removedFields, 1);
+
+  const keep = applyDelivery(withLink, v2, { at: '2026-11-20T09:00:00Z' });
+  const kept = keep.schema.tables[0].columns;
+  assert.deepEqual(kept.map(c => c.name), ['SUPPLIER_REF', 'NAME', 'OLD_FLAG', 'TERMS_DAYS']);
+  assert.equal(kept[1].type, 'string(40)', 'keeping the current version keeps its details');
+});
+
+test('deliveries: the log, the New tables and the tables still to come', () => {
+  const v2 = { tables: [v1.tables[0], { name: 'GL_Opening_Balance', columns: [{ name: 'AMOUNT' }] }] };
+  const { comparison } = applyDelivery(v1, v2, {});
+  const rec = deliveryRecord({ side: 'new', origin: 'supplier', file: 'templates-v2.csv', at: '2026-11-20T09:00:00Z', by: 'Alex', comparison });
+  assert.equal(deliverySummaryText(rec), '1 new table, 1 unchanged');
+  const first = deliveryRecord({ side: 'new', origin: 'file', file: 'v1.json', at: '2026-11-19T09:00:00Z', comparison: compareDelivery(null, v1) });
+  assert.equal(recentTables({ deliveries: [first] }, 'new').size, 0, 'the first list is not marked new');
+  const project = { deliveries: [first, rec], targetSchema: v2, expectedTables: parseExpected('GL Opening Balance\nCustomer_Load\n\nCustomer_Load', 'new') };
+  assert.deepEqual([...recentTables(project, 'new')], ['GL_Opening_Balance']);
+  assert.deepEqual(stillExpected(project).map(e => e.name), ['Customer_Load'], 'names match ignoring case, spaces and underscores');
+});
+
+test('deliveries: Set up stays in progress while tables are still to come', () => {
+  const p = emptyProject();
+  p.sourceSchema = { tables: [{ name: 'a', columns: [{ name: 'x' }] }] };
+  p.targetSchema = { tables: [{ name: 'B', columns: [{ name: 'Y' }] }] };
+  assert.equal(projectProgress(p).steps.find(s => s.key === 'setup').state, 'done');
+  p.expectedTables = [{ side: 'new', name: 'C_Load' }];
+  const step = projectProgress(p).steps.find(s => s.key === 'setup');
+  assert.equal(step.state, 'progress');
+  assert.match(step.summary, /Waiting for 1 table still to come\./);
+});

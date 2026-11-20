@@ -38,6 +38,7 @@ import { projectProgress, stepForScreen, STATE_LABEL, visibleScreens } from './p
 import { SCREEN_GUIDE } from './guide.js';
 import { templateImportCard, bindTemplateImport } from './template-import-view.js';
 import { mergeSchema } from './template-import.js';
+import { DELIVERY_TEXT, compareDelivery, needsReview, applyDelivery, deliveryRecord, deliverySummaryText, stillExpected, parseExpected, recentTables } from './deliveries.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
 import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine, listOrigin, recordOrigin, matchesUsing, orphanMatches, addResultText } from './setup-routes.js';
@@ -373,6 +374,50 @@ function renderNewProject() {
 // 'replace-confirm' (asked to replace, not yet confirmed) or 'replace'.
 // Held in memory only: a reload shows the finished state.
 const setupMode = new Map();
+// A delivery waiting for the person to choose which version of each re-sent table to keep.
+const setupPending = new Map();
+
+/**
+ * Add a delivery to one side's list and log it. With `replacing`, the list
+ * starts again from the delivery.
+ */
+function applyAndRecord(p, side, incoming, origin, file, useNew, replacing) {
+  const key = side === 'old' ? 'sourceSchema' : 'targetSchema';
+  const at = new Date().toISOString();
+  const had = Boolean(p[key]?.tables?.length);
+  const res = applyDelivery(replacing ? null : p[key], incoming, { useNewVersion: useNew, at });
+  p[key] = { ...res.schema, system: p[key]?.system || res.schema.system };
+  p.deliveries = [...(p.deliveries || []), deliveryRecord({ side, origin, file, at, by: getCurrentUser()?.name, comparison: res.comparison, useNewVersion: useNew, replaced: replacing && had })];
+  return { schema: p[key], added: res.summary.addedFields, summary: res.summary, record: p.deliveries.at(-1) };
+}
+
+/** The choice for each re-sent table, as HTML. Empty when no table needs one. */
+function deliveryReviewHtml(project, side, incoming) {
+  const key = side === 'old' ? 'sourceSchema' : 'targetSchema';
+  const review = needsReview(compareDelivery(project[key], incoming));
+  if (!review.length) return '';
+  const list = (label, items) => items.length ? `<li>${label}: ${items.map(x => esc(x)).join(', ')}</li>` : '';
+  return `
+    <div class="delivery-review" role="group" aria-labelledby="delivery-review-title">
+      <h4 id="delivery-review-title">${esc(DELIVERY_TEXT.reviewTitle)}</h4>
+      <p class="recon-sub" style="margin:0 0 0.6rem">${esc(DELIVERY_TEXT.reviewLead)}</p>
+      ${review.map(c => `
+        <div class="delivery-table">
+          <strong>${esc(c.name)}</strong>
+          <ul class="delivery-diff">
+            ${list('New fields', c.added)}
+            ${list('No longer in this version', c.removed)}
+            ${c.changed.length ? `<li>Changed: ${c.changed.map(x => `${esc(x.name)} (${x.what.map(w => `${w} ${esc(x.before[w])} → ${esc(x.after[w])}`).join('; ')})`).join(', ')}</li>` : ''}
+          </ul>
+          <label class="delivery-choice"><input type="radio" name="use-new-${esc(c.name)}" value="new" data-table="${esc(c.name)}" checked> ${esc(DELIVERY_TEXT.useNew)}</label>
+          <label class="delivery-choice"><input type="radio" name="use-new-${esc(c.name)}" value="keep" data-table="${esc(c.name)}"> ${esc(DELIVERY_TEXT.keepCurrent)}</label>
+        </div>`).join('')}
+    </div>`;
+}
+
+function readUseNew(container) {
+  return new Set([...(container?.querySelectorAll('input[value="new"][data-table]:checked') || [])].map(i => i.dataset.table));
+}
 
 function renderSetup({ id }) {
   const project = getProject(id);
@@ -414,7 +459,17 @@ function renderSetup({ id }) {
     const stats = schemaStats(project[SIDE[side] + 'Schema']);
     const word = SIDE_WORD[side];
     let body;
-    if (!list) body = routeOptions(side, SETUP_TEXT.question(word));
+    const pending = setupPending.get(`${id}:${side}`);
+    if (pending) body = `
+      <div class="setup-pending" id="setup-pending-${side}">
+        <p style="margin:0.5rem 0"><strong>${esc(pending.file || 'This delivery')}</strong> is ready to add.</p>
+        ${deliveryReviewHtml(project, side, pending.incoming)}
+        <div class="setup-actions">
+          <button type="button" class="btn btn-primary btn-sm setup-pending-apply" data-side="${side}">${esc(DELIVERY_TEXT.apply)}</button>
+          <button type="button" class="btn-link setup-pending-cancel" data-side="${side}">${esc(DELIVERY_TEXT.cancel)}</button>
+        </div>
+      </div>`;
+    else if (!list) body = routeOptions(side, SETUP_TEXT.question(word));
     else if (m === 'add') body = `${routeOptions(side, SETUP_TEXT.questionMore(word))}
       <p class="recon-sub" style="margin:0.5rem 0 0">${esc(SETUP_TEXT.addNote)}</p>
       <button type="button" class="btn-link setup-cancel" data-side="${side}">${esc(SETUP_TEXT.keep)}</button>`;
@@ -477,7 +532,7 @@ function renderSetup({ id }) {
     const key = chosen(side);
     if (!key) return '';
     const m = mode(side);
-    if (m === 'replace-confirm') return '';
+    if (m === 'replace-confirm' || setupPending.has(`${id}:${side}`)) return '';
     const showAfter = key === 'screens' || key === 'supplier';
     if (hasList(side) && !m && !showAfter) return '';
     const r = routeFor(side, key);
@@ -504,6 +559,7 @@ function renderSetup({ id }) {
     <div class="grid-2 setup-sides">${sideCard('old')}${sideCard('new')}</div>
     ${panel('old')}
     ${panel('new')}
+    ${setupExtras(project, esc)}
     <div class="setup-next">
       ${both ? `<p class="setup-next-text">${esc(SETUP_TEXT.bothReady)}</p>
         <a href="#/projects/${id}/map" class="btn btn-primary">${esc(SETUP_TEXT.next)} →</a>`
@@ -515,10 +571,14 @@ function renderSetup({ id }) {
   document.querySelectorAll('.setup-panel details.template-import').forEach(d => { d.open = true; });
   // The supplier spreadsheet and the screenshot tool add to a list. When the
   // person chose to replace it, the old list is cleared just before they apply.
+  let replacingNow = false;
+  let beforeShots = null;
   const before = (side, origin) => p => {
     const key = `${id}:${side}`;
     const sk = SIDE[side];
-    if (setupMode.get(key) === 'replace') {
+    replacingNow = setupMode.get(key) === 'replace';
+    if (side === 'old') beforeShots = p.sourceSchema ? structuredClone(p.sourceSchema) : null;
+    if (replacingNow) {
       p[sk + 'Schema'] = null;
       recordOrigin(p, side, origin, 'replace');
     } else {
@@ -527,8 +587,18 @@ function renderSetup({ id }) {
     }
     setupMode.delete(key);
   };
-  bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }), { beforeApply: before('new', 'supplier') });
-  bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }), { beforeApply: before('old', 'screens') });
+  bindTemplateImport(id, reconcileUI(), () => renderSetup({ id }), {
+    beforeApply: before('new', 'supplier'),
+    reviewHtml: (proj, incoming) => setupMode.get(`${id}:new`) === 'replace' ? '' : deliveryReviewHtml(proj, 'new', incoming),
+    applyTarget: (p, incoming, file, previewEl) => applyAndRecord(p, 'new', incoming, 'supplier', file, readUseNew(previewEl), replacingNow),
+  });
+  bindScreenshotDictionary(id, { ...reconcileUI(), openAISettings: openAISettingsModal }, () => renderSetup({ id }), {
+    beforeApply: before('old', 'screens'),
+    afterApply: (p, incoming) => {
+      const at = new Date().toISOString();
+      p.deliveries = [...(p.deliveries || []), deliveryRecord({ side: 'old', origin: 'screens', file: 'Pictures of screens', at, by: getCurrentUser()?.name, comparison: compareDelivery(beforeShots, incoming) })];
+    },
+  });
 
   bindTrace(id, reconcileUI(), () => renderSetup({ id }));
   attachLogout();
@@ -546,6 +616,32 @@ function renderSetup({ id }) {
       document.getElementById(`setup-panel-${side}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
   });
+  document.querySelectorAll('.setup-pending-apply').forEach(b => b.addEventListener('click', () => {
+    const side = b.dataset.side;
+    const key = `${id}:${side}`;
+    const pending = setupPending.get(key);
+    if (!pending) return;
+    const p = getProject(id);
+    const res = applyAndRecord(p, side, pending.incoming, pending.origin, pending.file, readUseNew(document.getElementById(`setup-pending-${side}`)), false);
+    recordOrigin(p, side, pending.origin, 'add');
+    saveProject(p);
+    setupPending.delete(key); setupMode.delete(key);
+    toast(`Added: ${deliverySummaryText(res.record)}.`);
+    renderSetup({ id });
+  }));
+  document.querySelectorAll('.setup-pending-cancel').forEach(b => b.addEventListener('click', () => {
+    setupPending.delete(`${id}:${b.dataset.side}`); renderSetup({ id });
+  }));
+  document.getElementById('expected-save')?.addEventListener('click', () => {
+    const p = getProject(id);
+    p.expectedTables = [
+      ...parseExpected(document.getElementById('expected-old').value, 'old'),
+      ...parseExpected(document.getElementById('expected-new').value, 'new'),
+    ];
+    saveProject(p);
+    toast('Saved the tables still to come');
+    renderSetup({ id });
+  });
   const setMode = (side, value) => { if (value) setupMode.set(`${id}:${side}`, value); else setupMode.delete(`${id}:${side}`); renderSetup({ id }); };
   document.querySelectorAll('.setup-add').forEach(b => b.addEventListener('click', () => setMode(b.dataset.side, 'add')));
   document.querySelectorAll('.setup-replace').forEach(b => b.addEventListener('click', () => setMode(b.dataset.side, 'replace-confirm')));
@@ -562,7 +658,7 @@ function renderSetup({ id }) {
   }));
   const sample = (side, schema, name) => document.getElementById(`load-${side}-sample`)?.addEventListener('click', () => {
     const p = getProject(id);
-    p[side + 'Schema'] = cloneSample(schema);
+    applyAndRecord(p, side === 'source' ? 'old' : 'new', cloneSample(schema), 'sample', `${name} sample`, new Set(), true);
     recordOrigin(p, side === 'source' ? 'old' : 'new', 'sample', 'replace');
     saveProject(p);
     setupMode.delete(`${id}:${side === 'source' ? 'old' : 'new'}`);
@@ -571,6 +667,39 @@ function renderSetup({ id }) {
   });
   sample('source', synergySample, 'Synergy');
   sample('target', impulseSample, 'Impulse');
+}
+
+// Below the two lists: what has come in so far, and what is still to come.
+function setupExtras(project, esc) {
+  const log = [...(project.deliveries || [])].reverse();
+  const expected = project.expectedTables || [];
+  const waiting = stillExpected(project);
+  const waitingKeys = new Set(waiting.map(e => `${e.side}:${e.name}`));
+  const side = s => s === 'old' ? 'Old system' : 'New system';
+  const from = { db: 'Database', file: 'File', screens: 'Pictures of screens', supplier: "Supplier's spreadsheet", sample: 'Sample' };
+  const when = iso => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const lines = s => expected.filter(e => e.side === s).map(e => e.name).join('\n');
+  return `
+    <details class="card setup-extra" id="setup-expected" ${waiting.length ? 'open' : ''}>
+      <summary><strong>${esc(DELIVERY_TEXT.expectTitle)}</strong>
+        <span class="recon-sub" style="display:inline"> ${waiting.length ? esc(DELIVERY_TEXT.waiting(waiting.length)) : expected.length ? 'Everything you were waiting for has arrived.' : 'Note any tables the supplier has not sent yet.'}</span></summary>
+      <p class="recon-sub" style="margin:0.6rem 0">${esc(DELIVERY_TEXT.expectLead)}</p>
+      ${expected.length ? `<ul class="expected-list">${expected.map(e => `<li class="${waitingKeys.has(`${e.side}:${e.name}`) ? 'is-waiting' : 'is-in'}">${waitingKeys.has(`${e.side}:${e.name}`) ? '○' : '✓'} ${esc(side(e.side))}: ${esc(e.name)}${waitingKeys.has(`${e.side}:${e.name}`) ? '' : ' (arrived)'}</li>`).join('')}</ul>` : ''}
+      <div class="grid-2" style="gap:1rem">
+        <label class="field"><span>Old system</span><textarea id="expected-old" rows="3" placeholder="One table per line">${esc(lines('old'))}</textarea></label>
+        <label class="field"><span>New system</span><textarea id="expected-new" rows="3" placeholder="One table per line">${esc(lines('new'))}</textarea></label>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" id="expected-save">Save</button>
+    </details>
+    ${log.length ? `
+    <details class="card setup-extra" id="setup-log">
+      <summary><strong>${esc(DELIVERY_TEXT.logTitle)}</strong> <span class="recon-sub" style="display:inline"> ${log.length} ${log.length === 1 ? 'delivery' : 'deliveries'}, the latest ${esc(when(log[0].at))}</span></summary>
+      <p class="recon-sub" style="margin:0.6rem 0">${esc(DELIVERY_TEXT.logLead)}</p>
+      <div class="schema-preview"><table>
+        <thead><tr><th>When</th><th>System</th><th>From</th><th>File</th><th>What came in</th></tr></thead>
+        <tbody>${log.map(d => `<tr><td>${esc(when(d.at))}</td><td>${esc(side(d.side))}</td><td>${esc(from[d.origin] || d.origin)}</td><td>${esc(d.file || '—')}</td><td>${d.replaced ? 'Replaced the list. ' : ''}${esc(deliverySummaryText(d))}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </details>` : ''}`;
 }
 
 function setupUpload(side, projectId) {
@@ -606,18 +735,26 @@ async function handleSchemaFile(file, side, projectId, origin = 'file') {
     const warnings = schema._warnings;
     delete schema._warnings;
     let message;
-    if (p[key]?.tables?.length && setupMode.get(modeKey) !== 'replace') {
-      // Adding to a list never takes anything away.
-      if (!p[side + 'Origin']) p[side + 'Origin'] = listOrigin(p, sideWord);
-      const merged = mergeSchema(p[key], schema);
-      p[key] = { ...merged.schema, system: p[key].system || merged.schema.system };
-      recordOrigin(p, sideWord, origin, 'add');
-      message = addResultText(merged);
-    } else {
-      p[key] = schema;
-      recordOrigin(p, sideWord, origin, 'replace');
+    const existing = p[key]?.tables?.length ? p[key] : null;
+    const replacing = !existing || setupMode.get(modeKey) === 'replace';
+    if (!replacing && needsReview(compareDelivery(existing, schema)).length) {
+      // Some tables came in again with changes: let the person choose before anything changes.
+      setupPending.set(modeKey, { incoming: schema, origin, file: file.name });
+      toast('Some tables came in again with changes. Choose which version to keep.');
+      renderSetup({ id: projectId });
+      document.getElementById(`setup-side-${sideWord}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      return;
+    }
+    if (!replacing && !p[side + 'Origin']) p[side + 'Origin'] = listOrigin(p, sideWord);
+    const res = applyAndRecord(p, sideWord, schema, origin, file.name, new Set(), replacing);
+    recordOrigin(p, sideWord, origin, replacing ? 'replace' : 'add');
+    if (replacing) {
       const orphans = orphanMatches(p, sideWord).length;
-      message = orphans ? `List replaced. ${orphans} ${orphans === 1 ? 'match uses a field' : 'matches use fields'} not in the new list.` : 'Field list added';
+      message = existing
+        ? (orphans ? `List replaced. ${orphans} ${orphans === 1 ? 'match uses a field' : 'matches use fields'} not in the new list.` : 'List replaced.')
+        : 'Field list added';
+    } else {
+      message = `Added: ${deliverySummaryText(res.record)}.`;
     }
     saveProject(p);
     setupMode.delete(modeKey);
@@ -834,6 +971,22 @@ function renderAcceptInvite({ token }) {
   });
 }
 
+// Projects where the Match screen shows only the tables from the latest delivery.
+const mapOnlyNew = new Set();
+
+function mapNewBar(project) {
+  const t = recentTables(project, 'new');
+  const o = recentTables(project, 'old');
+  const side = t.size ? 'new' : o.size ? 'old' : null;
+  if (!side) return '';
+  const n = (side === 'new' ? t : o).size;
+  return `
+    <div class="map-new-bar">
+      <span><b class="table-new-badge">New</b> ${n} ${side} system ${n === 1 ? 'table' : 'tables'} arrived or changed in the latest delivery.</span>
+      <label><input type="checkbox" id="map-only-new" ${mapOnlyNew.has(project.id) ? 'checked' : ''}> Show only ${n === 1 ? 'that table' : 'those tables'} on the ${side} system side</label>
+    </div>`;
+}
+
 function renderMap({ id }) {
   const project = getProject(id);
   if (!project) return renderNotFound();
@@ -855,10 +1008,16 @@ function renderMap({ id }) {
         <a href="#/projects/${id}/export" class="btn btn-ghost btn-sm">Downloads</a>
       </div>
     </div>
+    ${mapNewBar(project)}
     <div id="mapping-container"></div>
   `);
   attachLogout();
+  document.getElementById('map-only-new')?.addEventListener('change', e => {
+    if (e.target.checked) mapOnlyNew.add(id); else mapOnlyNew.delete(id);
+    renderMap({ id });
+  });
 
+  const fresh = { source: recentTables(project, 'old'), target: recentTables(project, 'new') };
   const container = document.getElementById('mapping-container');
   canvasInstance = new MappingCanvas(container, {
     sourceSchema: project.sourceSchema,
@@ -866,6 +1025,8 @@ function renderMap({ id }) {
     oldLabel: esc(oldLabel(project)),
     newLabel: esc(newLabel(project)),
     mappings: [...project.mappings],
+    newTables: fresh,
+    onlyNewSide: mapOnlyNew.has(id) ? (fresh.target.size ? 'target' : 'source') : null,
     getActor: () => getCurrentUser()?.name || 'unknown',
     onChange: mappings => {
       const p = getProject(id);
