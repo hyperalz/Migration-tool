@@ -1127,3 +1127,23 @@
     @media (max-width: 900px) { .dpo-two { grid-template-columns: 1fr; gap: 1.5rem; } }
     .dpo-three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 2.5rem; }
     @media (max-width: 900px) { .dpo-three { grid-template-columns: 1fr; gap: 1.25rem; } }
+
+/* MapBridge product page */
+.mb-note { color: #6B7280; font-size: 0.92rem; margin-top: 0.75rem; }
+.mb-steps { list-style: none; counter-reset: mb; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+.mb-steps li { counter-increment: mb; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem 1rem; }
+.mb-steps li::before { content: counter(mb); display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: #0b4a50; color: #fff; font-weight: 700; margin-bottom: 0.6rem; }
+.mb-steps h3 { font-size: 1.05rem; margin: 0 0 0.35rem; }
+.mb-steps p { font-size: 0.93rem; color: #374151; margin: 0; }
+.mb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+.mb-two h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+.mb-list { list-style: none; padding: 0; margin: 0; }
+.mb-list li { padding: 0.6rem 0 0.6rem 1.6rem; border-bottom: 1px solid #e2e8f0; position: relative; }
+.mb-list li::before { content: "✓"; position: absolute; left: 0; color: #059669; font-weight: 700; }
+.mb-muted li { color: #6B7280; }
+.mb-muted li::before { content: "–"; color: #9CA3AF; }
+.mb-shot { margin: 2.5rem 0 0; }
+.mb-shot img { width: 100%; height: auto; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,0.08); }
+.mb-shot figcaption { color: #6B7280; font-size: 0.88rem; margin-top: 0.5rem; text-align: center; }
+@media (max-width: 1000px) { .mb-steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .mb-steps, .mb-two { grid-template-columns: 1fr; } .mb-two { gap: 2rem; } }

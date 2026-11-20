@@ -57,6 +57,7 @@ const routes = {
   '/login': renderLogin,
   '/signup': renderSignup,
   '/dashboard': renderDashboard,
+  '/demo': renderDemo,
   '/projects/new': renderNewProject,
   '/projects/:id': params => renderHome(params, reconcileUI()),
   '/projects/:id/setup': renderSetup,
@@ -86,7 +87,7 @@ function route() {
   const [hash, anchor] = (location.hash.slice(1) || '/login').split('#');
   const user = getCurrentUser();
 
-  if (!user && !['/login', '/signup', '/invite'].some(p => hash.startsWith(p))) {
+  if (!user && !['/login', '/signup', '/invite', '/demo'].some(p => hash.startsWith(p))) {
     location.hash = '#/login';
     return;
   }
@@ -222,18 +223,32 @@ function closeDrawer() {
   document.getElementById('drawer-backdrop')?.classList.remove('open');
 }
 
+// "Try the demo": no sign-up. Signs in as the demo account and opens the
+// demo project, making it the first time.
+function renderDemo() {
+  const user = seedDemoUser();
+  login({ email: user.email, password: 'demo123' });
+  const me = getCurrentUser();
+  const existing = getProjects().find(p => p.demo && p.members.some(m => m.userId === me.id));
+  const project = existing || createFinanceDemoProject(me);
+  location.replace(`#/projects/${project.id}`);
+}
+
 function renderLogin() {
   document.getElementById('app-shell').innerHTML = nav() + '<main class="app-main" id="app-main"></main>';
   mount(`
     <div class="auth-page card">
-      <h1>Sign in</h1>
-      <p>Demo app — data stored locally in your browser.</p>
-      <div class="alert alert-info">Demo account: <strong>demo@mapbridge.local</strong> / <strong>demo123</strong></div>
+      <h1>MapBridge</h1>
+      <p>MapBridge helps you move data from an old system to a new one. You match every field, track testing in test and live, and get each area signed off.</p>
+      <a class="btn btn-primary" href="#/demo" style="width:100%;text-align:center">Try the demo (no sign-up)</a>
+      <p class="recon-sub" style="margin:0.4rem 0 1.25rem">Opens a finance system move part way through testing.</p>
+      <h2 class="auth-or">Or sign in</h2>
       <form id="login-form" novalidate>
         <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" name="email" value="demo@mapbridge.local" autocomplete="email"></div>
         <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" name="password" value="demo123" autocomplete="current-password"></div>
-        <button class="btn btn-primary" type="submit" style="width:100%">Sign in</button>
+        <button class="btn btn-secondary" type="submit" style="width:100%">Sign in</button>
       </form>
+      <p class="recon-sub" style="margin-top:0.75rem">This is a demo version. What you add is kept in this web browser only.</p>
       <p style="margin-top:1rem;font-size:0.88rem;color:var(--muted)">No account? <a href="#/signup" style="color:var(--brand);font-weight:600">Create one</a></p>
     </div>
   `);
@@ -319,8 +334,12 @@ function renderDashboard() {
       </a>
     `).join('')}</div>` : `
       <div class="empty-state card">
-        <p>No projects yet. Create one to add the field lists and start matching.</p>
-        <a href="#/projects/new" class="btn btn-primary" style="margin-top:1rem">Create first project</a>
+        <h2>New to MapBridge?</h2>
+        <p>Start with the demo project. It shows a finance system move part way through testing, so you can see each step before you start your own.</p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;margin-top:1rem">
+          <a href="#/demo" class="btn btn-primary">Open the demo project</a>
+          <a href="#/projects/new" class="btn btn-secondary">Start your own project</a>
+        </div>
       </div>`}
   `);
   attachLogout();
@@ -334,21 +353,16 @@ function renderDashboard() {
 function renderNewProject() {
   document.getElementById('app-shell').innerHTML = nav('New project') + '<main class="app-main" id="app-main"></main>';
   mount(`
-    <div class="page-head"><div><h1>New project</h1><p>Name the move and the two systems. The names you give are used on every screen.</p></div></div>
+    <div class="page-head"><div><h1>New project</h1><p>Name the move and the two systems. MapBridge uses these names on every screen. Next, you add the field lists.</p></div></div>
     <div class="card" style="max-width:520px">
       <form id="new-project-form">
-        <div class="field"><label>Project name</label><input name="name" placeholder="e.g. Birmingham LA — Synergy to Impulse" required></div>
+        <div class="field"><label>Project name</label><input name="name" placeholder="For example, Finance system move" required></div>
         <div class="field"><label for="np-old">The old system's name</label>
-          <input id="np-old" name="sourceSystem" list="np-old-names" placeholder="For example, Synergy">
-          <datalist id="np-old-names"><option value="Synergy"><option value="Capita One"><option value="SIMS"></datalist>
+          <input id="np-old" name="sourceSystem" placeholder="For example, the system you use now">
         </div>
         <div class="field"><label for="np-new">The new system's name</label>
-          <input id="np-new" name="targetSystem" list="np-new-names" placeholder="For example, Impulse">
-          <datalist id="np-new-names"><option value="Impulse"><option value="Impulse Nexus"></datalist>
+          <input id="np-new" name="targetSystem" placeholder="For example, the system you are moving to">
         </div>
-        <h2 class="route-head">What do you have?</h2>
-        <p class="recon-sub" style="margin:0 0 0.5rem">${esc(ROUTE_TEXT.lead)}</p>
-        ${routeQuestionsHtml(null, esc, 'np')}
         <button class="btn btn-primary" type="submit">Create project</button>
       </form>
     </div>
@@ -363,7 +377,7 @@ function renderNewProject() {
       targetSystem: fd.get('targetSystem'),
       ownerId: getCurrentUser().id,
     });
-    project.route = routeFromForm(k => fd.get(k));
+    project.route = routeFromForm(() => null);
     saveProject(project);
     toast('Project created');
     location.hash = `#/projects/${project.id}/setup`;
@@ -1216,6 +1230,8 @@ function renderVerify({ id }) {
       serviceArea: filterServiceArea,
     });
     const checks = fieldCheckIndex(project, project.reconRuns || [], { finalRunId: project.reconFinalRunId || null });
+    // The file comparison column only appears once someone has compared files.
+    const hasFileChecks = (project.reconRuns || []).length > 0;
     const conflicts = trackerConflicts(project, checks);
     const conflictIds = new Set(conflicts.map(m => m.id));
     const failingCount = project.mappings.filter(m => checks.get(m.id)?.state === 'fail').length;
@@ -1283,17 +1299,17 @@ function renderVerify({ id }) {
                 <button class="verification-pill ${filterQuick === 'active' ? 'active' : ''}" data-filter-type="quick" data-filter="active">In progress <span class="count">${quickCounts.active}</span></button>
                 <button class="verification-pill verify-pill-warn ${filterQuick === 'issues' ? 'active' : ''}" data-filter-type="quick" data-filter="issues"${quickCounts.issues ? '' : ' disabled'}>Issues <span class="count">${quickCounts.issues}</span></button>
                 <button class="verification-pill ${filterQuick === 'done' ? 'active' : ''}" data-filter-type="quick" data-filter="done">Signed off <span class="count">${quickCounts.done}</span></button>
-                <button class="verification-pill verify-pill-warn ${filterQuick === 'failing' || filterQuick === 'conflict' ? 'active' : ''}" data-filter-type="quick" data-filter="failing"${failingCount ? '' : ' disabled'}>Differences in files <span class="count">${failingCount}</span></button>
+                ${hasFileChecks ? `<button class="verification-pill verify-pill-warn ${filterQuick === 'failing' || filterQuick === 'conflict' ? 'active' : ''}" data-filter-type="quick" data-filter="failing"${failingCount ? '' : ' disabled'}>Differences in files <span class="count">${failingCount}</span></button>` : ''}
               </div>
             </div>
           </div>
         </div>
         <div class="verify-table-wrap">
-          ${filtered.length ? `<table class="verification-table">
+          ${filtered.length ? `<table class="verification-table${hasFileChecks ? '' : ' no-file-checks'}">
             <thead><tr>
               <th>Field</th>
               <th>Status</th>
-              <th>File comparison</th>
+              ${hasFileChecks ? '<th>File comparison</th>' : ''}
               <th>Progress</th>
               <th class="col-service-area">Area</th>
             </tr></thead>
@@ -1310,7 +1326,7 @@ function renderVerify({ id }) {
             return `<tr${rowClass ? ` class="${rowClass}"` : ''} data-mapping-id="${m.id}">
               <td class="col-mapping"><code class="col-mapping-code">${esc(formatColumnRef(m))}</code></td>
               <td class="col-status"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></td>
-              <td class="col-check">${renderCheckCell(id, checks.get(m.id), conflictIds.has(m.id))}</td>
+              ${hasFileChecks ? `<td class="col-check">${renderCheckCell(id, checks.get(m.id), conflictIds.has(m.id))}</td>` : ''}
               <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id, compact: true })}</td>
               <td class="col-service-area">
                 <select class="service-area-select" data-mapping-id="${m.id}" aria-label="Service area">
@@ -1657,8 +1673,8 @@ function renderPhaseBar(traceCounts, activeStep = null) {
   return `<div class="phase-bar">${TRACE_STEPS.map(step => {
     const n = traceCounts[step.key] || 0;
     const isActive = activeStep === step.key;
-    const short = step.action.replace('Checked in ', '').replace('Checked ', '');
-    return `<button type="button" class="phase-step-btn phase-step ${isActive ? 'current' : ''}" data-phase="${step.key}" title="${esc(step.action)} — ${n} completed">
+    const short = step.action;
+    return `<button type="button" class="phase-step-btn phase-step ${isActive ? 'current' : ''}" data-phase="${step.key}" title="${esc(step.action)}: ${n} so far">
       <span class="phase-step-label">${esc(short)}</span><span class="phase-count">${n}</span>
     </button>`;
   }).join('')}</div>`;
