@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>MapBridge — Field matching and sign-off tracking</title>
-  <meta name="description" content="Our tool for matching every old field to the new system, with AI suggestions, code translations, and a signed-off record of who checked what.">
+  <title>MapBridge – match, test and sign off every field in a data migration</title>
+  <meta name="description" content="A tool for moving data from an old system to a new one. Match every field, track testing in test and live, and get each area signed off by name.">
   
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F97316'/><text x='50' y='67' font-family='Arial,sans-serif' font-size='46' font-weight='700' text-anchor='middle' fill='white'>FW</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,127 +48,139 @@
   <!-- Hero -->
   <header class="hero">
     <div class="wrap">
-      <h1>MapBridge: how we make sure nothing is lost</h1>
-      <p class="lead">Our tool for matching every old field to the new system. AI suggests the matches, people decide, and every approval is recorded by name and date.</p>
-      <div class="hero-actions">
-        <a href="app.html" class="btn btn-primary">Open the tool</a>
-        <a href="#features" class="btn btn-secondary">See what it does ↓</a>
+      <div class="hero-grid">
+        <div>
+          <h1>MapBridge</h1>
+          <p class="lead">A tool for moving data from an old system to a new one. You match every field, track testing in test and live, and get each area signed off by name.</p>
+          <div class="hero-actions">
+            <a href="app.html#/demo" class="btn btn-primary">Try the demo</a>
+            <a href="#how" class="btn btn-secondary">How it works</a>
+          </div>
+          <p class="mb-note">No sign-up. Works in your web browser, with nothing to install.</p>
+        </div>
+        <div class="hero-image">
+          <img src="assets/app-home.webp" width="1184" height="760" alt="The MapBridge project home: the one thing to do now, everything left to do, and where each area is">
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Features -->
-  <section class="section-grey" id="features">
+  <!-- How it works -->
+  <section class="section-grey" id="how">
     <div class="wrap">
       <div class="section-head">
-        <h2>What MapBridge does</h2>
-        <p>Four steps to match every field and track who signed it off.</p>
+        <h2>How it works</h2>
+        <p>Five steps. Each area of the move goes through them at its own pace.</p>
       </div>
-      
-      <div style="display: grid; gap: 2rem;">
-        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; align-items: center;">
-          <div>
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">1</div>
-            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">AI suggests, people decide</h3>
-            <p>MapBridge reads field names, types and notes from both systems. It suggests which fields match, with a confidence score and a plain-English reason. You review and approve each one.</p>
-            <p>The approval is recorded by your name.</p>
-          </div>
-          <div class="mapbridge-screenshot">
-            <img loading="lazy" src="assets/mapbridge-suggestions.webp" width="1184" height="653" alt="MapBridge AI suggestions interface showing confidence scores and approval buttons">
-          </div>
-        </div>
+      <ol class="mb-steps">
+        <li><h3>Field lists</h3><p>Add the tables and fields from both systems. Use your supplier's mapping spreadsheet, a read-only link to the database, screenshots of the old system, or a file.</p></li>
+        <li><h3>Match</h3><p>Match each old field to where it goes in the new one. MapBridge suggests matches and says why. A person approves each one.</p></li>
+        <li><h3>Load and test</h3><p>Whoever loads the data copies it into a test system, then live. Your team checks each field on screen and records pass or fail, by name.</p></li>
+        <li><h3>Sign off</h3><p>Each area manager signs off their area when the data in live is right. MapBridge warns them if anything is still open.</p></li>
+        <li><h3>Hand over</h3><p>Download the evidence pack, then close the project. Nothing is left behind.</p></li>
+      </ol>
+    </div>
+  </section>
 
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: center;">
-          <div class="mapbridge-screenshot">
-            <img loading="lazy" src="assets/mapbridge-suggestions.webp" width="1184" height="653" alt="Code translation showing 1/0 to Y/N conversion">
-          </div>
-          <div>
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">2</div>
-            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Code translations</h3>
-            <p>When the old system uses different codes to the new one (like 1 and 0 instead of Y and N), MapBridge spots this and suggests the translation.</p>
-            <p>You can add as many translations as you need for each field.</p>
-          </div>
+  <!-- Need and get -->
+  <section class="section-white">
+    <div class="wrap">
+      <div class="mb-two">
+        <div>
+          <h2>What you need to start</h2>
+          <ul class="mb-list">
+            <li>The names of the tables and fields in both systems. Your new supplier can usually send these.</li>
+            <li>Someone in each area to test the data on screen.</li>
+            <li>A manager for each area to sign it off.</li>
+          </ul>
+          <p class="mb-note">You do not need to share any records to match fields.</p>
         </div>
+        <div>
+          <h2>What you get</h2>
+          <ul class="mb-list">
+            <li>A field tracker: where every field is, and who did each step and when.</li>
+            <li>A problems log: every failure, and whether it is fixed.</li>
+            <li>A one-page summary for senior managers.</li>
+            <li>An evidence pack to keep for audit.</li>
+            <li>If you have the files, a comparison of record counts and totals (reconciliation).</li>
+          </ul>
+        </div>
+      </div>
+      <figure class="mb-shot">
+        <img loading="lazy" src="assets/app-tracker.webp" width="1184" height="760" alt="The field tracker: each field with its status, such as passed in test or failed in test, and a row of steps">
+        <figcaption>The field tracker in the demo project.</figcaption>
+      </figure>
+    </div>
+  </section>
 
-        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; align-items: center;">
-          <div>
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">3</div>
-            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Sign-off tracking</h3>
-            <p>For each matched field, you record who sent it for loading, who checked it in test, who loaded it into live, and who signed it off.</p>
-            <p>Each step is recorded by name and date. If something fails, you can revert it and record why.</p>
-          </div>
-          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem;">
-            <div style="display: grid; gap: 1rem;">
-              <div style="border-left: 4px solid #F97316; padding-left: 1rem;">
-                <strong>Sent for loading</strong> · J. Smith · 3 March 2026
-              </div>
-              <div style="border-left: 4px solid #F97316; padding-left: 1rem;">
-                <strong>Loaded into test</strong> · S. Jones · 5 March 2026
-              </div>
-              <div style="border-left: 4px solid #F97316; padding-left: 1rem;">
-                <strong>Passed in test</strong> · J. Smith · 8 March 2026
-              </div>
-              <div style="border-left: 4px solid #059669; padding-left: 1rem;">
-                <strong>Signed off</strong> · J. Smith · 10 March 2026
-              </div>
+  <!-- Data -->
+  <section class="section-blue-light">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Your data</h2>
+        <p>Matching uses the names of tables and fields only. MapBridge does not copy, move or change any data. If you compare files, they are read in your web browser and the records are not kept. <a href="it-and-dpo.html">Read the detail for IT and data protection officers</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-white">
+    <div class="wrap">
+      <div class="savings-grid">
+        <div class="section-head">
+          <h2>What you could save</h2>
+          <p>For a project with 800 fields, we estimate:</p>
+          <p class="savings-note">An estimate, not a promise. We do not have enough projects with MapBridge yet to promise a number. </p>
+          <details class="savings-working">
+            <summary>See how we worked it out</summary>
+            <p>40 to 140 days across 800 fields is roughly 25 to 80 minutes saved per field. That is the time spent finding the matching field, agreeing code translations, writing the first SQL and chasing sign-off by email and spreadsheet.</p>
+            <p>Money saved is those days at a £500 day rate: 40 × £500 = £20k, 140 × £500 = £70k. Your day rate and field count will change the answer.</p>
+          </details>
+        </div>
+        <div class="savings-chart">
+          <div class="bar-group">
+            <div class="bar-label">Days of work saved</div>
+            <div class="bar">
+              <div class="bar-fill" style="left: 15%; right: 35%;"></div>
             </div>
+            <div class="bar-range">40 ————————— 140 days</div>
           </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: center;">
-          <div style="background: #0f172a; color: white; border-radius: 12px; padding: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6;">
-            <div style="color: #94a3b8; margin-bottom: 1rem;">-- Generated by MapBridge</div>
-            <div><span style="color: #60a5fa;">SELECT</span></div>
-            <div>&nbsp;&nbsp;employee_id,</div>
-            <div>&nbsp;&nbsp;<span style="color: #F97316;">CASE</span> fsm_flag</div>
-            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #F97316;">WHEN</span> <span style="color: #a3e635;">'1'</span> <span style="color: #F97316;">THEN</span> <span style="color: #a3e635;">'Y'</span></div>
-            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #F97316;">WHEN</span> <span style="color: #a3e635;">'0'</span> <span style="color: #F97316;">THEN</span> <span style="color: #a3e635;">'N'</span></div>
-            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #F97316;">ELSE</span> <span style="color: #a3e635;">NULL</span></div>
-            <div>&nbsp;&nbsp;<span style="color: #F97316;">END</span> <span style="color: #60a5fa;">AS</span> FSM_STATUS</div>
-            <div><span style="color: #60a5fa;">FROM</span> old_table;</div>
-          </div>
-          <div>
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #F97316; margin-bottom: 1rem;">4</div>
-            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Starter SQL for your supplier</h3>
-            <p>MapBridge writes starter SQL queries for your supplier, with the translation rules already in place.</p>
-            <p>This gives them a head start and makes sure the translations are right.</p>
+          <div class="bar-group">
+            <div class="bar-label">Money saved at £500/day</div>
+            <div class="bar">
+              <div class="bar-fill" style="left: 15%; right: 35%;"></div>
+            </div>
+            <div class="bar-range">£20k ————————— £70k, before our fees</div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Works today / Coming next -->
   <section class="section-white">
     <div class="wrap">
-      <div class="section-head">
-        <h2>Works today, coming next</h2>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+      <div class="mb-two">
         <div>
-          <h3 style="color: #059669; margin-bottom: 1.5rem;">✓ Works today</h3>
-          <ul style="list-style: none; padding: 0;">
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">AI-suggested field matches</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Value and code translations</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Sign-off tracking field by field</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Starter SQL export</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Read-only tool for SQL Server and Oracle</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Test load comparison (reconciliation): counts, totals and every matched field, with a printable report</li>
+          <h2>Works today</h2>
+          <ul class="mb-list">
+            <li>Field lists from supplier spreadsheets, databases, screenshots or files, added as tables arrive</li>
+            <li>Suggested matches and code translations</li>
+            <li>Field tracker for test and live</li>
+            <li>Problems log</li>
+            <li>Area sign-off and a one-page executive overview</li>
+            <li>Evidence pack</li>
+            <li>Hiding sensitive fields, such as bank details</li>
+            <li>Starter SQL for your supplier</li>
+            <li>Optional file comparison</li>
           </ul>
         </div>
         <div>
-          <h3 style="color: #6B7280; margin-bottom: 1.5rem;">Coming next</h3>
-          <ul style="list-style: none; padding: 0; color: #6B7280;">
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Shared online workspace with invites and roles</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Data quality checks (null rates, value ranges)</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Screen spot checks in the new system</li>
-            <li style="padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">Cutover plan generator</li>
+          <h2>Coming next</h2>
+          <ul class="mb-list mb-muted">
+            <li>A shared online workspace, with invites and roles</li>
+            <li>Matching on what the data contains, not just the field names</li>
+            <li>Ready-made field lists for common systems</li>
           </ul>
         </div>
-      </div>
-      <div style="margin-top: 3rem; text-align: center;">
-        <a href="app.html" class="btn btn-primary">Open the tool</a>
-        <p style="margin-top: 1rem; color: #6B7280; font-size: 0.9rem;">Free to try. Runs in your web browser.</p>
       </div>
     </div>
   </section>
@@ -177,8 +189,8 @@
   <section class="section-orange" style="padding: 3rem 0;">
     <div class="wrap cta-band">
       <div>
-        <h2>Want to use MapBridge on your project?</h2>
-        <p>We run the whole project with you, using MapBridge to track every field and sign-off.</p>
+        <h2>Want help running your move?</h2>
+        <p>We can run the whole project with you, using MapBridge.</p>
       </div>
       <!-- TODO: Replace with real booking link -->
       <a href="https://www.linkedin.com/in/alexosfwd/" class="btn btn-white">Book a 30-minute call</a>
