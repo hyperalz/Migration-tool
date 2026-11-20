@@ -98,14 +98,14 @@ export function executiveSummary(project, { evidenceChanged = false } = {}) {
     const plain = plainSummary(latestRun, runs, project);
     for (const i of plain.issues.filter(x => x.severity === 'high')) risks.push({ text: i.text, why: i.why, area: i.area });
   }
-  if (fields.liveFailed) risks.push({ text: `${num(fields.liveFailed)} ${plural(fields.liveFailed, 'field')} failed UAT in live.`, why: 'What people see in live is wrong.', area: '' });
-  if (fields.testFailed) risks.push({ text: `${num(fields.testFailed)} ${plural(fields.testFailed, 'field')} failed UAT in test.`, why: 'They need fixing before they can go into live.', area: '' });
+  if (fields.liveFailed) risks.push({ text: `${num(fields.liveFailed)} ${plural(fields.liveFailed, 'field')} failed testing in live.`, why: 'What people see in live is wrong.', area: '' });
+  if (fields.testFailed) risks.push({ text: `${num(fields.testFailed)} ${plural(fields.testFailed, 'field')} failed testing in test.`, why: 'They need fixing before they can go into live.', area: '' });
 
   // ----- readiness -----
   const blockers = [];
   if (ov.summary.high) blockers.push(`${num(ov.summary.high)} serious data ${plural(ov.summary.high, 'problem')} open.`);
-  if (fields.liveFailed) blockers.push(`${num(fields.liveFailed)} ${plural(fields.liveFailed, 'field')} failed UAT in live.`);
-  if (fields.testFailed) blockers.push(`${num(fields.testFailed)} ${plural(fields.testFailed, 'field')} failed UAT in test.`);
+  if (fields.liveFailed) blockers.push(`${num(fields.liveFailed)} ${plural(fields.liveFailed, 'field')} failed testing in live.`);
+  if (fields.testFailed) blockers.push(`${num(fields.testFailed)} ${plural(fields.testFailed, 'field')} failed testing in test.`);
   const areasSigned = areas.filter(a => a.rag === 'green').length;
   let level;
   if (!fields.total && !runs.length) level = 'empty';

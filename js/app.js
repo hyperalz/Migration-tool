@@ -339,11 +339,11 @@ function renderNewProject() {
       <form id="new-project-form">
         <div class="field"><label>Project name</label><input name="name" placeholder="e.g. Birmingham LA — Synergy to Impulse" required></div>
         <div class="field"><label for="np-old">The old system's name</label>
-          <input id="np-old" name="sourceSystem" list="np-old-names" placeholder="e.g. Synergy">
+          <input id="np-old" name="sourceSystem" list="np-old-names" placeholder="For example, Synergy">
           <datalist id="np-old-names"><option value="Synergy"><option value="Capita One"><option value="SIMS"></datalist>
         </div>
         <div class="field"><label for="np-new">The new system's name</label>
-          <input id="np-new" name="targetSystem" list="np-new-names" placeholder="e.g. Impulse">
+          <input id="np-new" name="targetSystem" list="np-new-names" placeholder="For example, Impulse">
           <datalist id="np-new-names"><option value="Impulse"><option value="Impulse Nexus"></datalist>
         </div>
         <h2 class="route-head">What do you have?</h2>
@@ -498,7 +498,7 @@ function renderSetup({ id }) {
   const uploadZone = (side, origin, hint) => `
     <div class="upload-zone" id="${SIDE[side]}-upload" data-origin="${origin}">
       <input type="file" id="${SIDE[side]}-file" accept="${origin === 'db' ? '.json' : '.json,.csv'}">
-      <p><strong>${origin === 'db' ? 'Add the connector file' : 'Add a field list file'}</strong> (drop it here, or click to choose)</p>
+      <p><strong>${origin === 'db' ? 'Add the connector file' : 'Add a field list file'}</strong> (drag it here, or choose a file)</p>
       <p style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem">${esc(hint)}</p>
     </div>`;
 
@@ -1243,7 +1243,7 @@ function renderVerify({ id }) {
       <div class="page-head verify-page-head">
         <div>
           <h1>Field tracker</h1>
-          <p class="verify-lede">Follow each field through the move: matched, tables filled and sent, loaded into test, checked on screen, then loaded into live and checked again, then signed off. Click <strong>+</strong> on a row to record the next step.</p>
+          <p class="verify-lede">Follow each field through the move: matched, tables filled and sent, loaded into test, checked on screen, then loaded into live and checked again, then signed off. Select <strong>+</strong> on a row to record the next step.</p>
         </div>
         <a href="#/projects/${id}/reconcile" class="btn btn-secondary btn-sm">Compare files (optional) →</a>
       </div>
@@ -1321,7 +1321,7 @@ function renderVerify({ id }) {
           }).join('')}</tbody>
           </table>` : `<div class="empty-state verify-empty">
             <p>No fields match this filter.</p>
-            <p class="verify-empty-hint">Try clearing filters, or click <strong>+</strong> on a row to record the next step.</p>
+            <p class="verify-empty-hint">Try clearing the filters, or select <strong>+</strong> on a row to record the next step.</p>
           </div>`}
         </div>
       </div>
@@ -1518,7 +1518,7 @@ function showCheckWarningModal({ step, mapping, check }) {
         </ul>
         <div class="field" style="margin:0.75rem 0 0">
           <label for="check-warn-reason">To record "${esc(step.action)}" as passed anyway, say why</label>
-          <textarea id="check-warn-reason" rows="2" placeholder="e.g. fixed by the supplier on 14 Nov, to be confirmed in the next load"></textarea>
+          <textarea id="check-warn-reason" rows="2" placeholder="For example: fixed by the supplier on 14 November, to be confirmed in the next load"></textarea>
         </div>
         <div class="record-modal-actions">
           <a class="btn btn-ghost btn-sm" href="#/projects/${getCurrentProjectId()}/reconcile/${check.run.id}" id="check-warn-report">Open the report</a>
@@ -1565,10 +1565,10 @@ function traceNodeTitle(mapping, step, t, visual) {
   const attemptNote = attempts > 1 ? ` · ${attempts} attempts logged` : '';
   const who = t ? formatStepNames(t) : '';
   if (t && visual === 'done') {
-    return `${step.action} · ${who} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back`;
+    return `${step.action} · ${who} · ${new Date(t.at).toLocaleString()}${attemptNote} · Select to undo`;
   }
   if (t && visual === 'failed') {
-    return `${step.action} failed · ${who} · ${new Date(t.at).toLocaleString()}${attemptNote} · Click to go back and re-do`;
+    return `${step.action} failed · ${who} · ${new Date(t.at).toLocaleString()}${attemptNote} · Select to undo and redo`;
   }
   if (visual === 'next') return `Click to record: ${step.action}`;
   return `${step.action} — not yet`;
@@ -1591,7 +1591,7 @@ function renderTraceStrip(mapping, { interactive = false, mappingId = '', compac
       <div class="trace-node-marker" aria-hidden="true">${visual === 'done' || visual === 'failed' ? (visual === 'failed' ? '!' : '✓') : visual === 'next' ? '+' : ''}</div>
       <div class="trace-node-text">
         <span class="trace-action">${esc(step.action)}</span>
-        <span class="trace-person">${t ? esc(formatStepNames(t)) : visual === 'next' ? 'Click to record' : 'Pending'}${t && countStepAttempts(mapping, step.key) > 1 ? ` · ×${countStepAttempts(mapping, step.key)}` : ''}</span>
+        <span class="trace-person">${t ? esc(formatStepNames(t)) : visual === 'next' ? 'Select to record' : 'Not done yet'}${t && countStepAttempts(mapping, step.key) > 1 ? ` · ×${countStepAttempts(mapping, step.key)}` : ''}</span>
       </div>`;
     if (interactive && visual === 'next') {
       return `${connector}<button type="button" class="trace-node trace-node-btn ${visual}" title="${esc(title)}"
@@ -1619,9 +1619,9 @@ function renderTraceDetail(mapping, { interactive = false, mappingId = '' } = {}
         ${t
           ? `<div class="trace-meta"><span class="trace-person-name">${esc(formatStepNames(t))}</span><span class="trace-date">${new Date(t.at).toLocaleString()}${countStepAttempts(mapping, step.key) > 1 ? ` · ${countStepAttempts(mapping, step.key)} attempts logged` : ''}</span></div>`
           : visual === 'next'
-            ? '<div class="trace-meta trace-meta-next">Click the tick to record</div>'
+            ? '<div class="trace-meta trace-meta-next">Select the tick to record</div>'
             : '<div class="trace-meta trace-meta-pending">Not yet recorded</div>'}
-        ${interactive && canRevertTraceStep(mapping, step.key) ? '<div class="trace-meta trace-meta-revert">Click to go back and re-do</div>' : ''}
+        ${interactive && canRevertTraceStep(mapping, step.key) ? '<div class="trace-meta trace-meta-revert">Select to undo and redo</div>' : ''}
       </div>`;
     if (interactive && visual === 'next') {
       return `<button type="button" class="trace-timeline-item trace-timeline-btn ${visual} trace-node-btn"
@@ -1702,7 +1702,7 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
       </div>
       <p style="margin:0.5rem 0 0"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></p>
       <p class="drawer-hint">${fromVerify
-    ? 'Click + to record the next step. Click a completed tick to go back. Every action is kept in the audit log below.'
+    ? 'Select + to record the next step. Select a completed tick to undo it. Every action is kept in the record below.'
     : 'What each field means is shown below. Check how the values are written before you match.'}</p>
     </div>
     <div class="drawer-body">
@@ -1855,7 +1855,7 @@ function renderExport({ id }) {
     a.href = URL.createObjectURL(blob);
     a.download = `${slug(project.name)}-stubs.sql`;
     a.click();
-    toast('SQL stubs exported');
+    toast('Starter SQL downloaded');
   };
   document.getElementById('close-project').onclick = e => {
     const btn = e.currentTarget;

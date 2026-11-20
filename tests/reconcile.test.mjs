@@ -176,7 +176,7 @@ test('missing columns and missing keys are reported, not ignored', () => {
   assert.equal(res.fields[1].skipped, 'This field is not in the new system\'s file');
   assert.ok(res.groups.some(g => g.kind === 'not_checked'));
   assert.ok(res.groups.some(g => g.kind === 'blank_key' && g.count === 1));
-  assert.throws(() => reconcilePair({ pair, keyMappingIds: [], sourceRows: [], targetRows: [] }), /at least one key/);
+  assert.throws(() => reconcilePair({ pair, keyMappingIds: [], sourceRows: [], targetRows: [] }), /at least one field that identifies a record/);
   assert.throws(() => reconcilePair({ pair, keyMappingIds: ['k'], sourceRows: [{ nope: 1 }], targetRows: [{ ID: 1 }] }), /not in the old system's file/);
 });
 
@@ -445,7 +445,7 @@ test('progress: required new-system fields without a source keep mapping in prog
 test('progress: mapped but nothing checked points at the first load', () => {
   const p = schemaProjectFull();
   assert.deepEqual(states(p), { setup: 'done', map: 'done', check: 'todo', signoff: 'blocked', handover: 'todo' });
-  assert.equal(projectProgress(p).next.text, 'Check the first trial load');
+  assert.equal(projectProgress(p).next.text, 'Send the 13 matched fields for loading');
 });
 
 test('progress: issues open keeps checking in progress; sign-off opens up', () => {
@@ -1369,7 +1369,7 @@ test('fields: the board and to-do list follow the real steps, with no file check
   // the step bar moves on without file checks
   const pr = projectProgress(p);
   assert.equal(pr.steps[2].state, 'progress');
-  assert.match(pr.steps[2].summary, /^4 of 13 fields passed UAT in live\. 4 passed UAT in test\. 2 failed\. 2 waiting for UAT\.$/);
+  assert.match(pr.steps[2].summary, /^4 of 13 fields passed testing in live\. 4 passed testing in test\. 2 failed\. 2 waiting to be checked\.$/);
   assert.equal(pr.steps[3].state, 'todo');
 });
 
@@ -1431,7 +1431,7 @@ test('area page: one area\'s steps, jobs and fields, from the same records as th
   // fields grouped by new table, failures first, with their latest note
   assert.equal(ap.tables.length, 1);
   const first = ap.tables[0].fields[0];
-  assert.deepEqual([first.field, first.stage, first.label], ['SUPPLIER_REF', 'liveFailed', 'Failed UAT in live']);
+  assert.deepEqual([first.field, first.stage, first.label], ['SUPPLIER_REF', 'liveFailed', 'Failed in live']);
   assert.equal(first.from, 'supplier.supplier_id');
   assert.deepEqual(first.last, { note: '', by: 'x', at: 'T' });
   assert.equal(ap.open, 9);

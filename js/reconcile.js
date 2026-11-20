@@ -339,17 +339,17 @@ export function reconcilePair({
   const pairLabel = `${pair.sourceTable} → ${pair.targetTable}`;
 
   const keyMappings = pair.mappings.filter(m => keyMappingIds.includes(m.id));
-  if (!keyMappings.length) throw new Error(`Choose at least one key field for ${pairLabel}.`);
+  if (!keyMappings.length) throw new Error(`Choose at least one field that identifies a record for ${pairLabel}.`);
 
   const sourceCols = new Set(sourceRows.length ? Object.keys(sourceRows[0]) : []);
   const targetCols = new Set(targetRows.length ? Object.keys(targetRows[0]) : []);
 
   for (const km of keyMappings) {
     if (sourceRows.length && !sourceCols.has(km.sourceColumn)) {
-      throw new Error(`The key field "${km.sourceColumn}" is not in the old system's file for ${pairLabel}.`);
+      throw new Error(`The identifying field "${km.sourceColumn}" is not in the old system's file for ${pairLabel}.`);
     }
     if (targetRows.length && !targetCols.has(km.targetColumn)) {
-      throw new Error(`The key field "${km.targetColumn}" is not in the new system's file for ${pairLabel}.`);
+      throw new Error(`The identifying field "${km.targetColumn}" is not in the new system's file for ${pairLabel}.`);
     }
   }
 
@@ -389,14 +389,14 @@ export function reconcilePair({
   if (src.blankKeys) {
     const g = groups.add({
       signature: `${pair.id}::blank_key_source`, severity: 'medium', kind: 'blank_key', field: '(whole record)',
-      title: 'Records in the old system extract have a blank key and could not be compared',
+      title: 'Records in the old system extract have nothing in the identifying field and could not be compared',
     });
     g.count = src.blankKeys;
   }
   if (tgt.blankKeys) {
     const g = groups.add({
       signature: `${pair.id}::blank_key_target`, severity: 'high', kind: 'blank_key', field: '(whole record)',
-      title: 'Records in the new system extract have a blank key and could not be compared',
+      title: 'Records in the new system extract have nothing in the identifying field and could not be compared',
     });
     g.count = tgt.blankKeys;
   }

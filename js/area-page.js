@@ -11,20 +11,20 @@ import { areaBoard, todoList, STAGES } from './work-queue.js';
 import { projectProblems, isOpen } from './problems.js';
 
 export const STAGE_LABEL = {
-  matched: 'Matched, SQL not sent',
-  sent: 'SQL sent',
-  inTest: 'In test, waiting for UAT',
-  testFailed: 'Failed UAT in test',
-  testPassed: 'Passed UAT in test',
-  inLive: 'In live, waiting for UAT',
-  liveFailed: 'Failed UAT in live',
-  livePassed: 'Passed UAT in live',
+  matched: 'Matched, not sent yet',
+  sent: 'Sent for loading',
+  inTest: 'In test, waiting to be checked',
+  testFailed: 'Failed in test',
+  testPassed: 'Passed in test',
+  inLive: 'In live, waiting to be checked',
+  liveFailed: 'Failed in live',
+  livePassed: 'Passed in live',
   signed: 'Signed off',
 };
 
 export const AREA_TEXT = {
   signHelp: 'The service area manager signs off once live is correct and no more changes are needed. Signing off marks every field in this area as signed off.',
-  notReady: 'Not every field has passed UAT in live yet. You can still record a sign-off, but check the fields that are still open first.',
+  notReady: 'Not every field has passed testing in live yet. You can still record a sign-off, but check the fields that are still open first.',
   nothing: 'This area has no matched fields yet, so there is nothing to sign.',
 };
 

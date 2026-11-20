@@ -90,7 +90,7 @@ export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
         <form class="recon-review-form" id="area-signoff-form" novalidate>
           <div class="field"><label for="signoff-name">Name</label><input id="signoff-name" name="name" value="${esc(userName)}" autocomplete="name"></div>
           <div class="field"><label>Recording<select name="role"><option>Signed off</option><option>Not signed off</option></select></label></div>
-          <div class="field" style="flex:2"><label>Note (optional)<input name="note" placeholder="e.g. live checked with the service team"></label></div>
+          <div class="field" style="flex:2"><label>Note (optional)<input name="note" placeholder="For example: checked in live with the service team"></label></div>
           <button class="btn btn-primary" type="submit">Record</button>
         </form>`}
     </section>
