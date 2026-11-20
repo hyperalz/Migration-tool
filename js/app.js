@@ -45,6 +45,7 @@ import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice
 import { screenTables } from './trace.js';
 import { renderExecutive } from './executive-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
+import { systemTag, fieldPairHtml } from './system-tags.js';
 import { bindHelp } from './help-view.js';
 import { renderArea } from './area-view.js';
 import { renderSettings } from './settings-view.js';
@@ -502,8 +503,9 @@ function renderSetup({ id }) {
       </div>
       ${renderSchemaPreview(project[SIDE[side] + 'Schema'], stats)}`;
     return `
-      <section class="card setup-side" id="setup-side-${side}">
-        <h2 class="setup-side-title">${esc(label(side))}</h2>
+      <section class="card setup-side sys-side-${side}" id="setup-side-${side}">
+        ${systemTag(side, esc)}
+        <h2 class="setup-side-title">${esc((side === 'old' ? project.sourceSystem : project.targetSystem) || (side === 'old' ? 'The system you use now' : 'The system you are moving to'))}</h2>
         ${list ? `<p class="setup-done"><span aria-hidden="true">✓</span> ${esc(originLine(project, side))}</p>${orphanNote(side)}` : ''}
         ${body}
       </section>`;
@@ -564,11 +566,11 @@ function renderSetup({ id }) {
     <div class="page-head"><div><h1>${esc(SETUP_TEXT.title)}</h1>
       <p>${esc(SETUP_TEXT.lead)} ${esc(SETUP_TEXT.noRecords)}</p></div></div>
     <div class="setup-flow" aria-hidden="true">
-      <span class="setup-flow-box ${hasList('old') ? 'is-done' : ''}">${hasList('old') ? '✓ ' : ''}Old system's fields</span>
+      <span class="setup-flow-box sys-flow-old ${hasList('old') ? 'is-done' : ''}">${hasList('old') ? '✓ ' : ''}Old system's fields</span>
       <span class="setup-flow-arrow">→</span>
       <span class="setup-flow-box setup-flow-match">Match</span>
       <span class="setup-flow-arrow">←</span>
-      <span class="setup-flow-box ${hasList('new') ? 'is-done' : ''}">${hasList('new') ? '✓ ' : ''}New system's fields</span>
+      <span class="setup-flow-box sys-flow-new ${hasList('new') ? 'is-done' : ''}">${hasList('new') ? '✓ ' : ''}New system's fields</span>
     </div>
     <div class="grid-2 setup-sides">${sideCard('old')}${sideCard('new')}</div>
     ${panel('old')}
@@ -1036,8 +1038,8 @@ function renderMap({ id }) {
   canvasInstance = new MappingCanvas(container, {
     sourceSchema: project.sourceSchema,
     targetSchema: project.targetSchema,
-    oldLabel: esc(oldLabel(project)),
-    newLabel: esc(newLabel(project)),
+    oldLabel: systemTag('old', esc) + esc(project.sourceSystem || ''),
+    newLabel: systemTag('new', esc) + esc(project.targetSystem || ''),
     mappings: [...project.mappings],
     newTables: fresh,
     onlyNewSide: mapOnlyNew.has(id) ? (fresh.target.size ? 'target' : 'source') : null,
@@ -1081,7 +1083,7 @@ function showPassModal({ step, mapping }) {
     backdrop.innerHTML = `
       <div class="record-modal" role="dialog" aria-modal="true" aria-labelledby="pass-title">
         <h3 id="pass-title">${esc(step.action)}</h3>
-        <p class="record-modal-sub"><code>${esc(formatColumnRef(mapping))}</code></p>
+        <p class="record-modal-sub">${fieldPairHtml(mapping, esc)}</p>
         ${passQuestionHtml(esc)}
         <div class="record-modal-actions">
           <button type="button" class="btn btn-ghost btn-sm" id="pass-cancel">Cancel</button>
@@ -1324,7 +1326,7 @@ function renderVerify({ id }) {
               conflictIds.has(m.id) ? 'row-conflict' : '',
             ].filter(Boolean).join(' ');
             return `<tr${rowClass ? ` class="${rowClass}"` : ''} data-mapping-id="${m.id}">
-              <td class="col-mapping"><code class="col-mapping-code">${esc(formatColumnRef(m))}</code></td>
+              <td class="col-mapping">${fieldPairHtml(m, esc)}</td>
               <td class="col-status"><span class="status-badge" style="background:${current.color}18;color:${current.color}">${current.label}</span></td>
               ${hasFileChecks ? `<td class="col-check">${renderCheckCell(id, checks.get(m.id), conflictIds.has(m.id))}</td>` : ''}
               <td class="col-trace">${renderTraceStrip(m, { interactive: true, mappingId: m.id, compact: true })}</td>
@@ -1527,7 +1529,7 @@ function showCheckWarningModal({ step, mapping, check }) {
     backdrop.innerHTML = `
       <div class="record-modal" role="dialog" aria-modal="true" aria-labelledby="check-warn-title" style="width:min(560px,calc(100% - 2rem))">
         <h3 id="check-warn-title">The latest file comparison found differences</h3>
-        <p class="record-modal-sub"><code>${esc(formatColumnRef(mapping))}</code> · ${esc(check.run.label)}</p>
+        <p class="record-modal-sub">${fieldPairHtml(mapping, esc)} · ${esc(check.run.label)}</p>
         <ul class="check-warn-list">
           ${findings.map(f => `<li>${esc(f.title)}${f.kind === 'total_differs' || f.kind === 'not_checked' ? '' : ` <span class="recon-sub" style="display:inline">(${f.count.toLocaleString('en-GB')} ${f.count === 1 ? 'record' : 'records'})</span>`}</li>`).join('')}
           ${check.findings.length > findings.length ? `<li>…and ${check.findings.length - findings.length} more</li>` : ''}

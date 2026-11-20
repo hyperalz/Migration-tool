@@ -2,6 +2,7 @@
 
 import { getProject, saveProject } from './store.js';
 import { boldLeadNumber, todoRowHtml, cellTone } from './figures.js';
+import { fieldTag } from './system-tags.js';
 import { getCurrentUser } from './auth.js';
 import { buildAreaSignoff, projectOverview } from './reconcile-overview.js';
 import { signOffAreaFields } from './field-progress.js';
@@ -36,7 +37,7 @@ export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
     <span class="area-cell-text">${c.state === 'done' ? '<span aria-hidden="true">✓ </span>' : ''}${boldLeadNumber(c.text, esc)}</span></div>`;
   const fieldRow = f => `
     <tr class="${f.open ? '' : 'area-field-done'} area-stage-${f.stage}">
-      <td><strong>${esc(f.field)}</strong><div class="recon-sub recon-mono">from ${esc(f.from)}</div></td>
+      <td>${fieldTag('new', f.field, esc)}<div class="recon-sub sys-from">from ${fieldTag('old', f.from, esc)}</div></td>
       <td><span class="area-stage">${esc(f.label)}</span></td>
       <td>${f.last ? `${esc(f.last.note || '—')}<div class="recon-sub">${esc(f.last.by)}${f.last.at ? ` · ${esc(fmt(f.last.at))}` : ''}</div>` : '—'}</td>
     </tr>`;
