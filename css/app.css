@@ -2143,7 +2143,8 @@ details.home-step .home-step-body { padding: 0 0 0.9rem 2.65rem; }
 .area-table .schema-preview td { font-size: 0.88rem; max-width: none; }
 .area-stage { font-weight: 600; }
 .area-stage-liveFailed .area-stage, .area-stage-testFailed .area-stage { color: var(--danger); }
-.area-stage-inLive .area-stage, .area-stage-inTest .area-stage, .area-stage-testPassed .area-stage { color: #92400e; }
+.area-stage-inLive .area-stage, .area-stage-inTest .area-stage { color: #92400e; }
+.area-stage-testPassed .area-stage { color: #047857; }
 .area-field-done .area-stage { color: #047857; }
 .area-signoffs { margin: 0.5rem 0 0.75rem 1.2rem; font-size: 0.9rem; }
 a.home-area { text-decoration: none; }
@@ -2375,3 +2376,32 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .page-intro { margin: 0.6rem 0 0.9rem; font-size: 1.02rem; color: var(--text, #1d2939); border-left: 4px solid var(--brand); padding: 0.15rem 0 0.15rem 0.75rem; max-width: 760px; }
 .auth-or { font-size: 0.95rem; margin: 0.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .empty-state h2 { font-size: 1.2rem; margin: 0 0 0.4rem; }
+
+/* ---------- Figures that stand out ---------- */
+.fig { font-variant-numeric: tabular-nums; font-weight: 700; line-height: 1; color: var(--text, #1d2939); }
+.fig-bad { color: #b42318; }
+.fig-good { color: #067647; }
+.fig-big { font-size: 3rem; min-width: 3.5rem; text-align: center; }
+.fig-inline { font-size: 1.1em; font-weight: 700; }
+.home-next-fig { display: flex; gap: 1rem; align-items: center; margin: 0.4rem 0 0.9rem; }
+.home-next-fig h2.home-next-text { margin: 0; }
+.home-next-what { margin: 0.2rem 0 0; color: var(--muted); }
+.home-todo-list { list-style: none; margin: 0; padding: 0; }
+.home-todo-list li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto auto; align-items: center; gap: 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+.home-todo-list li:last-child { border-bottom: none; }
+.home-todo-list .fig { font-size: 1.6rem; text-align: right; }
+.home-todo-text { display: flex; flex-direction: column; gap: 0.1rem; }
+.home-todo-what { font-weight: 600; }
+.home-todo-action { color: var(--muted); font-size: 0.9rem; }
+.home-todo-list .home-area { margin: 0; white-space: nowrap; }
+@media (max-width: 640px) {
+  .home-todo-list li { grid-template-columns: 2.4rem minmax(0, 1fr) auto; }
+  .home-todo-list .home-area { grid-column: 2; justify-self: start; }
+  .fig-big { font-size: 2.4rem; min-width: 2.6rem; }
+}
+.home-cell-failed { color: #b42318; font-weight: 600; }
+.area-cell-text .fig-inline, .home-cell .fig-inline { font-size: 1.2em; }
+.problems-counts .area-cell-text, .area-cells .area-cell-text { font-variant-numeric: tabular-nums; }
+.problems-counts .area-cell-text { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+
+.count-chip { display: inline-block; min-width: 1.6em; padding: 0.05rem 0.45rem; margin-left: 0.35rem; border-radius: 999px; background: #fee4e2; color: #b42318; font-size: 0.85em; text-align: center; letter-spacing: 0; }

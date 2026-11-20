@@ -1,6 +1,7 @@
 // The page for one area. See area-page.js for what it shows and why.
 
 import { getProject, saveProject } from './store.js';
+import { boldLeadNumber, todoRowHtml, cellTone } from './figures.js';
 import { getCurrentUser } from './auth.js';
 import { buildAreaSignoff, projectOverview } from './reconcile-overview.js';
 import { signOffAreaFields } from './field-progress.js';
@@ -31,8 +32,8 @@ export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
     return;
   }
 
-  const cell = c => `<div class="area-cell area-cell-${c.state}"><span class="area-cell-label">${esc(c.label)}</span>
-    <span class="area-cell-text">${c.state === 'done' ? '<span aria-hidden="true">✓ </span>' : ''}${esc(c.text)}</span></div>`;
+  const cell = c => `<div class="area-cell area-cell-${cellTone(c.state, c.text)}"><span class="area-cell-label">${esc(c.label)}</span>
+    <span class="area-cell-text">${c.state === 'done' ? '<span aria-hidden="true">✓ </span>' : ''}${boldLeadNumber(c.text, esc)}</span></div>`;
   const fieldRow = f => `
     <tr class="${f.open ? '' : 'area-field-done'} area-stage-${f.stage}">
       <td><strong>${esc(f.field)}</strong><div class="recon-sub recon-mono">from ${esc(f.from)}</div></td>
@@ -50,18 +51,17 @@ export function renderArea({ id, area }, ui, { justRecorded = null } = {}) {
       <div class="recon-eyebrow"><a href="#/projects/${id}">Home</a> · <a href="#/projects/${id}/reconcile/overview">All areas</a></div>
       <h1>${esc(d.label)}</h1>
       <p>${d.signedOff ? 'Signed off.' : d.ready ? 'Every field is correct in live. Ready to sign off.'
-        : d.tables.length ? `${num(d.open)} of ${num(d.tables.reduce((n, t) => n + t.fields.length, 0))} fields still open.` : 'No matched fields yet.'}</p>
+        : d.tables.length ? `<strong class="fig-inline">${num(d.open)}</strong> of ${num(d.tables.reduce((n, t) => n + t.fields.length, 0))} fields still open.` : 'No matched fields yet.'}</p>
     </div></div>
 
     <section class="card area-cells" aria-label="Where each step has got">${d.cells.map(cell).join('')}</section>
 
     ${d.todo.length ? `
       <h2 class="home-heading">What needs doing here</h2>
-      <section class="card home-todo"><ol>${d.todo.map(t => `<li><span class="home-todo-text">${esc(t.text)}</span>
-        <a class="btn btn-ghost btn-sm" href="#/projects/${id}/${t.path}">Open</a></li>`).join('')}</ol></section>` : ''}
+      <section class="card home-todo"><ul class="home-todo-list">${d.todo.map(t => todoRowHtml(t, { esc, href: `#/projects/${id}/${t.path}` })).join('')}</ul></section>` : ''}
 
     ${d.problems.length ? `
-      <h2 class="home-heading">${esc(PROBLEMS_TEXT.areaHeading)} <span class="recon-sub">· ${num(d.problems.length)}</span></h2>
+      <h2 class="home-heading">${esc(PROBLEMS_TEXT.areaHeading)}<span class="count-chip">${num(d.problems.length)}</span></h2>
       <section class="card area-table">${problemsTable(id, d.problems, esc, { showArea: false })}
         <p class="recon-sub" style="margin:0.5rem 0 0"><a href="#/projects/${id}/problems">See every problem</a></p></section>` : ''}
 

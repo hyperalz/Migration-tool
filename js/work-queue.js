@@ -151,22 +151,22 @@ export function todoList(project) {
     const a = ov.areas.find(x => x.name === r.name);
     const where = inArea(r.name);
     if (newFields && !r.counts.fields && where) add(`list-${r.name}`, TIER.areaList, 'No fields for this area yet. Add them to the new system list.', 'setup', 'setup', where);
-    if (r.counts.mustHave) add(`must-${r.name}`, TIER.mustHave, `${num(r.counts.mustHave)} ${plural(r.counts.mustHave, 'field')} the new system must have ${plural(r.counts.mustHave, 'has', 'have')} no match yet.`, 'map', 'map', where);
-    if (a?.issues.high) add(`serious-${r.name}`, TIER.serious, `The last file comparison found ${num(a.issues.high)} serious ${plural(a.issues.high, 'problem')}. Fix ${plural(a.issues.high, 'it', 'them')}, then load again.`, 'reconcile/overview', 'check', where);
+    if (r.counts.mustHave) add(`must-${r.name}`, TIER.mustHave, `${num(r.counts.mustHave)} required ${plural(r.counts.mustHave, 'field')} in the new system not matched yet. Match ${plural(r.counts.mustHave, 'it', 'them')} first.`, 'map', 'map', where);
+    if (a?.issues.high) add(`serious-${r.name}`, TIER.serious, `${num(a.issues.high)} serious ${plural(a.issues.high, 'problem')} found by the last file comparison. Fix ${plural(a.issues.high, 'it', 'them')}, then load again.`, 'reconcile/overview', 'check', where);
     const recheck = a ? a.tables.filter(t => t.state === 'recheck').length : 0;
-    if (recheck) add(`recheck-${r.name}`, TIER.recheck, `${num(recheck)} ${plural(recheck, 'table has', 'tables have')} changed since the last file comparison. Compare ${plural(recheck, 'it', 'them')} again.`, 'reconcile', 'check', where);
+    if (recheck) add(`recheck-${r.name}`, TIER.recheck, `${num(recheck)} ${plural(recheck, 'table', 'tables')} changed since the last file comparison. Compare ${plural(recheck, 'it', 'them')} again.`, 'reconcile', 'check', where);
     const st = r.counts.stages;
     if (st.liveFailed) add(`live-failed-${r.name}`, TIER.liveFailed, `${num(st.liveFailed)} ${plural(st.liveFailed, 'field')} failed testing in live. Fix ${plural(st.liveFailed, 'it', 'them')}, then load into live again.`, 'verify', 'check', where);
     if (st.testFailed) add(`failed-${r.name}`, TIER.failed, `${num(st.testFailed)} ${plural(st.testFailed, 'field')} failed testing in test. Fix the match or the data, then send again.`, 'verify', 'check', where);
-    if (st.inLive) add(`in-live-${r.name}`, TIER.inLive, `${num(st.inLive)} ${plural(st.inLive, 'field is', 'fields are')} in live. Check them on screen and record what you find.`, 'verify', 'check', where);
-    if (st.inTest) add(`testing-${r.name}`, TIER.testing, `${num(st.inTest)} ${plural(st.inTest, 'field is', 'fields are')} in test. Check them on screen and record what you find.`, 'verify', 'check', where);
+    if (st.inLive) add(`in-live-${r.name}`, TIER.inLive, `${num(st.inLive)} ${plural(st.inLive, 'field', 'fields')} in live, waiting to be checked. Check ${plural(st.inLive, 'it', 'them')} on screen and record what you find.`, 'verify', 'check', where);
+    if (st.inTest) add(`testing-${r.name}`, TIER.testing, `${num(st.inTest)} ${plural(st.inTest, 'field', 'fields')} in test, waiting to be checked. Check ${plural(st.inTest, 'it', 'them')} on screen and record what you find.`, 'verify', 'check', where);
     if (st.testPassed) add(`to-live-${r.name}`, TIER.toLive, `${num(st.testPassed)} ${plural(st.testPassed, 'field')} passed testing in test. Load ${plural(st.testPassed, 'it', 'them')} into live.`, 'verify', 'check', where);
-    if (st.matched) add(`send-${r.name}`, TIER.send, `${num(st.matched)} matched ${plural(st.matched, 'field has', 'fields have')} not been sent for loading yet.`, 'verify', 'check', where);
+    if (st.matched) add(`send-${r.name}`, TIER.send, `${num(st.matched)} matched ${plural(st.matched, 'field', 'fields')} not sent for loading yet. Send ${plural(st.matched, 'it', 'them')} to whoever loads the data.`, 'verify', 'check', where);
     // Tables with no file check: only listed when this move uses file checks.
     const unchecked = runs.length && a ? a.tables.filter(t => t.state === 'not_checked').length : 0;
-    if (unchecked) add(`unchecked-${r.name}`, TIER.unchecked, `${num(unchecked)} ${plural(unchecked, 'table has', 'tables have')} not been checked yet.`, 'reconcile', 'check', where);
+    if (unchecked) add(`unchecked-${r.name}`, TIER.unchecked, `${num(unchecked)} ${plural(unchecked, 'table', 'tables')} not compared yet.`, 'reconcile', 'check', where);
     const others = r.counts.open - r.counts.mustHave;
-    if (others > 0) add(`match-${r.name}`, TIER.match, `${num(others)} ${plural(others, 'field')} in the new system ${plural(others, 'has', 'have')} no match yet. Match ${plural(others, 'it', 'them')} or mark ${plural(others, 'it', 'them')} as not used.`, 'map', 'map', where);
+    if (others > 0) add(`match-${r.name}`, TIER.match, `${num(others)} ${plural(others, 'field')} in the new system not matched yet. Match ${plural(others, 'it', 'them')} or mark ${plural(others, 'it', 'them')} as not used.`, 'map', 'map', where);
     if (r.ready && r.cells.agree.state !== 'done') add(`sign-${r.name}`, TIER.sign, 'Every field is correct in live. The service area manager can now sign it off.', 'reconcile/overview', 'signoff', where);
   }
 
@@ -176,7 +176,7 @@ export function todoList(project) {
   // Supplier questions, for fields that still have no match.
   const mapped = new Set((project.mappings || []).map(m => key(m.targetTable, m.targetColumn)));
   const asks = (project.templateImport?.questions || []).filter(q => !mapped.has(key(q.table, q.column))).length;
-  if (asks) add('questions', TIER.questions, `Ask the supplier about ${num(asks)} ${plural(asks, 'field')} with a question. The list is on the field lists page.`, 'setup', 'setup');
+  if (asks) add('questions', TIER.questions, `${num(asks)} ${plural(asks, 'field has', 'fields have')} a question for the supplier. The list is on the field lists page.`, 'setup', 'setup');
 
   // Names read from screenshots that are not linked to a real field yet.
   const unlinked = screenTables(project.sourceSchema).reduce((n, t) => n + t.columns.filter(c => !c.link && SEARCHABLE.has(c.type || 'text')).length, 0);
