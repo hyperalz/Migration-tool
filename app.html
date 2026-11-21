@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.sheetjs.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MapBridge App</title>
   <link rel="stylesheet" href="css/app.css">
@@ -14,9 +16,6 @@
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="drawer" id="mapping-drawer"></div>
   <div class="toast" id="toast"></div>
-  <script type="module">
-    import { initApp } from './js/app.js';
-    initApp();
-  </script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

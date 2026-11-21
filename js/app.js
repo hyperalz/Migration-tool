@@ -2,7 +2,7 @@ import { renderProblems } from './problems-view.js';
 import { projectProblems, isOpen } from './problems.js';
 import { GOVUK_TEXT, passQuestionHtml, readPassAnswer, requiredErrors, summaryListHtml } from './govuk.js';
 import { showErrors } from './govuk-view.js';
-import { getCurrentUser, login, signup, logout, seedDemoUser } from './auth.js';
+import { getCurrentUser, login, signup, logout, seedDemoUser, signInAsDemo, upgradeStoredPasswords, AUTH_TEXT } from './auth.js';
 import {
   getProjects, getProject, saveProject, createProject, deleteProject,
   saveInvite, getInviteByToken, removeInvite, addMember, uid, getUsers, getInvites,
@@ -29,7 +29,7 @@ import {
   buildTraceDashboardData, renderTraceDashboardHTML, scheduleDashboardCharts, destroyDashboardCharts,
 } from './dashboard-charts.js';
 import {
-  getAISettings, saveAISettings, generateHeuristicSuggestions, generateLLMSuggestions, STRONG_SUGGESTION,
+  getAISettings, saveAISettings, forgetAIKey, generateHeuristicSuggestions, generateLLMSuggestions, STRONG_SUGGESTION,
 } from './ai-suggestions.js';
 import { renderReconcile, renderReport, renderOverview, createFinanceDemoProject, DEMO_VERSION } from './reconcile-view.js';
 import { renderHome } from './home-view.js';
@@ -78,6 +78,7 @@ const routes = {
 
 export function initApp() {
   seedDemoUser();
+  upgradeStoredPasswords();
   bindHelp(esc);
   window.addEventListener('hashchange', route);
   if (!location.hash) location.hash = '#/login';
@@ -227,8 +228,7 @@ function closeDrawer() {
 // "Try the demo": no sign-up. Signs in as the demo account and opens the
 // demo project, making it the first time.
 function renderDemo() {
-  const user = seedDemoUser();
-  login({ email: user.email, password: 'demo123' });
+  signInAsDemo();
   const me = getCurrentUser();
   const mine = getProjects().filter(p => p.demo && p.members.some(m => m.userId === me.id));
   // An older copy of the demo is replaced, so everyone sees the current one.
@@ -247,15 +247,15 @@ function renderLogin() {
       <p class="recon-sub" style="margin:0.4rem 0 1.25rem">Opens a finance system move part way through testing.</p>
       <h2 class="auth-or">Or sign in</h2>
       <form id="login-form" novalidate>
-        <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" name="email" value="demo@mapbridge.local" autocomplete="email"></div>
-        <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" name="password" value="demo123" autocomplete="current-password"></div>
+        <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" name="email" autocomplete="email"></div>
+        <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" name="password" autocomplete="current-password"></div>
         <button class="btn btn-secondary" type="submit" style="width:100%">Sign in</button>
       </form>
-      <p class="recon-sub" style="margin-top:0.75rem">This is a demo version. What you add is kept in this web browser only.</p>
+      <p class="recon-sub" style="margin-top:0.75rem">${esc(AUTH_TEXT.demoNote)}</p>
       <p style="margin-top:1rem;font-size:0.88rem;color:var(--muted)">No account? <a href="#/signup" style="color:var(--brand);font-weight:600">Create one</a></p>
     </div>
   `);
-  document.getElementById('login-form').addEventListener('submit', e => {
+  document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
     if (showErrors(e.target, requiredErrors([
@@ -263,7 +263,7 @@ function renderLogin() {
       { id: 'login-password', value: fd.get('password'), text: GOVUK_TEXT.enterPassword },
     ]))) return;
     try {
-      login({ email: fd.get('email'), password: fd.get('password') });
+      await login({ email: fd.get('email'), password: fd.get('password') });
       location.hash = '#/dashboard';
     } catch (err) {
       showErrors(e.target, [{ id: 'login-email', text: err.message }]);
@@ -293,7 +293,7 @@ function renderSignup() {
       <p style="margin-top:1rem;font-size:0.88rem;color:var(--muted)">Already have an account? <a href="#/login" style="color:var(--brand);font-weight:600">Sign in</a></p>
     </div>
   `);
-  document.getElementById('signup-form').addEventListener('submit', e => {
+  document.getElementById('signup-form').addEventListener('submit', async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const errors = requiredErrors([
@@ -306,7 +306,7 @@ function renderSignup() {
     }
     if (showErrors(e.target, errors)) return;
     try {
-      signup(Object.fromEntries(fd));
+      await signup(Object.fromEntries(fd));
       location.hash = '#/dashboard';
     } catch (err) {
       showErrors(e.target, [{ id: 'signup-email', text: err.message }]);
@@ -2021,7 +2021,12 @@ function openAISettingsModal(onSave, { showKey = false } = {}) {
         
         <div class="field">
           <label>API Key</label>
-          <input type="password" id="ai-api-key" value="${esc(settings.apiKey)}" placeholder="sk-... (leave empty for Ollama)">
+          <input type="password" id="ai-api-key" value="${esc(settings.apiKey)}" placeholder="sk-... (leave empty for Ollama)" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="shot-agree"><input type="checkbox" id="ai-remember-key" ${settings.rememberKey ? 'checked' : ''}> Remember the key on this computer</label>
+          <p class="recon-sub" style="margin:0.25rem 0 0">If you leave this unticked, the key is forgotten when you close this browser window. The key is only ever sent to the AI address above.</p>
+          ${settings.apiKey ? '<button type="button" class="btn-link" id="ai-forget-key">Remove the key from this computer</button>' : ''}
         </div>
       </div>
       
@@ -2041,6 +2046,11 @@ function openAISettingsModal(onSave, { showKey = false } = {}) {
   });
   
   backdrop.querySelector('#ai-settings-cancel').onclick = () => backdrop.remove();
+  backdrop.querySelector('#ai-forget-key')?.addEventListener('click', () => {
+    forgetAIKey();
+    backdrop.querySelector('#ai-api-key').value = '';
+    toast('AI key removed from this computer');
+  });
   backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
   
   backdrop.querySelector('#ai-settings-save').onclick = () => {
@@ -2049,6 +2059,7 @@ function openAISettingsModal(onSave, { showKey = false } = {}) {
       baseURL: backdrop.querySelector('#ai-base-url').value.trim(),
       model: backdrop.querySelector('#ai-model').value.trim(),
       apiKey: backdrop.querySelector('#ai-api-key').value.trim(),
+      rememberKey: backdrop.querySelector('#ai-remember-key').checked,
     };
     saveAISettings(newSettings);
     toast('AI settings saved');

@@ -1,17 +1,45 @@
 import { missingKey } from './screenshot-dictionary.js';
 
+// The AI key is the most sensitive thing MapBridge keeps. It stays on this
+// computer and is only sent to the AI service chosen in the settings. If the
+// person chooses not to remember it, it is kept only until this browser tab or
+// window is closed (sessionStorage), never in long-term storage.
+const SETTINGS_KEY = 'mapbridge_ai_settings';
+const SESSION_KEY = 'mapbridge_ai_key_session';
+const session = () => { try { return globalThis.sessionStorage; } catch { return null; } };
+
 export function getAISettings() {
-  const stored = localStorage.getItem('mapbridge_ai_settings');
-  return stored ? JSON.parse(stored) : {
+  const stored = localStorage.getItem(SETTINGS_KEY);
+  const settings = stored ? JSON.parse(stored) : {
     mode: 'heuristic',
     apiKey: '',
     baseURL: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',
+    rememberKey: false,
   };
+  // Settings saved before this choice existed kept their key, so they count as remembered.
+  if (settings.rememberKey === undefined) settings.rememberKey = Boolean(settings.apiKey);
+  if (!settings.rememberKey) settings.apiKey = session()?.getItem(SESSION_KEY) || '';
+  return settings;
 }
 
 export function saveAISettings(settings) {
-  localStorage.setItem('mapbridge_ai_settings', JSON.stringify(settings));
+  const remember = Boolean(settings.rememberKey);
+  const { apiKey = '', ...rest } = settings;
+  if (remember) {
+    session()?.removeItem(SESSION_KEY);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...rest, apiKey, rememberKey: true }));
+  } else {
+    if (apiKey) session()?.setItem(SESSION_KEY, apiKey); else session()?.removeItem(SESSION_KEY);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...rest, apiKey: '', rememberKey: false }));
+  }
+}
+
+/** Remove the AI key from this computer completely. */
+export function forgetAIKey() {
+  session()?.removeItem(SESSION_KEY);
+  const stored = localStorage.getItem(SETTINGS_KEY);
+  if (stored) localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...JSON.parse(stored), apiKey: '' }));
 }
 
 function normalizeText(text) {

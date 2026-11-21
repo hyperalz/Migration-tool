@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>How we work – Foam Works Digital</title>
@@ -336,23 +338,6 @@
     </div>
   </footer>
 
-  <script>
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const navLinks = document.getElementById('nav-links');
-    
-    if (mobileMenuBtn && navLinks) {
-      mobileMenuBtn.addEventListener('click', () => {
-        const open = navLinks.classList.toggle('active');
-        mobileMenuBtn.setAttribute('aria-expanded', open);
-      });
-      
-      navLinks.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          navLinks.classList.remove('active');
-          mobileMenuBtn.setAttribute('aria-expanded', 'false');
-        });
-      });
-    }
-  </script>
+  <script src="js/site.js"></script>
 </body>
 </html>

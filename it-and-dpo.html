@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>For IT and data protection officers – Foam Works Digital</title>
@@ -111,7 +113,7 @@
           <p>Only field names, types, and notes are sent to the AI service you choose (like OpenAI or Azure). No employee names, salaries, or any personal data.</p>
           <h3 style="margin-top: 2rem;">If you read screenshots of the old system</h3>
           <p>Each screenshot is shrunk in your browser and sent to the AI service you choose, which returns the labels it can see. Only the text results are kept; the images are not stored. Screenshots can show personal data, so use blank or test records.</p>
-          <p>Your API key is stored in your web browser only. It is never sent to us.</p>
+          <p>Your API key stays in your web browser and is only sent to the AI service you choose. It is never sent to us. Unless you tick "Remember the key on this computer", it is forgotten when you close the browser window.</p>
         </div>
       </div>
     </div>
@@ -149,6 +151,37 @@
     </div>
   </section>
 
+  <!-- Security in this version -->
+  <section class="section-grey" id="security">
+    <div class="wrap">
+      <h2>Security in this version</h2>
+      <p class="lead">MapBridge runs entirely in the web browser, with no MapBridge server or database. This is how it is protected, and what it does not do yet.</p>
+      <div class="mb-two" style="margin-top:1.5rem">
+        <div>
+          <h3>In place</h3>
+          <ul class="mb-list">
+            <li>Hosted as plain files on GitHub Pages, always over HTTPS.</li>
+            <li>A content security policy: pages can only run MapBridge's own code and two libraries from fixed addresses. Each library is checked against a known fingerprint before it runs. There are no inline scripts.</li>
+            <li>Passwords are never stored. Each account keeps a salted hash (PBKDF2 with SHA-256, 150,000 rounds) made by the browser's own cryptography.</li>
+            <li>Your AI key is only sent to the AI address you choose, and is forgotten when you close the window unless you ask MapBridge to remember it.</li>
+            <li>A warning, and a box to tick, before any screenshot is sent to an AI service.</li>
+            <li>No analytics, tracking or advertising, and no cookies.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Not yet</h3>
+          <ul class="mb-list mb-muted">
+            <li>Accounts and projects belong to one web browser. Anyone who can use that browser can open them, so use a computer account that only you use.</li>
+            <li>No shared workspace, single sign-on or record of who viewed what. These come with the hosted version.</li>
+            <li>No independent security test or certification yet.</li>
+            <li>Do not keep real personal data in this version beyond what the optional file comparison needs.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:1.5rem">Found a security problem? <a href="contact.html">Tell us through the contact page</a>.</p>
+    </div>
+  </section>
+
   <!-- DPIA questions -->
   <section class="section-white">
     <div class="wrap">
@@ -179,7 +212,7 @@
         
         <details>
           <summary>Does the AI mode send personal data?</summary>
-          <p>No. The AI mode only sends field names, types, and notes. It does not send employee names, salaries, or any other personal data. The AI mode is optional and requires the user's own API key.</p>
+          <p>Matching suggestions send only field names, types and notes, never records. Reading screenshots is different: each picture is sent to the AI service you choose, so a screenshot that shows a real person sends their details too. MapBridge warns about this and asks the user to confirm before any picture is sent. Use blank screens or test records, or a model that runs on your own computer. Both AI features are optional and use your own key.</p>
         </details>
         
         <details>
@@ -207,23 +240,6 @@
     </div>
   </footer>
 
-  <script>
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const navLinks = document.getElementById('nav-links');
-    
-    if (mobileMenuBtn && navLinks) {
-      mobileMenuBtn.addEventListener('click', () => {
-        const open = navLinks.classList.toggle('active');
-        mobileMenuBtn.setAttribute('aria-expanded', open);
-      });
-      
-      navLinks.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          navLinks.classList.remove('active');
-          mobileMenuBtn.setAttribute('aria-expanded', 'false');
-        });
-      });
-    }
-  </script>
+  <script src="js/site.js"></script>
 </body>
 </html>
