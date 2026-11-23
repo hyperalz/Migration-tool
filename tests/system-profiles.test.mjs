@@ -110,19 +110,40 @@ test('the library numbers come from the lists themselves', () => {
   assert.doesNotMatch(statsHtml({ ...s, bySupplier: 1 }), /Be the first/);
 });
 
-test('an area is ready only when a list is held for it', () => {
+test('an area shows system lists only when a real system list is held', () => {
   const board = libraryBoard();
-  assert.equal(board.find(a => a.name === 'Schools').status, 'ready');
+  assert.equal(board.find(a => a.name === 'Schools').status, 'statutory');
   assert.equal(board.find(a => a.name === 'Finance').status, 'planned');
   assert.equal(board.find(a => a.name === 'Housing').status, 'none');
   assert.match(boardHtml(board), /Next: Oracle Fusion/);
   const extra = [...PROFILES, { ...PROFILES[0], id: 'x', area: 'Housing' }];
-  assert.equal(libraryBoard(extra).find(a => a.name === 'Housing').status, 'ready');
+  assert.equal(libraryBoard(extra).find(a => a.name === 'Housing').status, 'statutory');
+  const sys = [...PROFILES, { ...PROFILES[0], id: 'y', area: 'Housing', listType: 'system' }];
+  assert.equal(libraryBoard(sys).find(a => a.name === 'Housing').status, 'ready');
 });
 
 test('the update log lists every addition, newest first', () => {
   const log = libraryLog([{ ...PROFILES[0], added: '2026-12-01' }, PROFILES[1]]);
   assert.equal(log.length, 2);
   assert.equal(log[0].date, '2026-12-01');
-  assert.match(log[0].text, /Added Schools: pupil records \(England\), 29 fields/);
+  assert.match(log[0].text, /Added Schools: pupil records \(England\) \(statutory return list\), 29 fields/);
+});
+
+import { LIST_TYPE, listTypeOf } from '../js/system-profiles.js';
+import { listsHtml } from '../js/library-page.js';
+
+test('statutory return lists and system lists are kept apart', () => {
+  assert.ok(PROFILES.every(p => ['statutory', 'system'].includes(p.listType)), 'every list says which kind it is');
+  assert.equal(listTypeOf({}), 'system');
+  const s = libraryStats();
+  assert.equal(s.statutory + s.systems, s.lists);
+  assert.equal(s.statutory, 2);
+  assert.equal(s.systems, 0);
+  assert.equal(s.areasWithAny, 1);
+  assert.equal(s.areasReady, 0);
+  assert.match(statsHtml(s), /0<\/span>\s*<span class="lib-stat-label">system lists/);
+  assert.match(listsHtml(PROFILES, 'system'), /No system lists yet/);
+  assert.match(listsHtml(PROFILES, 'statutory'), /Statutory return/);
+  assert.equal(profileRecord(PROFILES[0]).listType, 'statutory');
+  assert.match(LIST_TYPE.statutory.note, /checklist/);
 });

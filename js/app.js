@@ -41,7 +41,7 @@ import { mergeSchema } from './template-import.js';
 import { DELIVERY_TEXT, compareDelivery, needsReview, applyDelivery, deliveryRecord, deliverySummaryText, stillExpected, parseExpected, recentTables } from './deliveries.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
-import { PROFILES, PROFILE_TEXT, SOURCE_KIND, getProfile, profileToSchema, profileRecord, profileFieldCount } from './system-profiles.js';
+import { PROFILES, PROFILE_TEXT, SOURCE_KIND, LIST_TYPE, listTypeOf, getProfile, profileToSchema, profileRecord, profileFieldCount } from './system-profiles.js';
 import { renderSuppliers } from './supplier-view.js';
 import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine, listOrigin, recordOrigin, matchesUsing, orphanMatches, addResultText } from './setup-routes.js';
 import { screenTables } from './trace.js';
@@ -476,7 +476,9 @@ function renderSetup({ id }) {
 
   const profileNote = side => {
     const rec = project[SIDE[side] + 'Profile'];
-    return rec ? `<p class="recon-sub profile-source">Ready field list: ${esc(rec.system)}. ${esc(rec.source)}</p>` : '';
+    if (!rec) return '';
+    const type = LIST_TYPE[rec.listType === 'statutory' ? 'statutory' : 'system'];
+    return `<p class="recon-sub profile-source">${esc(type.short.charAt(0).toUpperCase() + type.short.slice(1))}: ${esc(rec.system)}. ${esc(rec.source)}${rec.listType === 'statutory' ? ` ${esc(LIST_TYPE.statutory.note)}` : ''}</p>`;
   };
 
   const sideCard = side => {
@@ -556,24 +558,41 @@ function renderSetup({ id }) {
 
   const profileChooser = side => {
     if (!PROFILES.length) return `<p>${esc(PROFILE_TEXT.none)}</p>`;
-    return `
-      <fieldset class="profile-pick">
-        <legend>${esc(PROFILE_TEXT.pick)}</legend>
-        ${PROFILES.map((pr, i) => `
+    let first = true;
+    const option = pr => {
+      const html = `
           <label class="profile-option">
-            <input type="radio" name="profile-${side}" value="${esc(pr.id)}" ${i === 0 ? 'checked' : ''}>
+            <input type="radio" name="profile-${side}" value="${esc(pr.id)}" ${first ? 'checked' : ''}>
             <span class="profile-option-text">
               <span class="profile-option-title">${esc(pr.system)}</span>
-              <span class="profile-badge profile-badge-${esc(pr.source.kind)}">${esc(SOURCE_KIND[pr.source.kind]?.label || '')}</span>
+              <span class="profile-badges"><span class="profile-type profile-type-${listTypeOf(pr)}">${esc(LIST_TYPE[listTypeOf(pr)].label)}</span><span class="profile-badge profile-badge-${esc(pr.source.kind)}">${esc(SOURCE_KIND[pr.source.kind]?.label || '')}</span></span>
               <span class="profile-option-meta">${profileFieldCount(pr)} fields in ${pr.tables.length} tables · ${esc(pr.version)} · ${esc(PROFILE_TEXT.checked(pr.checked))}</span>
               <span class="profile-option-note">${esc(pr.note)}</span>
               <span class="profile-option-meta">From: <a href="${esc(pr.source.url)}" target="_blank" rel="noopener">${esc(pr.source.label)}</a></span>
             </span>
-          </label>`).join('')}
+          </label>`;
+      first = false;
+      return html;
+    };
+    const group = type => {
+      const lists = PROFILES.filter(pr => listTypeOf(pr) === type);
+      if (!lists.length) return '';
+      return `
+        <div class="profile-group">
+          <h3 class="profile-group-title">${esc(LIST_TYPE[type].plural)}</h3>
+          <p class="profile-group-note">${esc(LIST_TYPE[type].note)}</p>
+          ${lists.map(option).join('')}
+        </div>`;
+    };
+    return `
+      <fieldset class="profile-pick">
+        <legend>${esc(PROFILE_TEXT.pick)}</legend>
+        ${group('system')}${group('statutory')}
       </fieldset>
       <p class="recon-sub" style="margin:0.5rem 0 0.75rem">${esc(PROFILE_TEXT.starter)}</p>
       <button type="button" class="btn btn-primary btn-sm profile-use" data-side="${side}">${esc(PROFILE_TEXT.use)}</button>`;
   };
+
 
   // A side's tool stays open while there is no list, while changing, and for
   // the two ways in that have results or a follow-on step to look at.

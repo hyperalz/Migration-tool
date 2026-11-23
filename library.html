@@ -57,19 +57,37 @@
   <section class="section-grey">
     <div class="wrap">
       <h2>What the library covers</h2>
-      <p class="lib-sub">Each service area is ready when the library holds a list for it. Planned lists come from public sources we are working through.</p>
+      <p class="lib-sub">An area has system lists when the library holds a real system's fields for it. Planned lists come from public sources we are working through.</p>
+      <div class="lib-board-wrap">
       <table class="lib-board">
-        <thead><tr><th scope="col">Service area</th><th scope="col">Status</th><th scope="col">Lists</th></tr></thead>
+        <thead><tr><th scope="col">Service area</th><th scope="col">Status</th><th scope="col">System lists</th><th scope="col">Statutory return lists</th></tr></thead>
         <tbody id="lib-board"></tbody>
       </table>
+      </div>
     </div>
   </section>
 
   <section class="section-white">
     <div class="wrap">
-      <h2>Lists held</h2>
-      <p class="lib-sub">Each list says where it came from and when it was checked. Councils can start a project from any of them in MapBridge.</p>
-      <div class="lib-cards" id="lib-lists"></div>
+      <h2>Two kinds of list</h2>
+      <div class="lib-kinds">
+        <div class="lib-kind">
+          <h3><span class="lib-type lib-type-system">System list</span></h3>
+          <p>One product's own fields, such as a finance or housing system. This is what you match against in a migration.</p>
+          <p class="lib-card-meta">From the supplier's public documentation, or sent and checked by the supplier.</p>
+        </div>
+        <div class="lib-kind">
+          <h3><span class="lib-type lib-type-statutory">Statutory return</span></h3>
+          <p>The fields any system in a service area must be able to send to government, such as a school census. A starting point and a checklist: your returns still have to work after the move.</p>
+          <p class="lib-card-meta">From government standards. A real system has many more fields.</p>
+        </div>
+      </div>
+
+      <h2 class="lib-group-title">System lists</h2>
+      <div id="lib-lists-system"></div>
+
+      <h2 class="lib-group-title">Statutory return lists</h2>
+      <div id="lib-lists-statutory"></div>
     </div>
   </section>
 
@@ -82,9 +100,9 @@
       <div>
         <h2>How lists get here</h2>
         <ul class="mb-list">
-          <li>From public standards published by government.</li>
-          <li>From suppliers' public documentation: field names only, linked to the source.</li>
-          <li>From suppliers who send us their list and check it.</li>
+          <li>Statutory return lists: from standards published by government.</li>
+          <li>System lists: from suppliers' public documentation, field names only and linked to the source.</li>
+          <li>System lists: from suppliers who send us their list and check it.</li>
         </ul>
         <p class="mb-note">We write the notes ourselves and never copy a supplier's files. A council's own field list joins the library only with its written permission.</p>
       </div>
