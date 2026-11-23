@@ -2625,3 +2625,42 @@ table th, table td { border-bottom: 1px solid var(--line); }
   .exec-head > div { min-width: 0; flex: 1 1 100%; }
   .exec { max-width: 100%; overflow-wrap: anywhere; }
 }
+
+/* Ready field lists (system profiles) */
+.profile-pick { border: 0; padding: 0; margin: 0; display: grid; gap: 0.6rem; }
+.profile-pick legend { font-weight: 700; margin-bottom: 0.5rem; }
+.profile-option { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.75rem 0.9rem; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.profile-option:hover { border-color: var(--brand); }
+.profile-option input { margin-top: 0.25rem; accent-color: var(--brand); }
+.profile-option-text { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.profile-option-title { font-weight: 700; }
+.profile-option-meta, .profile-option-note { font-size: 0.9rem; color: var(--muted); }
+.profile-option-note { color: #0b0c0c; }
+.profile-badge { display: inline-block; align-self: flex-start; font-size: 0.85rem; font-weight: 700; padding: 0.1rem 0.5rem; border: 1px solid; }
+.profile-badge-standard { background: #f3f2f1; color: #0b0c0c; border-color: #505a5f; }
+.profile-badge-docs { background: #f3f2f1; color: #505a5f; border-color: #b1b4b6; }
+.profile-badge-supplier { background: #e3eff0; color: #0b4a50; border-color: #0b4a50; }
+.profile-source { margin: 0.25rem 0 0.5rem; }
+
+/* Supplier area: separate from the council journey */
+.supplier-page { max-width: 960px; }
+.supplier-kicker { display: inline-block; font-size: 1rem; color: var(--muted); margin-bottom: 0.25rem; }
+.supplier-page h2 { font-size: 1.5rem; margin: 0 0 0.6rem; }
+.supplier-page .card { margin-bottom: 1.25rem; }
+.supplier-grid { margin-bottom: 0; }
+.supplier-list { margin: 0; padding-left: 1.25rem; display: grid; gap: 0.4rem; }
+.supplier-terms { margin: 0; display: grid; gap: 0.6rem; }
+.supplier-terms > div { display: grid; grid-template-columns: 12rem 1fr; gap: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.6rem; }
+.supplier-terms dt { font-weight: 700; }
+.supplier-terms dd { margin: 0; }
+.supplier-held { width: 100%; border-collapse: collapse; }
+.supplier-held th, .supplier-held td { text-align: left; vertical-align: top; padding: 0.6rem 0.75rem 0.6rem 0; border-bottom: 1px solid #b1b4b6; }
+.supplier-errors { border: 5px solid #d4351c; padding: 1rem 1.25rem; margin-top: 0.75rem; }
+.supplier-errors h3 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.supplier-errors ul, .supplier-warnings ul { margin: 0.4rem 0 0; padding-left: 1.25rem; }
+.supplier-check .alert { margin-top: 0.75rem; }
+.supplier-affiliation { margin: 0 0 2rem; }
+@media (max-width: 640px) {
+  .supplier-terms > div { grid-template-columns: 1fr; gap: 0.2rem; }
+  .supplier-held { font-size: 0.9rem; }
+}
