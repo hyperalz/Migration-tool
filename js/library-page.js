@@ -30,7 +30,7 @@ export function boardHtml(board) {
     <tr>
       <th scope="row">${esc(a.name)}</th>
       <td><span class="lib-status lib-status-${a.status}">${esc(AREA_STATUS[a.status])}</span></td>
-      <td>${cell(a.systems, a.planned.length ? `Next: ${a.planned.join(', ')}` : a.statutory.length ? 'None yet' : 'Tell us if you need this')}</td>
+      <td>${cell(a.systems, a.planned.length ? `Next: ${a.planned.join(', ')}` : a.statutory.length ? 'None yet' : 'Tell us if you need this')}${a.systems.length && a.planned.length ? `<br><span class="lib-muted">Next: ${a.planned.map(esc).join(', ')}</span>` : ''}</td>
       <td>${cell(a.statutory, 'None yet')}</td>
     </tr>`).join('');
 }
