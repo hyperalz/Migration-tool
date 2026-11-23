@@ -3,7 +3,7 @@
 // needs no account, and sends nothing anywhere: a supplier checks their file
 // here, then sends it to us.
 
-import { PROFILES, SOURCE_KIND, LIST_TYPE, listTypeOf, TEMPLATE_COLUMNS, templateCSV, checkTemplate, profileFieldCount } from './system-profiles.js';
+import { PROFILES, SOURCE_KIND, LIST_TYPE, CORE_TEXT, isCoreList, listTypeOf, TEMPLATE_COLUMNS, templateCSV, checkTemplate, profileFieldCount } from './system-profiles.js';
 import { downloadText } from './export.js';
 
 export const SUPPLIER_TEXT = {
@@ -39,7 +39,7 @@ export const SUPPLIER_TEXT = {
   notReady: n => `There ${n === 1 ? 'is 1 problem' : `are ${n} problems`} to fix before you send the file`,
   worthALook: 'Worth a second look',
   heldTitle: 'Field lists MapBridge holds',
-  heldLead: 'Each list says where it came from and when it was checked. Statutory return lists show what any system must send to government. Lists you register are system lists.',
+  heldLead: 'Each list says where it came from and when it was checked. Statutory return lists show what any system must send to government. Lists you register are system lists. Send every field you have, and mark the ones most often moved.',
   affiliation: 'MapBridge is made by Foam Works Digital Ltd. We are not affiliated with any supplier named here.',
   contact: 'Message Alex Osborne on LinkedIn',
 };
@@ -96,7 +96,7 @@ export function renderSuppliers({ nav, mount, esc, toast }) {
             <tr>
               <td>${esc(p.system)}<br><span class="recon-sub">${esc(p.version)}</span></td>
               <td>${esc(LIST_TYPE[listTypeOf(p)].label)}</td>
-              <td>${profileFieldCount(p)}</td>
+              <td>${isCoreList(p) ? esc(CORE_TEXT.count(profileFieldCount(p))) : profileFieldCount(p)}</td>
               <td><span class="profile-badge profile-badge-${esc(p.source.kind)}">${esc(SOURCE_KIND[p.source.kind]?.label || '')}</span><br><a href="${esc(p.source.url)}" target="_blank" rel="noopener">${esc(p.source.label)}</a></td>
               <td>${esc(p.checked)}</td>
             </tr>`).join('')}

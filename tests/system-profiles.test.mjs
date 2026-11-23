@@ -187,3 +187,18 @@ test('the Dynamics vendor list gives entity field names and no made-up lengths',
   assert.ok(cols.every(c => !/characters/.test(c.values || '')), 'no lengths are claimed');
   assert.equal(cols.find(c => c.name === 'Vendor group').required, true);
 });
+
+import { CORE_TEXT, isCoreList } from '../js/system-profiles.js';
+
+test('system lists say they hold core fields, not the whole record', () => {
+  for (const p of PROFILES.filter(isCoreList)) {
+    assert.ok(p.fullRecord, `${p.id} says what the full record holds`);
+    assert.match(listsHtml(PROFILES, 'system'), new RegExp(CORE_TEXT.count(profileFieldCount(p))));
+  }
+  assert.ok(!isCoreList(getProfile('dfe-cbds-pupil-starter')));
+  assert.match(LIST_TYPE.system.note, /core fields/);
+  assert.equal(profileRecord(getProfile('oracle-fusion-suppliers')).coreOnly, true);
+  const s = libraryStats();
+  assert.equal(s.coreFields, PROFILES.filter(isCoreList).reduce((n, p) => n + profileFieldCount(p), 0));
+  assert.match(statsHtml(s), /are core fields of system lists/);
+});

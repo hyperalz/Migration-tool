@@ -41,7 +41,7 @@ import { mergeSchema } from './template-import.js';
 import { DELIVERY_TEXT, compareDelivery, needsReview, applyDelivery, deliveryRecord, deliverySummaryText, stillExpected, parseExpected, recentTables } from './deliveries.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
-import { PROFILES, PROFILE_TEXT, SOURCE_KIND, LIST_TYPE, listTypeOf, getProfile, profileToSchema, profileRecord, profileFieldCount } from './system-profiles.js';
+import { PROFILES, PROFILE_TEXT, SOURCE_KIND, LIST_TYPE, CORE_TEXT, isCoreList, listTypeOf, getProfile, profileToSchema, profileRecord, profileFieldCount } from './system-profiles.js';
 import { renderSuppliers } from './supplier-view.js';
 import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine, listOrigin, recordOrigin, matchesUsing, orphanMatches, addResultText } from './setup-routes.js';
 import { screenTables } from './trace.js';
@@ -478,7 +478,7 @@ function renderSetup({ id }) {
     const rec = project[SIDE[side] + 'Profile'];
     if (!rec) return '';
     const type = LIST_TYPE[rec.listType === 'statutory' ? 'statutory' : 'system'];
-    return `<p class="recon-sub profile-source">${esc(type.short.charAt(0).toUpperCase() + type.short.slice(1))}: ${esc(rec.system)}. ${esc(rec.source)}${rec.listType === 'statutory' ? ` ${esc(LIST_TYPE.statutory.note)}` : ''}</p>`;
+    return `<p class="recon-sub profile-source">${esc(type.short.charAt(0).toUpperCase() + type.short.slice(1))}: ${esc(rec.system)}. ${esc(rec.source)}${rec.listType === 'statutory' ? ` ${esc(LIST_TYPE.statutory.note)}` : ` Core fields only. ${esc(CORE_TEXT.more)} Add any others you use with "Add more fields".`}</p>`;
   };
 
   const sideCard = side => {
@@ -566,8 +566,9 @@ function renderSetup({ id }) {
             <span class="profile-option-text">
               <span class="profile-option-title">${esc(pr.system)}</span>
               <span class="profile-badges"><span class="profile-type profile-type-${listTypeOf(pr)}">${esc(LIST_TYPE[listTypeOf(pr)].label)}</span><span class="profile-badge profile-badge-${esc(pr.source.kind)}">${esc(SOURCE_KIND[pr.source.kind]?.label || '')}</span></span>
-              <span class="profile-option-meta">${profileFieldCount(pr)} fields in ${pr.tables.length} tables · ${esc(pr.version)} · ${esc(PROFILE_TEXT.checked(pr.checked))}</span>
+              <span class="profile-option-meta">${isCoreList(pr) ? esc(CORE_TEXT.count(profileFieldCount(pr))) : `${profileFieldCount(pr)} fields`} in ${pr.tables.length} ${pr.tables.length === 1 ? 'table' : 'tables'} · ${esc(pr.version)} · ${esc(PROFILE_TEXT.checked(pr.checked))}</span>
               <span class="profile-option-note">${esc(pr.note)}</span>
+              ${isCoreList(pr) ? `<span class="profile-option-meta">${esc(pr.fullRecord || CORE_TEXT.more)} Add any others you use with "Add more fields".</span>` : ''}
               <span class="profile-option-meta">From: <a href="${esc(pr.source.url)}" target="_blank" rel="noopener">${esc(pr.source.label)}</a></span>
             </span>
           </label>`;

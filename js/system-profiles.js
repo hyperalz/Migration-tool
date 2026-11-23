@@ -31,9 +31,18 @@ export const LIST_TYPE = {
     label: 'System list',
     plural: 'System lists',
     short: 'system list',
-    note: "One system's own fields, for matching.",
+    note: "One system's own fields, for matching. Each list holds the core fields most often moved, not every field in the system.",
   },
 };
+
+/** System lists hold core fields only. Said wherever their size is shown. */
+export const CORE_TEXT = {
+  label: 'Core fields',
+  count: n => `${n} core ${n === 1 ? 'field' : 'fields'}`,
+  more: 'The full record has many more fields, most of them rarely used or moved.',
+};
+
+export const isCoreList = profile => listTypeOf(profile) === 'system';
 
 export const listTypeOf = profile => (profile?.listType === 'statutory' ? 'statutory' : 'system');
 
@@ -200,6 +209,7 @@ export const PROFILES = [
       label: 'Oracle Fusion Cloud Procurement documentation: Import Suppliers and the POZ_SUPPLIERS_INT table',
       url: 'https://docs.oracle.com/en/cloud/saas/procurement/24c/oaprc/create-suppliers-with-the-import-suppliers-process.html',
     },
+    fullRecord: "Oracle's supplier record has many more columns, including country-specific tax fields and spare flexfield columns organisations use for their own data.",
     note: "The main supplier record that Oracle Fusion loads through its Import Suppliers process. Field names and lengths are from Oracle's public documentation; the notes are ours. This is the supplier record only: addresses, sites, contacts and bank accounts are loaded separately, and most tax details come through Oracle's tax workbook. Download the import template itself from Oracle. Not affiliated with Oracle.",
     tables: [
       {
@@ -237,6 +247,7 @@ export const PROFILES = [
       label: 'Oracle Fusion Cloud Procurement documentation: the POZ_SUP_ADDRESSES_INT and POZ_SUPPLIER_SITES_INT tables',
       url: 'https://docs.oracle.com/en/cloud/saas/procurement/24c/oaprc/create-suppliers-with-the-import-suppliers-process.html',
     },
+    fullRecord: "Oracle's address and site records have many more columns, covering things like tax reporting, receiving and B2B messaging.",
     note: "Where a supplier is, and how you buy from and pay each of its sites. In Oracle an address is loaded first, then one or more sites that use it: a site is the address as used by one procurement business unit, and it holds the payment settings. Field names and lengths are from Oracle's public documentation; the notes are ours. Load the supplier list first. Contacts and bank accounts are separate loads. Not affiliated with Oracle.",
     tables: [
       {
@@ -301,6 +312,7 @@ export const PROFILES = [
       label: 'Microsoft Learn: Common Data Model, VendVendorV2Entity (Vendors V2)',
       url: 'https://learn.microsoft.com/en-us/common-data-model/schema/core/operationscommon/entities/supplychain/procurementandsourcing/vendvendorv2entity',
     },
+    fullRecord: 'The Vendors V2 entity has many more fields, including country-specific ones for places such as France, India and the US.',
     note: "The vendor record Dynamics 365 Finance loads through its Vendors V2 data entity, one company (legal entity) at a time. Field names are from Microsoft's public documentation; the notes are ours. Microsoft does not publish field lengths there, as they depend on each setup, so none are given. The entity holds one main address and contact details: extra addresses, contacts and bank accounts are separate loads. Not affiliated with Microsoft.",
     tables: [
       {
@@ -394,6 +406,7 @@ export function libraryStats(profiles = PROFILES, areas = LIBRARY_AREAS) {
     statutory: profiles.filter(p => listTypeOf(p) === 'statutory').length,
     systems: profiles.filter(p => listTypeOf(p) === 'system').length,
     fields: profiles.reduce((n, p) => n + profileFieldCount(p), 0),
+    coreFields: profiles.filter(isCoreList).reduce((n, p) => n + profileFieldCount(p), 0),
     areasWithAny: board.filter(a => a.status === 'ready' || a.status === 'statutory').length,
     areasReady: board.filter(a => a.status === 'ready').length,
     areas: areas.length,
@@ -451,6 +464,7 @@ export function profileRecord(profile) {
     system: profile.system,
     version: profile.version,
     listType: listTypeOf(profile),
+    coreOnly: isCoreList(profile),
     source: profileSourceLine(profile),
     url: profile.source?.url || '',
   };
