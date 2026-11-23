@@ -41,6 +41,8 @@ import { mergeSchema } from './template-import.js';
 import { DELIVERY_TEXT, compareDelivery, needsReview, applyDelivery, deliveryRecord, deliverySummaryText, stillExpected, parseExpected, recentTables } from './deliveries.js';
 import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionary-view.js';
 import { traceCard, bindTrace } from './trace-view.js';
+import { PROFILES, PROFILE_TEXT, SOURCE_KIND, getProfile, profileToSchema, profileRecord, profileFieldCount } from './system-profiles.js';
+import { renderSuppliers } from './supplier-view.js';
 import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine, listOrigin, recordOrigin, matchesUsing, orphanMatches, addResultText } from './setup-routes.js';
 import { screenTables } from './trace.js';
 import { renderExecutive } from './executive-view.js';
@@ -59,6 +61,7 @@ const routes = {
   '/signup': renderSignup,
   '/dashboard': renderDashboard,
   '/demo': renderDemo,
+  '/suppliers': () => renderSuppliers({ nav, mount, esc, toast }),
   '/projects/new': renderNewProject,
   '/projects/:id': params => renderHome(params, reconcileUI()),
   '/projects/:id/setup': renderSetup,
@@ -89,7 +92,7 @@ function route() {
   const [hash, anchor] = (location.hash.slice(1) || '/login').split('#');
   const user = getCurrentUser();
 
-  if (!user && !['/login', '/signup', '/invite', '/demo'].some(p => hash.startsWith(p))) {
+  if (!user && !['/login', '/signup', '/invite', '/demo', '/suppliers'].some(p => hash.startsWith(p))) {
     location.hash = '#/login';
     return;
   }
@@ -253,6 +256,7 @@ function renderLogin() {
       </form>
       <p class="recon-sub" style="margin-top:0.75rem">${esc(AUTH_TEXT.demoNote)}</p>
       <p style="margin-top:1rem;font-size:0.88rem;color:var(--muted)">No account? <a href="#/signup" style="color:var(--brand);font-weight:600">Create one</a></p>
+      <p style="margin-top:0.5rem;font-size:0.88rem;color:var(--muted)">Supplier? <a href="#/suppliers">Register your system's field list</a></p>
     </div>
   `);
   document.getElementById('login-form').addEventListener('submit', async e => {
@@ -470,6 +474,11 @@ function renderSetup({ id }) {
       </div>`;
   };
 
+  const profileNote = side => {
+    const rec = project[SIDE[side] + 'Profile'];
+    return rec ? `<p class="recon-sub profile-source">Ready field list: ${esc(rec.system)}. ${esc(rec.source)}</p>` : '';
+  };
+
   const sideCard = side => {
     const list = hasList(side);
     const m = mode(side);
@@ -508,7 +517,7 @@ function renderSetup({ id }) {
       <section class="card setup-side sys-side-${side}" id="setup-side-${side}">
         ${systemTag(side, esc)}
         <h2 class="setup-side-title">${esc((side === 'old' ? project.sourceSystem : project.targetSystem) || (side === 'old' ? 'The system you use now' : 'The system you are moving to'))}</h2>
-        ${list ? `<p class="setup-done"><span aria-hidden="true">✓</span> ${esc(originLine(project, side))}</p>${orphanNote(side)}` : ''}
+        ${list ? `<p class="setup-done"><span aria-hidden="true">✓</span> ${esc(originLine(project, side))}</p>${profileNote(side)}${orphanNote(side)}` : ''}
         ${body}
       </section>`;
   };
@@ -541,7 +550,29 @@ function renderSetup({ id }) {
         ${traceCard(project, esc)}` : ''}`;
     }
     if (key === 'supplier') return templateImportCard(project, esc);
+    if (key === 'profile') return profileChooser(side);
     return '';
+  };
+
+  const profileChooser = side => {
+    if (!PROFILES.length) return `<p>${esc(PROFILE_TEXT.none)}</p>`;
+    return `
+      <fieldset class="profile-pick">
+        <legend>${esc(PROFILE_TEXT.pick)}</legend>
+        ${PROFILES.map((pr, i) => `
+          <label class="profile-option">
+            <input type="radio" name="profile-${side}" value="${esc(pr.id)}" ${i === 0 ? 'checked' : ''}>
+            <span class="profile-option-text">
+              <span class="profile-option-title">${esc(pr.system)}</span>
+              <span class="profile-badge profile-badge-${esc(pr.source.kind)}">${esc(SOURCE_KIND[pr.source.kind]?.label || '')}</span>
+              <span class="profile-option-meta">${profileFieldCount(pr)} fields in ${pr.tables.length} tables · ${esc(pr.version)} · ${esc(PROFILE_TEXT.checked(pr.checked))}</span>
+              <span class="profile-option-note">${esc(pr.note)}</span>
+              <span class="profile-option-meta">From: <a href="${esc(pr.source.url)}" target="_blank" rel="noopener">${esc(pr.source.label)}</a></span>
+            </span>
+          </label>`).join('')}
+      </fieldset>
+      <p class="recon-sub" style="margin:0.5rem 0 0.75rem">${esc(PROFILE_TEXT.starter)}</p>
+      <button type="button" class="btn btn-primary btn-sm profile-use" data-side="${side}">${esc(PROFILE_TEXT.use)}</button>`;
   };
 
   // A side's tool stays open while there is no list, while changing, and for
@@ -634,6 +665,33 @@ function renderSetup({ id }) {
       document.getElementById(`setup-panel-${side}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
   });
+  document.querySelectorAll('.profile-use').forEach(b => b.addEventListener('click', () => {
+    const side = b.dataset.side;
+    const picked = document.querySelector(`input[name="profile-${side}"]:checked`);
+    const profile = picked && getProfile(picked.value);
+    if (!profile) return;
+    const p = getProject(id);
+    const sk = SIDE[side];
+    const key = `${id}:${side}`;
+    const incoming = profileToSchema(profile);
+    const existing = p[sk + 'Schema']?.tables?.length ? p[sk + 'Schema'] : null;
+    const replacing = !existing || setupMode.get(key) === 'replace';
+    p[sk + 'Profile'] = profileRecord(profile);
+    if (!replacing && needsReview(compareDelivery(existing, incoming)).length) {
+      saveProject(p);
+      setupPending.set(key, { incoming, origin: 'profile', file: profile.system });
+      toast('Some tables are already in the list with differences. Choose which version to keep.');
+      renderSetup({ id });
+      return;
+    }
+    if (!replacing && !p[sk + 'Origin']) p[sk + 'Origin'] = listOrigin(p, side);
+    const res = applyAndRecord(p, side, incoming, 'profile', profile.system, new Set(), replacing);
+    recordOrigin(p, side, 'profile', replacing ? 'replace' : 'add');
+    saveProject(p);
+    setupMode.delete(key);
+    toast(replacing ? `Added the ready field list: ${profileFieldCount(profile)} fields.` : `Added: ${deliverySummaryText(res.record)}.`);
+    renderSetup({ id });
+  }));
   document.querySelectorAll('.setup-pending-apply').forEach(b => b.addEventListener('click', () => {
     const side = b.dataset.side;
     const key = `${id}:${side}`;
@@ -694,7 +752,7 @@ function setupExtras(project, esc) {
   const waiting = stillExpected(project);
   const waitingKeys = new Set(waiting.map(e => `${e.side}:${e.name}`));
   const side = s => s === 'old' ? 'Old system' : 'New system';
-  const from = { db: 'Database', file: 'File', screens: 'Pictures of screens', supplier: "Supplier's spreadsheet", sample: 'Sample' };
+  const from = { db: 'Database', file: 'File', screens: 'Pictures of screens', supplier: "Supplier's spreadsheet", sample: 'Sample', profile: 'Ready field list' };
   const when = iso => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const lines = s => expected.filter(e => e.side === s).map(e => e.name).join('\n');
   return `

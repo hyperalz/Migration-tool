@@ -4,6 +4,9 @@
 // usually describes the new one. Pure functions, so they can be tested.
 
 import { screenTables } from './trace.js';
+import { PROFILE_TEXT } from './system-profiles.js';
+
+const READY = { key: 'profile', title: PROFILE_TEXT.routeTitle, best: PROFILE_TEXT.routeBest, gives: PROFILE_TEXT.routeGives };
 
 export const SETUP_TEXT = {
   title: 'Set up: get a list of fields from each system',
@@ -37,6 +40,7 @@ export const ROUTES = {
       gives: 'The fields in your file, with any definitions and values you wrote down.' },
     { key: 'screens', title: 'Use pictures of its screens', best: 'When access has ended, or is about to.',
       gives: 'The names shown on each screen. You can then link them to the real fields.' },
+    READY,
   ],
   new: [
     { key: 'supplier', title: "Import the supplier's mapping spreadsheet", best: 'When the supplier has sent their templates.',
@@ -45,6 +49,7 @@ export const ROUTES = {
       gives: 'Every table and field, with types, from a read-only connector.' },
     { key: 'file', title: 'Upload a field list', best: 'When you have a list in any other form.',
       gives: 'The fields in your file, with any definitions and values you wrote down.' },
+    READY,
   ],
 };
 
@@ -58,6 +63,7 @@ const FROM = {
   screens: 'pictures of its screens',
   supplier: "the supplier's spreadsheet",
   sample: 'a sample list',
+  profile: 'a ready field list',
 };
 
 /** Every place a side's list came from, first one first. */

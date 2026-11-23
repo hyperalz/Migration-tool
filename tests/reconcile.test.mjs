@@ -1741,8 +1741,8 @@ test('masking: titles, special-category and sensitive schools fields are masked 
 import { ROUTES, chosenRoute, listOrigin, answersFromChoice, originLine, SETUP_TEXT, recordOrigin, orphanMatches, addResultText, listOrigins } from '../js/setup-routes.js';
 
 test('set up: each system has its own ways in, best first', () => {
-  assert.deepEqual(ROUTES.old.map(r => r.key), ['db', 'file', 'screens']);
-  assert.deepEqual(ROUTES.new.map(r => r.key), ['supplier', 'db', 'file']);
+  assert.deepEqual(ROUTES.old.map(r => r.key), ['db', 'file', 'screens', 'profile']);
+  assert.deepEqual(ROUTES.new.map(r => r.key), ['supplier', 'db', 'file', 'profile']);
   assert.ok(!ROUTES.new.some(r => r.key === 'screens'), 'pictures of screens are for the old system only');
   for (const r of [...ROUTES.old, ...ROUTES.new]) assert.ok(r.best && r.gives, r.key);
 });

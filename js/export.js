@@ -34,6 +34,8 @@ export function buildExportPackage(project, user) {
     },
     // What the supplier delivered and when, and what is still to come.
     deliveries: project.deliveries || [],
+    // Where any ready field list came from, so each definition can be traced.
+    readyFieldLists: { old: project.sourceProfile || null, new: project.targetProfile || null },
     expectedTables: project.expectedTables || [],
     summary: {
       totalMappings: project.mappings.length,
