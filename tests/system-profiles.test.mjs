@@ -116,7 +116,7 @@ test('an area shows system lists only when a real system list is held', () => {
   assert.equal(board.find(a => a.name === 'Finance').status, 'ready');
   assert.equal(board.find(a => a.name === 'HR and payroll').status, 'none');
   assert.equal(board.find(a => a.name === 'Housing').status, 'none');
-  assert.match(boardHtml(board), /Next: Oracle Fusion/);
+  assert.match(boardHtml(board), /Next: Microsoft Dynamics 365/);
   const extra = [...PROFILES, { ...PROFILES[0], id: 'x', area: 'Housing' }];
   assert.equal(libraryBoard(extra).find(a => a.name === 'Housing').status, 'statutory');
   const sys = [...PROFILES, { ...PROFILES[0], id: 'y', area: 'Housing', listType: 'system' }];
@@ -139,10 +139,10 @@ test('statutory return lists and system lists are kept apart', () => {
   const s = libraryStats();
   assert.equal(s.statutory + s.systems, s.lists);
   assert.equal(s.statutory, 2);
-  assert.equal(s.systems, 1);
+  assert.equal(s.systems, 2);
   assert.equal(s.areasWithAny, 2);
   assert.equal(s.areasReady, 1);
-  assert.match(statsHtml(s), /1<\/span>\s*<span class="lib-stat-label">system list</);
+  assert.match(statsHtml(s), /2<\/span>\s*<span class="lib-stat-label">system lists</);
   assert.match(statsHtml({ ...s, systems: 0 }), /Planned: finance first/);
   assert.match(listsHtml(PROFILES.filter(p => p.listType === 'statutory'), 'system'), /No system lists yet/);
   assert.match(listsHtml(PROFILES, 'system'), /Oracle Fusion: suppliers/);
@@ -161,5 +161,17 @@ test('the Oracle supplier list keeps to field names and our own notes', () => {
   assert.equal(f('Supplier name').values, 'Up to 360 characters');
   assert.equal(f('Supplier name').required, true);
   assert.match(f('Supplier number').description, /blank/);
-  assert.match(boardHtml(libraryBoard()), /Oracle Fusion: suppliers<br><span class="lib-muted">Next: Oracle Fusion: supplier addresses and sites/);
+  assert.match(boardHtml(libraryBoard()), /Oracle Fusion: suppliers<br>Oracle Fusion: supplier addresses and sites<br><span class="lib-muted">Next: Microsoft Dynamics 365/);
+});
+
+test('Oracle addresses and sites link back to the supplier list', () => {
+  const a = getProfile('oracle-fusion-supplier-addresses-sites');
+  assert.equal(a.listType, 'system');
+  assert.deepEqual(a.tables.map(t => t.name), ['Supplier address', 'Supplier site']);
+  const [addr, site] = a.tables;
+  const f = (t, n) => t.columns.find(c => c.name === n);
+  assert.equal(f(addr, 'Address name').values, 'Up to 240 characters');
+  assert.equal(f(site, 'Address name').required, true, 'a site must name the address it uses');
+  assert.equal(f(addr, 'Supplier name').values, getProfile('oracle-fusion-suppliers').tables[0].columns.find(c => c.name === 'Supplier name').values);
+  assert.match(a.note, /Load the supplier list first/);
 });
