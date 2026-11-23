@@ -187,6 +187,43 @@ export const PROFILES = [
       },
     ],
   },
+  {
+    id: 'oracle-fusion-suppliers',
+    listType: 'system',
+    system: 'Oracle Fusion: suppliers',
+    area: 'Finance',
+    version: 'Supplier record (Import Suppliers)',
+    checked: 'November 2026',
+    added: '2026-11-23',
+    source: {
+      kind: 'docs',
+      label: 'Oracle Fusion Cloud Procurement documentation: Import Suppliers and the POZ_SUPPLIERS_INT table',
+      url: 'https://docs.oracle.com/en/cloud/saas/procurement/24c/oaprc/create-suppliers-with-the-import-suppliers-process.html',
+    },
+    note: "The main supplier record that Oracle Fusion loads through its Import Suppliers process. Field names and lengths are from Oracle's public documentation; the notes are ours. This is the supplier record only: addresses, sites, contacts and bank accounts are loaded separately, and most tax details come through Oracle's tax workbook. Download the import template itself from Oracle. Not affiliated with Oracle.",
+    tables: [
+      {
+        name: 'Supplier',
+        columns: [
+          { name: 'Import action', type: 'code', required: true, values: 'Create, update or delete', description: 'What the row does to the supplier record in Oracle.' },
+          { name: 'Supplier name', type: 'string', required: true, values: 'Up to 360 characters', description: 'Oracle column VENDOR_NAME. Identifies the supplier, so each name must be different.' },
+          { name: 'Supplier number', type: 'string', required: false, values: 'Leave blank to let Oracle number it', description: 'Oracle advises leaving this blank so numbers are made automatically. Fill it in only if you must keep the old system\'s numbers.' },
+          { name: 'Alternate supplier name', type: 'string', required: false, values: 'Up to 360 characters', description: 'Oracle column VENDOR_NAME_ALT. Another name, such as a trading or phonetic name.' },
+          { name: 'Alias', type: 'string', required: false, values: 'Up to 360 characters', description: 'A short name people search by.' },
+          { name: 'Tax organization type', type: 'code', required: false, values: 'Up to 30 characters, from a lookup', description: 'Oracle column ORGANIZATION_TYPE_LOOKUP_CODE. Individual and Foreign Individual mark sole traders, which unlocks personal tax fields.' },
+          { name: 'Supplier type', type: 'code', required: false, values: 'Up to 30 characters, from a lookup', description: 'Oracle column VENDOR_TYPE_LOOKUP_CODE. Your own grouping of suppliers, set up in Oracle.' },
+          { name: 'Business relationship', type: 'code', required: true, values: 'From a lookup', description: 'Whether you can spend with the supplier yet. It cannot be changed through import later, so get it right first time.' },
+          { name: 'Parent supplier', type: 'string', required: false, values: 'An existing supplier name', description: 'Links the supplier to a parent company that is already in Oracle.' },
+          { name: 'One-time supplier', type: 'boolean', required: false, values: 'Y or N', description: 'Oracle column ONE_TIME_FLAG. For suppliers paid once, such as refunds.' },
+          { name: 'Inactive date', type: 'date', required: false, description: 'Oracle column END_DATE_ACTIVE. The date the supplier stops being used. Old suppliers are often loaded with this set, or left behind.' },
+          { name: 'Customer number', type: 'string', required: false, description: 'Your account number with the supplier.' },
+          { name: 'Tax registration country', type: 'code', required: false, values: 'Country', description: 'The country of the tax registration number below. Other tax details are loaded through Oracle\'s tax workbook.' },
+          { name: 'Tax registration number', type: 'string', required: false, description: 'For UK suppliers, usually the VAT number.' },
+          { name: 'National Insurance number', type: 'string', required: false, description: 'Only for suppliers who are individuals. Personal data, so check who needs it before you move it.' },
+        ],
+      },
+    ],
+  },
 ];
 
 // ---- The library in public: what is held, what is next ----
@@ -199,7 +236,7 @@ export const PROFILES = [
  */
 export const LIBRARY_AREAS = [
   { name: 'Schools', planned: [] },
-  { name: 'Finance', planned: ['Oracle Fusion: suppliers', 'SAP S/4HANA: finance', 'Microsoft Dynamics 365 Finance'] },
+  { name: 'Finance', planned: ['Oracle Fusion: supplier addresses and sites', 'Microsoft Dynamics 365 Finance: vendors', 'SAP S/4HANA: finance'] },
   { name: 'HR and payroll', planned: [] },
   { name: 'Housing', planned: [] },
   { name: 'Revenues and benefits', planned: [] },

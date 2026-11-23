@@ -113,7 +113,8 @@ test('the library numbers come from the lists themselves', () => {
 test('an area shows system lists only when a real system list is held', () => {
   const board = libraryBoard();
   assert.equal(board.find(a => a.name === 'Schools').status, 'statutory');
-  assert.equal(board.find(a => a.name === 'Finance').status, 'planned');
+  assert.equal(board.find(a => a.name === 'Finance').status, 'ready');
+  assert.equal(board.find(a => a.name === 'HR and payroll').status, 'none');
   assert.equal(board.find(a => a.name === 'Housing').status, 'none');
   assert.match(boardHtml(board), /Next: Oracle Fusion/);
   const extra = [...PROFILES, { ...PROFILES[0], id: 'x', area: 'Housing' }];
@@ -138,12 +139,27 @@ test('statutory return lists and system lists are kept apart', () => {
   const s = libraryStats();
   assert.equal(s.statutory + s.systems, s.lists);
   assert.equal(s.statutory, 2);
-  assert.equal(s.systems, 0);
-  assert.equal(s.areasWithAny, 1);
-  assert.equal(s.areasReady, 0);
-  assert.match(statsHtml(s), /0<\/span>\s*<span class="lib-stat-label">system lists/);
-  assert.match(listsHtml(PROFILES, 'system'), /No system lists yet/);
+  assert.equal(s.systems, 1);
+  assert.equal(s.areasWithAny, 2);
+  assert.equal(s.areasReady, 1);
+  assert.match(statsHtml(s), /1<\/span>\s*<span class="lib-stat-label">system list</);
+  assert.match(statsHtml({ ...s, systems: 0 }), /Planned: finance first/);
+  assert.match(listsHtml(PROFILES.filter(p => p.listType === 'statutory'), 'system'), /No system lists yet/);
+  assert.match(listsHtml(PROFILES, 'system'), /Oracle Fusion: suppliers/);
   assert.match(listsHtml(PROFILES, 'statutory'), /Statutory return/);
   assert.equal(profileRecord(PROFILES[0]).listType, 'statutory');
   assert.match(LIST_TYPE.statutory.note, /checklist/);
+});
+
+test('the Oracle supplier list keeps to field names and our own notes', () => {
+  const o = getProfile('oracle-fusion-suppliers');
+  assert.equal(o.listType, 'system');
+  assert.equal(o.source.kind, 'docs');
+  assert.match(o.source.url, /^https:\/\/docs\.oracle\.com\//);
+  assert.match(o.note, /Not affiliated with Oracle/);
+  const f = name => o.tables[0].columns.find(c => c.name === name);
+  assert.equal(f('Supplier name').values, 'Up to 360 characters');
+  assert.equal(f('Supplier name').required, true);
+  assert.match(f('Supplier number').description, /blank/);
+  assert.match(boardHtml(libraryBoard()), /Oracle Fusion: suppliers<br><span class="lib-muted">Next: Oracle Fusion: supplier addresses and sites/);
 });
