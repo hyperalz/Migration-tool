@@ -3,7 +3,7 @@
 // needs no account, and sends nothing anywhere: a supplier checks their file
 // here, then sends it to us.
 
-import { PROFILES, SOURCE_KIND, TEMPLATE_COLUMNS, templateCSV, checkTemplate, profileFieldCount } from './system-profiles.js';
+import { PROFILES, SOURCE_KIND, LIST_TYPE, listTypeOf, TEMPLATE_COLUMNS, templateCSV, checkTemplate, profileFieldCount } from './system-profiles.js';
 import { downloadText } from './export.js';
 
 export const SUPPLIER_TEXT = {
@@ -39,7 +39,7 @@ export const SUPPLIER_TEXT = {
   notReady: n => `There ${n === 1 ? 'is 1 problem' : `are ${n} problems`} to fix before you send the file`,
   worthALook: 'Worth a second look',
   heldTitle: 'Field lists MapBridge holds',
-  heldLead: 'Each list says where it came from and when it was checked.',
+  heldLead: 'Each list says where it came from and when it was checked. Statutory return lists show what any system must send to government. Lists you register are system lists.',
   affiliation: 'MapBridge is made by Foam Works Digital Ltd. We are not affiliated with any supplier named here.',
   contact: 'Message Alex Osborne on LinkedIn',
 };
@@ -91,10 +91,11 @@ export function renderSuppliers({ nav, mount, esc, toast }) {
         <h2>${esc(T.heldTitle)}</h2>
         <p class="recon-sub" style="margin:0 0 0.75rem">${esc(T.heldLead)} <a href="library.html">See the route library</a>.</p>
         <table class="supplier-held">
-          <thead><tr><th scope="col">System</th><th scope="col">Fields</th><th scope="col">Where it came from</th><th scope="col">Checked</th></tr></thead>
+          <thead><tr><th scope="col">List</th><th scope="col">Kind</th><th scope="col">Fields</th><th scope="col">Where it came from</th><th scope="col">Checked</th></tr></thead>
           <tbody>${PROFILES.map(p => `
             <tr>
               <td>${esc(p.system)}<br><span class="recon-sub">${esc(p.version)}</span></td>
+              <td>${esc(LIST_TYPE[listTypeOf(p)].label)}</td>
               <td>${profileFieldCount(p)}</td>
               <td><span class="profile-badge profile-badge-${esc(p.source.kind)}">${esc(SOURCE_KIND[p.source.kind]?.label || '')}</span><br><a href="${esc(p.source.url)}" target="_blank" rel="noopener">${esc(p.source.label)}</a></td>
               <td>${esc(p.checked)}</td>

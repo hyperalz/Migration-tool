@@ -14,6 +14,29 @@ export const SOURCE_KIND = {
   supplier: { label: 'Checked by supplier', note: 'Sent to us and checked by the supplier.' },
 };
 
+/**
+ * Two kinds of list, kept apart everywhere they are shown:
+ * - statutory: the fields any system in a service area must be able to send
+ *   to government. A starting point and a checklist, not a system's own list.
+ * - system: one product's actual fields. Used for real matching.
+ */
+export const LIST_TYPE = {
+  statutory: {
+    label: 'Statutory return',
+    plural: 'Statutory return lists',
+    short: 'statutory return list',
+    note: 'The fields any system in this area must be able to send to government. Use it as a starting point and a checklist. A real system has many more fields.',
+  },
+  system: {
+    label: 'System list',
+    plural: 'System lists',
+    short: 'system list',
+    note: "One system's own fields, for matching.",
+  },
+};
+
+export const listTypeOf = profile => (profile?.listType === 'statutory' ? 'statutory' : 'system');
+
 export const PROFILE_TEXT = {
   routeTitle: 'Use a ready field list',
   routeBest: 'When MapBridge already holds a list for this system.',
@@ -21,13 +44,14 @@ export const PROFILE_TEXT = {
   pick: 'Choose a field list',
   use: 'Use this list',
   none: 'MapBridge does not hold a ready list for this system yet. Use one of the other ways in.',
-  starter: 'A starting point, not the whole system. Your own setup will have more fields.',
+  starter: 'A statutory return list is a starting point, not the whole system. Your own setup will have more fields.',
   checked: when => `Checked ${when}`,
 };
 
 export const PROFILES = [
   {
     id: 'dfe-cbds-pupil-starter',
+    listType: 'statutory',
     system: 'Schools: pupil records (England)',
     area: 'Schools',
     version: 'Starter set',
@@ -88,6 +112,7 @@ export const PROFILES = [
   },
   {
     id: 'wg-plasc-pupil-2026',
+    listType: 'statutory',
     system: 'Schools: pupil records (Wales)',
     area: 'Schools',
     version: 'PLASC January 2026',
@@ -181,14 +206,25 @@ export const LIBRARY_AREAS = [
   { name: 'Social care', planned: [] },
 ];
 
-export const AREA_STATUS = { ready: 'Ready', planned: 'Planned', none: 'Not started' };
+export const AREA_STATUS = {
+  ready: 'System lists held',
+  statutory: 'Statutory return only',
+  planned: 'Planned',
+  none: 'Not started',
+};
 
-/** Each area with its status and the lists held for it. */
+/**
+ * Each area with its status and the lists held for it, by kind. An area only
+ * counts as having system lists when a real system's list is held: a
+ * statutory return list on its own is shown as such.
+ */
 export function libraryBoard(profiles = PROFILES, areas = LIBRARY_AREAS) {
   return areas.map(a => {
     const held = profiles.filter(p => p.area === a.name);
-    const status = held.length ? 'ready' : a.planned.length ? 'planned' : 'none';
-    return { name: a.name, status, held: held.map(p => p.system), planned: a.planned };
+    const statutory = held.filter(p => listTypeOf(p) === 'statutory').map(p => p.system);
+    const systems = held.filter(p => listTypeOf(p) === 'system').map(p => p.system);
+    const status = systems.length ? 'ready' : statutory.length ? 'statutory' : a.planned.length ? 'planned' : 'none';
+    return { name: a.name, status, statutory, systems, planned: a.planned };
   });
 }
 
@@ -197,7 +233,10 @@ export function libraryStats(profiles = PROFILES, areas = LIBRARY_AREAS) {
   const board = libraryBoard(profiles, areas);
   return {
     lists: profiles.length,
+    statutory: profiles.filter(p => listTypeOf(p) === 'statutory').length,
+    systems: profiles.filter(p => listTypeOf(p) === 'system').length,
     fields: profiles.reduce((n, p) => n + profileFieldCount(p), 0),
+    areasWithAny: board.filter(a => a.status === 'ready' || a.status === 'statutory').length,
     areasReady: board.filter(a => a.status === 'ready').length,
     areas: areas.length,
     bySupplier: profiles.filter(p => p.source?.kind === 'supplier').length,
@@ -208,7 +247,7 @@ export function libraryStats(profiles = PROFILES, areas = LIBRARY_AREAS) {
 export function libraryLog(profiles = PROFILES) {
   return profiles
     .filter(p => p.added)
-    .map(p => ({ date: p.added, text: `Added ${p.system}, ${profileFieldCount(p)} fields`, source: p.source.label }))
+    .map(p => ({ date: p.added, text: `Added ${p.system} (${LIST_TYPE[listTypeOf(p)].short}), ${profileFieldCount(p)} fields`, source: p.source.label }))
     .sort((a, b) => b.date.localeCompare(a.date) || a.text.localeCompare(b.text));
 }
 
@@ -253,6 +292,7 @@ export function profileRecord(profile) {
     id: profile.id,
     system: profile.system,
     version: profile.version,
+    listType: listTypeOf(profile),
     source: profileSourceLine(profile),
     url: profile.source?.url || '',
   };

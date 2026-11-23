@@ -1261,3 +1261,18 @@ nav .btn-primary:hover, .nav-links .btn-primary:hover { background: #f3f2f1; col
   .lib-log li { grid-template-columns: 1fr; gap: 0.1rem; }
   .lib-board th, .lib-board td { padding-right: 0.5rem; }
 }
+.lib-stats { grid-template-columns: repeat(5, 1fr); }
+.lib-status-statutory { background: #fff; color: #0b0c0c; border-color: #0b0c0c; border-style: dashed; }
+.lib-type { display: inline-block; font-weight: 700; font-size: 0.85rem; padding: 0.05rem 0.5rem; border: 2px solid; margin-right: 0.4rem; background: #fff; }
+.lib-type-system { color: #0b4a50; border-color: #0b4a50; }
+.lib-type-statutory { color: #0b0c0c; border-color: #0b0c0c; border-style: dashed; }
+.lib-kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 0 0 2.5rem; }
+.lib-kind { border-left: 5px solid #b1b4b6; padding: 0.25rem 0 0.25rem 1.1rem; }
+.lib-kind h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+.lib-kind p { margin: 0 0 0.5rem; }
+.lib-group-title { font-size: 1.5rem; margin: 2rem 0 1rem; }
+.lib-empty { border: 1px dashed #b1b4b6; padding: 1rem 1.25rem; color: #505a5f; margin: 0; }
+@media (max-width: 1000px) { .lib-stats { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 760px) { .lib-stats { grid-template-columns: 1fr 1fr; } .lib-kinds { grid-template-columns: 1fr; } }
+.lib-board-wrap { overflow-x: auto; }
+@media (max-width: 760px) { .lib-board { font-size: 0.9rem; } .lib-board tbody th { padding-left: 0.4rem; } .lib-status { font-size: 0.8rem; } }
