@@ -32,6 +32,7 @@ export const PROFILES = [
     area: 'Schools',
     version: 'Starter set',
     checked: 'November 2026',
+    added: '2026-11-23',
     source: {
       kind: 'standard',
       label: 'DfE common basic data set (CBDS)',
@@ -91,6 +92,7 @@ export const PROFILES = [
     area: 'Schools',
     version: 'PLASC January 2026',
     checked: 'November 2026',
+    added: '2026-11-23',
     source: {
       kind: 'standard',
       label: 'Welsh Government PLASC technical completion notes, January 2026',
@@ -161,6 +163,54 @@ export const PROFILES = [
     ],
   },
 ];
+
+// ---- The library in public: what is held, what is next ----
+
+/**
+ * The areas councils and schools move systems in. An area is "Ready" when
+ * the library holds a list for it, "Planned" when lists are lined up from
+ * public sources, and "Not started" otherwise. Only list what is really
+ * planned: this is shown on the website as progress.
+ */
+export const LIBRARY_AREAS = [
+  { name: 'Schools', planned: [] },
+  { name: 'Finance', planned: ['Oracle Fusion: suppliers', 'SAP S/4HANA: finance', 'Microsoft Dynamics 365 Finance'] },
+  { name: 'HR and payroll', planned: [] },
+  { name: 'Housing', planned: [] },
+  { name: 'Revenues and benefits', planned: [] },
+  { name: 'Social care', planned: [] },
+];
+
+export const AREA_STATUS = { ready: 'Ready', planned: 'Planned', none: 'Not started' };
+
+/** Each area with its status and the lists held for it. */
+export function libraryBoard(profiles = PROFILES, areas = LIBRARY_AREAS) {
+  return areas.map(a => {
+    const held = profiles.filter(p => p.area === a.name);
+    const status = held.length ? 'ready' : a.planned.length ? 'planned' : 'none';
+    return { name: a.name, status, held: held.map(p => p.system), planned: a.planned };
+  });
+}
+
+/** The headline numbers. Worked out from the library, so they are always true. */
+export function libraryStats(profiles = PROFILES, areas = LIBRARY_AREAS) {
+  const board = libraryBoard(profiles, areas);
+  return {
+    lists: profiles.length,
+    fields: profiles.reduce((n, p) => n + profileFieldCount(p), 0),
+    areasReady: board.filter(a => a.status === 'ready').length,
+    areas: areas.length,
+    bySupplier: profiles.filter(p => p.source?.kind === 'supplier').length,
+  };
+}
+
+/** What was added and when, newest first. */
+export function libraryLog(profiles = PROFILES) {
+  return profiles
+    .filter(p => p.added)
+    .map(p => ({ date: p.added, text: `Added ${p.system}, ${profileFieldCount(p)} fields`, source: p.source.label }))
+    .sort((a, b) => b.date.localeCompare(a.date) || a.text.localeCompare(b.text));
+}
 
 export function getProfile(id, profiles = PROFILES) {
   return profiles.find(p => p.id === id) || null;

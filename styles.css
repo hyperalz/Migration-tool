@@ -1222,3 +1222,42 @@ nav .btn-primary:hover, .nav-links .btn-primary:hover { background: #f3f2f1; col
 .section-navy a.btn, .section-orange a.btn { text-decoration: none; }
 .section-navy .btn-primary, .section-orange .btn-primary { background: #fff; color: #0b4a50; box-shadow: 0 2px 0 #08363b; }
 .section-navy .btn-primary:hover, .section-orange .btn-primary:hover { background: #f3f2f1; color: #0b4a50; }
+
+/* Route library page */
+.lib-hero { padding-bottom: 2.5rem; }
+.lib-kicker { color: #505a5f; font-size: 1.1rem; margin: 0 0 0.25rem; }
+.lib-hero h1 { margin-bottom: 0.75rem; }
+.lib-sub { color: #505a5f; margin: 0 0 1.25rem; max-width: 46rem; }
+.lib-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2rem; }
+.lib-stat { border-top: 5px solid #0b4a50; background: #f3f2f1; padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.lib-stat-number { font-size: 3rem; line-height: 1.05; font-weight: 700; color: #0b0c0c; }
+.lib-stat-label { font-size: 1.05rem; color: #0b0c0c; }
+.lib-stat-note { font-size: 0.95rem; color: #0b4a50; font-weight: 700; }
+.lib-board { width: 100%; border-collapse: collapse; background: #fff; }
+.lib-board th, .lib-board td { text-align: left; vertical-align: top; padding: 0.8rem 1rem 0.8rem 0; border-bottom: 1px solid #b1b4b6; }
+.lib-board thead th { font-size: 1rem; }
+.lib-board tbody th { font-weight: 700; padding-left: 0.75rem; }
+.lib-board thead th:first-child { padding-left: 0.75rem; }
+.lib-status { display: inline-block; font-weight: 700; font-size: 0.95rem; padding: 0.1rem 0.55rem; border: 1px solid; }
+.lib-status-ready { background: #cce2d8; color: #005a30; border-color: #005a30; }
+.lib-status-planned { background: #e3eff0; color: #0b4a50; border-color: #0b4a50; }
+.lib-status-none { background: #f3f2f1; color: #505a5f; border-color: #b1b4b6; }
+.lib-muted { color: #505a5f; }
+.lib-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+.lib-card { border: 1px solid #b1b4b6; padding: 1.25rem; background: #fff; }
+.lib-card h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
+.lib-card p { margin: 0 0 0.6rem; font-size: 0.97rem; }
+.lib-card-meta { color: #505a5f; }
+.lib-badge { display: inline-block; font-weight: 700; font-size: 0.85rem; padding: 0.05rem 0.5rem; border: 1px solid #505a5f; background: #f3f2f1; color: #0b0c0c; margin-right: 0.4rem; }
+.lib-badge-supplier { background: #e3eff0; color: #0b4a50; border-color: #0b4a50; }
+.lib-log { list-style: none; padding: 0; margin: 0; }
+.lib-log li { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid #b1b4b6; }
+.lib-log time { font-weight: 700; }
+.lib-cta h2 { font-size: 1.5rem; margin-bottom: 0.6rem; }
+.lib-cta p { margin: 0 0 0.9rem; }
+@media (max-width: 760px) {
+  .lib-stats { grid-template-columns: 1fr 1fr; }
+  .lib-stat-number { font-size: 2.25rem; }
+  .lib-log li { grid-template-columns: 1fr; gap: 0.1rem; }
+  .lib-board th, .lib-board td { padding-right: 0.5rem; }
+}

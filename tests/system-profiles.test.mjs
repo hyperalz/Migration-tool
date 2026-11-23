@@ -96,3 +96,33 @@ test('the Wales list follows the Welsh census, not the England one', () => {
   assert.ok(w.tables.some(t => t.name === 'Welsh language'));
   assert.match(getProfile('dfe-cbds-pupil-starter').note, /Wales list/);
 });
+
+import { libraryStats, libraryBoard, libraryLog, LIBRARY_AREAS } from '../js/system-profiles.js';
+import { statsHtml, boardHtml } from '../js/library-page.js';
+
+test('the library numbers come from the lists themselves', () => {
+  const s = libraryStats();
+  assert.equal(s.lists, PROFILES.length);
+  assert.equal(s.fields, PROFILES.reduce((n, p) => n + profileFieldCount(p), 0));
+  assert.equal(s.areas, LIBRARY_AREAS.length);
+  assert.equal(s.bySupplier, 0);
+  assert.match(statsHtml(s), /Be the first/);
+  assert.doesNotMatch(statsHtml({ ...s, bySupplier: 1 }), /Be the first/);
+});
+
+test('an area is ready only when a list is held for it', () => {
+  const board = libraryBoard();
+  assert.equal(board.find(a => a.name === 'Schools').status, 'ready');
+  assert.equal(board.find(a => a.name === 'Finance').status, 'planned');
+  assert.equal(board.find(a => a.name === 'Housing').status, 'none');
+  assert.match(boardHtml(board), /Next: Oracle Fusion/);
+  const extra = [...PROFILES, { ...PROFILES[0], id: 'x', area: 'Housing' }];
+  assert.equal(libraryBoard(extra).find(a => a.name === 'Housing').status, 'ready');
+});
+
+test('the update log lists every addition, newest first', () => {
+  const log = libraryLog([{ ...PROFILES[0], added: '2026-12-01' }, PROFILES[1]]);
+  assert.equal(log.length, 2);
+  assert.equal(log[0].date, '2026-12-01');
+  assert.match(log[0].text, /Added Schools: pupil records \(England\), 29 fields/);
+});

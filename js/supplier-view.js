@@ -89,7 +89,7 @@ export function renderSuppliers({ nav, mount, esc, toast }) {
 
       <section class="card">
         <h2>${esc(T.heldTitle)}</h2>
-        <p class="recon-sub" style="margin:0 0 0.75rem">${esc(T.heldLead)}</p>
+        <p class="recon-sub" style="margin:0 0 0.75rem">${esc(T.heldLead)} <a href="library.html">See the route library</a>.</p>
         <table class="supplier-held">
           <thead><tr><th scope="col">System</th><th scope="col">Fields</th><th scope="col">Where it came from</th><th scope="col">Checked</th></tr></thead>
           <tbody>${PROFILES.map(p => `
