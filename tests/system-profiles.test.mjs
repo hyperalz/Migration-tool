@@ -86,3 +86,13 @@ test('missing headings stop the check straight away', () => {
   assert.match(r.errors[0], /Table, Field, Type, Required/);
   assert.match(checkTemplate([]).errors[0], /empty/);
 });
+
+test('the Wales list follows the Welsh census, not the England one', () => {
+  const w = getProfile('wg-plasc-pupil-2026');
+  assert.match(w.source.url, /^https:\/\/www\.gov\.wales\//);
+  const field = name => w.tables.flatMap(t => t.columns).find(c => c.name === name);
+  assert.match(field('National identity').values, /WAL/);
+  assert.equal(field('Pupil ALN provision').values, 'N, C or L');
+  assert.ok(w.tables.some(t => t.name === 'Welsh language'));
+  assert.match(getProfile('dfe-cbds-pupil-starter').note, /Wales list/);
+});
