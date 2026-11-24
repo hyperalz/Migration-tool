@@ -19,7 +19,7 @@ export const STEPS = [
   { key: 'check', label: 'Load and test', path: 'verify',
     screens: [{ key: 'verify', label: 'Field tracker', path: 'verify' }, { key: 'reconcile', label: 'Compare files (optional)', path: 'reconcile' }] },
   { key: 'signoff', label: 'Sign off', path: 'reconcile/overview', screens: [{ key: 'overview', label: 'Overview', path: 'reconcile/overview' }] },
-  { key: 'handover', label: 'Hand over', path: 'export', screens: [{ key: 'export', label: 'Downloads and close', path: 'export' }] },
+  { key: 'handover', label: 'Hand over', path: 'export', screens: [{ key: 'export', label: 'Downloads and close', path: 'export' }, { key: 'report', label: 'Sign-off report', path: 'report' }] },
 ];
 
 export const STATE_LABEL = { done: 'Done', progress: 'In progress', todo: 'Not started', blocked: 'Not yet possible' };
