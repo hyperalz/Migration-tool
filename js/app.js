@@ -13,7 +13,7 @@ import {
   getSchemaColumn, valuesFormatMismatch,
 } from './schema.js';
 import {
-  buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs, mappingsToRows, evidenceDigest,
+  buildExportPackage, downloadJSON, downloadCSV, downloadExcel, generateSQLStubs, mappingsToRows, evidenceDigest, evidenceFingerprint,
 } from './export.js';
 import { MappingCanvas } from './mapping.js';
 import {
@@ -43,11 +43,13 @@ import { screenshotCard, bindScreenshotDictionary } from './screenshot-dictionar
 import { traceCard, bindTrace } from './trace-view.js';
 import { PROFILES, PROFILE_TEXT, SOURCE_KIND, LIST_TYPE, listTypeOf, getProfile, profileToSchema, profileRecord, profileFieldCount } from './system-profiles.js';
 import { renderSuppliers } from './supplier-view.js';
+import { RECORD_TEXT, retireMatch, retireMissing, recordNotMoving, withdrawDecision, unmatchedOldFields, decisionSummary, findFields, resultLine } from './field-record.js';
+import { renderSignoffReport } from './signoff-report.js';
 import { SETUP_TEXT, ROUTES, SIDE_WORD, routeFor, chosenRoute, answersFromChoice, originLine, listOrigin, recordOrigin, matchesUsing, orphanMatches, addResultText } from './setup-routes.js';
 import { screenTables } from './trace.js';
 import { renderExecutive } from './executive-view.js';
 import { oldName, newName, oldLabel, newLabel } from './words.js';
-import { systemTag, fieldPairHtml } from './system-tags.js';
+import { systemTag, fieldTag, fieldPairHtml } from './system-tags.js';
 import { bindHelp } from './help-view.js';
 import { renderArea } from './area-view.js';
 import { renderSettings } from './settings-view.js';
@@ -76,6 +78,7 @@ const routes = {
   '/projects/:id/settings': params => renderSettings(params, { ...reconcileUI(), openAISettings: openAISettingsModal }),
   '/projects/:id/reconcile/:runId': params => renderReport(params, reconcileUI()),
   '/projects/:id/export': renderExport,
+  '/projects/:id/report': params => renderSignoffReport(params, { ...reconcileUI(), getProject, getCurrentUser }),
   '/invite/:token': renderAcceptInvite,
 };
 
@@ -745,7 +748,10 @@ function renderSetup({ id }) {
   document.querySelectorAll('.setup-remove-orphans').forEach(b => b.addEventListener('click', () => {
     if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Click again to remove them'; return; }
     const p = getProject(id);
-    const gone = new Set(orphanMatches(p, b.dataset.side).map(m => m.id));
+    const goneList = orphanMatches(p, b.dataset.side);
+    const gone = new Set(goneList.map(m => m.id));
+    const who = getCurrentUser()?.name || 'unknown';
+    goneList.forEach(m => retireMatch(p, m, { by: who, reason: RECORD_TEXT.droppedFromList, kind: 'dropped' }));
     p.mappings = p.mappings.filter(m => !gone.has(m.id));
     saveProject(p);
     toast(`Removed ${gone.size} ${gone.size === 1 ? 'match' : 'matches'}`);
@@ -1105,6 +1111,7 @@ function renderMap({ id }) {
     </div>
     ${mapNewBar(project)}
     <div id="mapping-container"></div>
+    <section class="card decisions-panel" id="decisions-panel" aria-labelledby="decisions-title"></section>
   `);
   attachLogout();
   document.getElementById('map-only-new')?.addEventListener('change', e => {
@@ -1125,14 +1132,17 @@ function renderMap({ id }) {
     getActor: () => getCurrentUser()?.name || 'unknown',
     onChange: mappings => {
       const p = getProject(id);
+      retireMissing(p, p.mappings, mappings, { by: getCurrentUser()?.name || 'unknown' });
       p.mappings = mappings;
       p.status = 'mapping';
       saveProject(p);
       const stats = mappingProgress(p.sourceSchema, p.targetSchema, mappings);
       canvasInstance.updateFooter(stats);
+      renderDecisions(id);
     },
     onSelectMapping: mapping => openMappingDrawer(mapping, id),
   });
+  renderDecisions(id);
 
   const stats = mappingProgress(project.sourceSchema, project.targetSchema, project.mappings);
   project.mappings.forEach(ensureVerification);
@@ -1146,6 +1156,73 @@ function renderMap({ id }) {
   document.getElementById('ai-suggest').addEventListener('click', async () => {
     await openAISuggestModal(id);
   });
+}
+
+// Old fields with no match: record "not moving" with a reason, so the
+// evidence shows what was left behind and why. Decisions are never erased.
+const decisionOpen = new Set();
+function renderDecisions(id) {
+  const panel = document.getElementById('decisions-panel');
+  if (!panel) return;
+  const project = getProject(id);
+  const list = unmatchedOldFields(project);
+  const sum = decisionSummary(project);
+  const day = iso => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  panel.innerHTML = `
+    <h2 id="decisions-title">${esc(RECORD_TEXT.notMovingTitle)} <span class="recon-sub">${sum.unmatched ? `${sum.decided} of ${sum.unmatched} decided` : ''}</span></h2>
+    ${!list.length ? `<p class="recon-sub">${esc(RECORD_TEXT.allDecided)}</p>` : `
+    <p class="recon-sub">${esc(RECORD_TEXT.notMovingLead)}</p>
+    <ul class="decision-list">${list.map(f => {
+      const k = `${f.table}.${f.column}`;
+      if (f.decision) {
+        return `<li class="decision-row decided">
+          <span class="decision-field">${esc(k)}</span>
+          <span class="decision-state"><strong>${esc(RECORD_TEXT.notMoving)}:</strong> ${esc(f.decision.reason)} <span class="recon-sub">${esc(f.decision.by)}, ${esc(day(f.decision.at))}</span></span>
+          <button type="button" class="btn btn-ghost btn-sm decision-undo" data-table="${esc(f.table)}" data-column="${esc(f.column)}">${esc(RECORD_TEXT.undo)}</button>
+        </li>`;
+      }
+      if (decisionOpen.has(k)) {
+        return `<li class="decision-row">
+          <span class="decision-field">${esc(k)}</span>
+          <form class="decision-form" data-table="${esc(f.table)}" data-column="${esc(f.column)}">
+            <label for="dec-${esc(k)}">${esc(RECORD_TEXT.notMovingReason)}</label>
+            <p class="decision-error" hidden>${esc(RECORD_TEXT.reasonNeeded)}</p>
+            <input id="dec-${esc(k)}" name="reason" type="text" autocomplete="off">
+            <span class="decision-actions"><button type="submit" class="btn btn-primary btn-sm">${esc(RECORD_TEXT.notMovingSave)}</button>
+            <button type="button" class="btn btn-ghost btn-sm decision-cancel" data-key="${esc(k)}">Cancel</button></span>
+          </form>
+        </li>`;
+      }
+      return `<li class="decision-row">
+        <span class="decision-field">${esc(k)}</span>
+        <span class="decision-state recon-sub">${esc(RECORD_TEXT.undecided)}</span>
+        <button type="button" class="btn btn-secondary btn-sm decision-open" data-key="${esc(k)}">${esc(RECORD_TEXT.notMoving)}</button>
+      </li>`;
+    }).join('')}</ul>`}`;
+  const who = () => getCurrentUser()?.name || 'unknown';
+  panel.querySelectorAll('.decision-open').forEach(b => b.addEventListener('click', () => {
+    decisionOpen.add(b.dataset.key); renderDecisions(id);
+    panel.querySelector(`.decision-form input`)?.focus();
+  }));
+  panel.querySelectorAll('.decision-cancel').forEach(b => b.addEventListener('click', () => { decisionOpen.delete(b.dataset.key); renderDecisions(id); }));
+  panel.querySelectorAll('.decision-form').forEach(f => f.addEventListener('submit', e => {
+    e.preventDefault();
+    const reason = String(new FormData(f).get('reason') || '').trim();
+    if (!reason) { f.querySelector('.decision-error').hidden = false; f.querySelector('input').focus(); return; }
+    const p = getProject(id);
+    recordNotMoving(p, { table: f.dataset.table, column: f.dataset.column, reason, by: who() });
+    saveProject(p);
+    decisionOpen.delete(`${f.dataset.table}.${f.dataset.column}`);
+    toast('Decision recorded');
+    renderDecisions(id);
+  }));
+  panel.querySelectorAll('.decision-undo').forEach(b => b.addEventListener('click', () => {
+    const p = getProject(id);
+    withdrawDecision(p, { table: b.dataset.table, column: b.dataset.column, by: who() });
+    saveProject(p);
+    toast(RECORD_TEXT.undone);
+    renderDecisions(id);
+  }));
 }
 
 function formatStepNames(t) {
@@ -1286,6 +1363,7 @@ function renderVerify({ id }) {
   let filterStatus = null;
   let filterServiceArea = null;
   let filterQuick = null;
+  let searchQuery = '';
   let dashboardOpen = false;
   let setupOpen = false;
 
@@ -1350,6 +1428,13 @@ function renderVerify({ id }) {
           Either the fix has not been re-checked yet, or the field was passed too early.</span>
           <button class="btn btn-secondary btn-sm" id="show-conflicts">Show ${conflicts.length === 1 ? 'it' : 'them'}</button>
         </div>` : ''}
+      <section class="card field-find" aria-labelledby="field-find-title">
+        <h2 id="field-find-title">${esc(RECORD_TEXT.searchTitle)}</h2>
+        <label for="field-find-input">${esc(RECORD_TEXT.searchLabel)}</label>
+        <p class="route-hint" id="field-find-hint">${esc(RECORD_TEXT.searchHint)}</p>
+        <input type="search" id="field-find-input" aria-describedby="field-find-hint" autocomplete="off" value="${esc(searchQuery)}">
+        <div id="field-find-results" aria-live="polite"></div>
+      </section>
       ${renderTraceDashboardHTML(dashData, dashboardOpen)}
       <p class="recon-sub" style="margin:0 0 1rem">The people who record steps, and the areas with their managers, are in <a href="#/projects/${id}/settings">Project settings</a>.</p>
       <div class="verify-workspace card">
@@ -1458,6 +1543,25 @@ function renderVerify({ id }) {
         render();
       });
     });
+    const drawResults = () => {
+      const box = document.getElementById('field-find-results');
+      if (!box) return;
+      const hits = findFields(getProject(id), searchQuery);
+      if (searchQuery.trim().length < 2) { box.innerHTML = ''; return; }
+      box.innerHTML = hits.length ? `<ul class="field-find-list">${hits.map(h => `
+        <li class="field-find-hit field-find-${h.state}">
+          <span class="field-find-name">${fieldTag(h.side, `${h.table}.${h.column}`, esc)}</span>
+          <span>${esc(resultLine(h))}</span>
+          ${h.removed.length ? `<span class="recon-sub">${h.removed.map(r => `Removed match to ${esc(r.to)}: ${esc(r.reason)} (${esc(r.by)})`).join('. ')}.</span>` : ''}
+          ${h.matches.map(m => `<button type="button" class="btn btn-ghost btn-sm field-find-open" data-id="${esc(m.id)}">Open the record for ${esc(m.to)}</button>`).join('')}
+        </li>`).join('')}</ul>` : `<p class="recon-sub">${esc(RECORD_TEXT.noResults)}</p>`;
+      box.querySelectorAll('.field-find-open').forEach(b => b.addEventListener('click', () => {
+        const m = getProject(id).mappings.find(x => x.id === b.dataset.id);
+        if (m) openMappingDrawer(m, id, null, getProject(id));
+      }));
+    };
+    document.getElementById('field-find-input')?.addEventListener('input', e => { searchQuery = e.target.value; drawResults(); });
+    drawResults();
     document.getElementById('show-conflicts')?.addEventListener('click', () => {
       filterQuick = 'conflict';
       filterStep = null;
@@ -1810,7 +1914,7 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
             ${renderColumnDefinitionCard(oldLabel(proj), sourceCol, 'col-def-source')}
             ${renderColumnDefinitionCard(newLabel(proj), targetCol, 'col-def-target')}
           </div>
-          ${valueMismatch ? `<div class="alert alert-warn col-def-alert">The values are written differently. ${esc(oldName(proj))} has <strong>${esc(sourceCol?.values || '')}</strong>, and ${esc(newName(proj))} expects <strong>${esc(targetCol?.values || '')}</strong>. Add a rule below to turn one into the other.</div>` : ''}
+          ${valueMismatch ? `<div class="alert alert-warn col-def-alert">The values are written differently. ${esc(oldName(proj))} has <strong>${esc(sourceCol?.values || '')}</strong>, and ${esc(newName(proj))} expects <strong>${esc(targetCol?.values || '')}</strong>. Write the rule that turns one into the other in the notes of the filled table, so it is kept with the match.</div>` : ''}
         </div>
       </details>
       <details class="drawer-section"${fromVerify ? ' open' : ''}>
@@ -1825,21 +1929,30 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
               return `<li class="hist-revert">
                 <div class="hist-status">↩ Reverted</div>
                 ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
-                <div class="hist-meta">${esc(h.by)} · ${new Date(h.at).toLocaleString()}</div>
+                <div class="hist-meta">${esc(h.by)} · ${new Date(h.at).toLocaleString('en-GB')}</div>
               </li>`;
             }
             const hm = statusMeta(h.status);
             return `<li>
               <div class="hist-status" style="color:${hm.color}">${hm.label}</div>
               ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
-              <div class="hist-meta">${esc(h.participants?.length ? h.participants.join(', ') : h.by)} · ${new Date(h.at).toLocaleString()}${h.reference ? ` · ${esc(h.reference)}` : ''}</div>
+              <div class="hist-meta">${esc(h.participants?.length ? h.participants.join(', ') : h.by)} · ${new Date(h.at).toLocaleString('en-GB')}${h.reference ? ` · ${esc(h.reference)}` : ''}</div>
             </li>`;
           }).join('')}</ul>` : `<p style="font-size:0.8rem;color:var(--muted)">No history yet.</p>`}
         </div>
       </details>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-danger btn-sm" id="delete-mapping">Delete this match</button>
+      <details class="remove-match">
+        <summary>${esc(RECORD_TEXT.removeTitle)}</summary>
+        <form id="remove-match-form" class="remove-match-form">
+          <p class="recon-sub">${esc(RECORD_TEXT.removeHint)}</p>
+          <label for="remove-reason">${esc(RECORD_TEXT.reasonLabel)}</label>
+          <p class="decision-error" id="remove-error" hidden>${esc(RECORD_TEXT.reasonNeeded)}</p>
+          <input id="remove-reason" name="reason" type="text" autocomplete="off">
+          <button type="submit" class="btn btn-danger btn-sm">${esc(RECORD_TEXT.removeConfirm)}</button>
+        </form>
+      </details>
     </div>
   `;
 
@@ -1859,16 +1972,22 @@ function openMappingDrawer(mapping, projectId, _activeTab = 'mapping', project =
     });
   }
 
-  document.getElementById('delete-mapping').onclick = () => {
-    if (!confirm('Delete this mapping?')) return;
-    if (canvasInstance) canvasInstance.deleteMapping(mapping.id);
-    else {
-      const p = getProject(projectId);
-      p.mappings = p.mappings.filter(x => x.id !== mapping.id);
-      saveProject(p);
+  document.getElementById('remove-match-form').onsubmit = e => {
+    e.preventDefault();
+    const reason = String(document.getElementById('remove-reason').value || '').trim();
+    if (!reason) {
+      document.getElementById('remove-error').hidden = false;
+      document.getElementById('remove-reason').focus();
+      return;
     }
+    const p = getProject(projectId);
+    const current = p.mappings.find(x => x.id === mapping.id) || mapping;
+    retireMatch(p, current, { by: getCurrentUser()?.name || 'unknown', reason, kind: 'removed' });
+    p.mappings = p.mappings.filter(x => x.id !== mapping.id);
+    saveProject(p);
+    if (canvasInstance && location.hash.endsWith('/map')) canvasInstance.deleteMapping(mapping.id);
     closeDrawer();
-    toast('Match deleted');
+    toast(RECORD_TEXT.removed);
     if (location.hash.includes('/verify')) renderVerify({ id: projectId });
   };
 }
@@ -1911,8 +2030,10 @@ function renderExport({ id }) {
     <div class="grid-2">
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Downloads</h3>
-        <button class="btn btn-primary" id="export-json">Download the evidence pack</button>
-        <p class="recon-sub" style="margin:0.5rem 0 0">One file with the whole story of this move. Keep it safe.</p>
+        <a class="btn btn-primary" href="#/projects/${id}/report">Open the sign-off report</a>
+        <p class="recon-sub" style="margin:0.5rem 0 1rem">What happened to every field, ready to print, sign and attach to a milestone certificate.</p>
+        <button class="btn btn-secondary" id="export-json">Download the evidence pack</button>
+        <p class="recon-sub" style="margin:0.5rem 0 0">One file with the whole story of this move, with a fingerprint so changes can be spotted. Keep it safe.</p>
         <details class="other-ways">
           <summary>Other downloads</summary>
           <div class="other-ways-body">
@@ -1932,8 +2053,10 @@ function renderExport({ id }) {
   `);
   attachLogout();
 
-  document.getElementById('export-json').onclick = () => {
-    downloadJSON(buildExportPackage(project, user), `${slug(project.name)}-evidence-pack.json`);
+  document.getElementById('export-json').onclick = async () => {
+    const pkg = buildExportPackage(project, user);
+    try { pkg.fingerprint = await evidenceFingerprint(pkg); } catch { /* fingerprint needs a secure page */ }
+    downloadJSON(pkg, `${slug(project.name)}-evidence-pack.json`);
     markEvidenceExported(id, user);
     toast('Evidence pack downloaded');
     renderExport({ id });

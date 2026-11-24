@@ -32,6 +32,14 @@ export function buildExportPackage(project, user) {
       finalRunId: project.reconFinalRunId || null,
       areaSignoffs: project.reconAreaSignoffs || [],
     },
+    // Matches that were removed, with who removed them, when and why, and
+    // the decisions recorded for old fields that are not moving.
+    removedMatches: (project.removedMatches || []).map(r => ({
+      sourceTable: r.sourceTable, sourceColumn: r.sourceColumn,
+      targetTable: r.targetTable, targetColumn: r.targetColumn,
+      removed: r.removed, verificationHistory: r.verification?.history || [],
+    })),
+    fieldDecisions: project.fieldDecisions || [],
     // What the supplier delivered and when, and what is still to come.
     deliveries: project.deliveries || [],
     // Where any ready field list came from, so each definition can be traced.
@@ -42,8 +50,30 @@ export function buildExportPackage(project, user) {
       deliveries: (project.deliveries || []).length,
       checkedLoads: (project.reconRuns || []).length,
       areaSignoffs: (project.reconAreaSignoffs || []).length,
+      removedMatches: (project.removedMatches || []).length,
+      fieldDecisions: (project.fieldDecisions || []).length,
     },
   };
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(k => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value === undefined ? null : value);
+}
+
+/**
+ * A SHA-256 fingerprint of an evidence pack's contents, ignoring who exported
+ * it and when. Printed on the sign-off report and stored in the pack, so
+ * anyone can tell whether a pack has been changed since it was made.
+ */
+export async function evidenceFingerprint(pkg) {
+  const { exportedAt, exportedBy, fingerprint, ...content } = pkg;
+  const bytes = new TextEncoder().encode(stableStringify(content));
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // A short digest of an evidence pack's contents, ignoring who exported it and

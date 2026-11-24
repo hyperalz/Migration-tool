@@ -17,6 +17,7 @@ export const PAGE_INTRO = {
   reconcile: 'Use this page to compare two files of records, if you have them. This is an extra check. You do not have to use it.',
   overview: 'Use this page to see where each area is. Each area manager signs off their area here when the data in live is right.',
   export: 'Use this page to download the evidence pack, then close the project. Closing it deletes the project from this browser.',
+  report: 'This report shows what happened to every field. Print it or save it as a PDF, sign it, and keep it with the evidence pack.',
   executive: 'This is a one-page summary of the move for senior managers. You can print it or save it as a PDF.',
   problems: 'This is a list of every problem found in testing, and whether it has been fixed.',
   area: 'This page shows one area of the move: where each field is, and who signs the area off.',
@@ -135,6 +136,11 @@ export const SCREEN_GUIDE = {
     'The evidence pack is one file with the full story of this move.',
     'Download it and keep it safe.',
     'Closing the project deletes it from this browser. You cannot undo that.',
+  ],
+  report: [
+    'The report lists every field: matched, not moving, or removed, with who and why.',
+    'If anything still needs a decision, the box at the top says what.',
+    'Print it, sign it, and download the evidence pack at the same time. The fingerprints will match.',
   ],
 };
 
