@@ -116,7 +116,7 @@ test('an area shows system lists only when a real system list is held', () => {
   assert.equal(board.find(a => a.name === 'Finance').status, 'ready');
   assert.equal(board.find(a => a.name === 'HR and payroll').status, 'none');
   assert.equal(board.find(a => a.name === 'Housing').status, 'none');
-  assert.match(boardHtml(board), /Next: Microsoft Dynamics 365/);
+  assert.match(boardHtml(board), /Next: Oracle Fusion: supplier contacts/);
   const extra = [...PROFILES, { ...PROFILES[0], id: 'x', area: 'Housing' }];
   assert.equal(libraryBoard(extra).find(a => a.name === 'Housing').status, 'statutory');
   const sys = [...PROFILES, { ...PROFILES[0], id: 'y', area: 'Housing', listType: 'system' }];
@@ -139,10 +139,10 @@ test('statutory return lists and system lists are kept apart', () => {
   const s = libraryStats();
   assert.equal(s.statutory + s.systems, s.lists);
   assert.equal(s.statutory, 2);
-  assert.equal(s.systems, 2);
+  assert.equal(s.systems, 3);
   assert.equal(s.areasWithAny, 2);
   assert.equal(s.areasReady, 1);
-  assert.match(statsHtml(s), /2<\/span>\s*<span class="lib-stat-label">system lists</);
+  assert.match(statsHtml(s), /3<\/span>\s*<span class="lib-stat-label">system lists</);
   assert.match(statsHtml({ ...s, systems: 0 }), /Planned: finance first/);
   assert.match(listsHtml(PROFILES.filter(p => p.listType === 'statutory'), 'system'), /No system lists yet/);
   assert.match(listsHtml(PROFILES, 'system'), /Oracle Fusion: suppliers/);
@@ -161,7 +161,7 @@ test('the Oracle supplier list keeps to field names and our own notes', () => {
   assert.equal(f('Supplier name').values, 'Up to 360 characters');
   assert.equal(f('Supplier name').required, true);
   assert.match(f('Supplier number').description, /blank/);
-  assert.match(boardHtml(libraryBoard()), /Oracle Fusion: suppliers<br>Oracle Fusion: supplier addresses and sites<br><span class="lib-muted">Next: Microsoft Dynamics 365/);
+  assert.match(boardHtml(libraryBoard()), /Oracle Fusion: suppliers<br>Oracle Fusion: supplier addresses and sites<br>Microsoft Dynamics 365 Finance: vendors<br><span class="lib-muted">Next: Oracle Fusion: supplier contacts/);
 });
 
 test('Oracle addresses and sites link back to the supplier list', () => {
@@ -174,4 +174,31 @@ test('Oracle addresses and sites link back to the supplier list', () => {
   assert.equal(f(site, 'Address name').required, true, 'a site must name the address it uses');
   assert.equal(f(addr, 'Supplier name').values, getProfile('oracle-fusion-suppliers').tables[0].columns.find(c => c.name === 'Supplier name').values);
   assert.match(a.note, /Load the supplier list first/);
+});
+
+test('the Dynamics vendor list gives entity field names and no made-up lengths', () => {
+  const d = getProfile('dynamics-365-finance-vendors');
+  assert.equal(d.listType, 'system');
+  assert.match(d.source.url, /^https:\/\/learn\.microsoft\.com\//);
+  assert.match(d.note, /does not publish field lengths/);
+  assert.match(d.note, /Not affiliated with Microsoft/);
+  const cols = d.tables[0].columns;
+  assert.ok(cols.every(c => /^Entity field [A-Za-z]+\. /.test(c.description)), 'every field names its entity field');
+  assert.ok(cols.every(c => !/characters/.test(c.values || '')), 'no lengths are claimed');
+  assert.equal(cols.find(c => c.name === 'Vendor group').required, true);
+});
+
+import { CORE_TEXT, isCoreList } from '../js/system-profiles.js';
+
+test('system lists say they hold core fields, not the whole record', () => {
+  for (const p of PROFILES.filter(isCoreList)) {
+    assert.ok(p.fullRecord, `${p.id} says what the full record holds`);
+    assert.match(listsHtml(PROFILES, 'system'), new RegExp(CORE_TEXT.count(profileFieldCount(p))));
+  }
+  assert.ok(!isCoreList(getProfile('dfe-cbds-pupil-starter')));
+  assert.match(LIST_TYPE.system.note, /core fields/);
+  assert.equal(profileRecord(getProfile('oracle-fusion-suppliers')).coreOnly, true);
+  const s = libraryStats();
+  assert.equal(s.coreFields, PROFILES.filter(isCoreList).reduce((n, p) => n + profileFieldCount(p), 0));
+  assert.match(statsHtml(s), /are core fields of system lists/);
 });

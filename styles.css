@@ -1276,3 +1276,4 @@ nav .btn-primary:hover, .nav-links .btn-primary:hover { background: #f3f2f1; col
 @media (max-width: 760px) { .lib-stats { grid-template-columns: 1fr 1fr; } .lib-kinds { grid-template-columns: 1fr; } }
 .lib-board-wrap { overflow-x: auto; }
 @media (max-width: 760px) { .lib-board { font-size: 0.9rem; } .lib-board tbody th { padding-left: 0.4rem; } .lib-status { font-size: 0.8rem; } }
+.lib-core { border-left: 4px solid #0b4a50; background: #f3f2f1; padding: 0.5rem 0.75rem; font-size: 0.93rem; }
